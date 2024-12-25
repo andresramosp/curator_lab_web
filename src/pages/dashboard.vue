@@ -64,9 +64,9 @@ const sections = [
     options: [
       { title: "Photos", icon: "mdi-eye", route: "/dashboard/catalog/photos" },
       {
-        title: "Luminate",
+        title: "Curate",
         icon: "mdi-eye",
-        route: "/dashboard/catalog/luminate",
+        route: "/dashboard/catalog/curate",
       },
 
       {

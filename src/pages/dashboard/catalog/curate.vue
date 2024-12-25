@@ -1,30 +1,33 @@
 <template>
   <v-container class="main-container">
-    <PhotosGrid :hasToolbar="true" />
-    <v-btn class="catalog-button" fab @click="openFileDialog">Add Photos</v-btn>
+    <PhotosGrid :hasToolbar="false" />
+    <v-btn
+      class="analyze-button"
+      fab
+      :loading="photosStore.isAnalyzing"
+      :disabled="photosStore.isAnalyzing || allAnalyzed"
+      @click="analyze"
+    >
+      Curate
+    </v-btn>
     <input type="file" ref="fileInput" multiple hidden @change="uploadFiles" />
   </v-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import PhotosGrid from "@/components/photosGrid.vue";
 
 const photosStore = usePhotosStore();
-const fileInput = ref(null);
 
-function openFileDialog() {
-  fileInput.value.click();
+async function analyze() {
+  await photosStore.analyze();
 }
 
-async function uploadFiles(event) {
-  const selectedFiles = Array.from(event.target.files);
-  if (selectedFiles.length === 0) return;
-
-  await photosStore.uploadPhotos(selectedFiles);
-  event.target.value = ""; // Reset file input
-}
+const allAnalyzed = computed(() => {
+  return !photosStore.photos.find((photo) => !photo.metadata);
+});
 
 // Fetch inicial al montar el componente
 onMounted(() => {
@@ -33,7 +36,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.catalog-button {
+.analyze-button {
   position: sticky;
   bottom: 16px;
   left: 50%;

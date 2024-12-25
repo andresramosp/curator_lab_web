@@ -5,6 +5,7 @@ export const usePhotosStore = defineStore("photos", {
   state: () => ({
     photos: [],
     isLoading: false, // Estado para manejar el loading
+    isAnalyzing: false,
   }),
   actions: {
     async fetchPhotos() {
@@ -37,8 +38,8 @@ export const usePhotosStore = defineStore("photos", {
 
         if (!response.ok)
           throw new Error(`HTTP error! status: ${response.status}`);
-        const { photos: uploadedPhotos } = await response.json();
-        this.photos = [...this.photos, ...uploadedPhotos]; // Añadir las nuevas fotos al estado actual
+        const { savedPhotos } = await response.json();
+        this.photos = [...this.photos, ...savedPhotos]; // Añadir las nuevas fotos al estado actual
       } catch (error) {
         console.error("Error uploading photos:", error);
       }
@@ -47,13 +48,13 @@ export const usePhotosStore = defineStore("photos", {
       // llamada API
       this.photos = this.photos.filter((photo) => photo.id != photoId);
     },
-    async luminate() {
+    async analyze() {
       const photosToAnalyze = this.photos.filter((photo) => !photo.metadata);
       if (!photosToAnalyze.length) {
         console.log("No hay imágenes para analizar");
         return;
       }
-      this.isLoading = true;
+      this.isAnalyzing = true;
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/api/analyzer/`,
@@ -83,7 +84,7 @@ export const usePhotosStore = defineStore("photos", {
       } catch (error) {
         console.error("Error al analizar imágenes:", error);
       } finally {
-        this.isLoading = false;
+        this.isAnalyzing = false;
       }
     },
   },
