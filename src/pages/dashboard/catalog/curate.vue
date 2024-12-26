@@ -1,6 +1,6 @@
 <template>
   <v-container class="main-container">
-    <PhotosGrid :hasToolbar="false" />
+    <PhotosGrid :photos="photosStore.photos" :forCuration="true" />
     <v-btn
       class="analyze-button"
       fab

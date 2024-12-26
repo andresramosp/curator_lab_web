@@ -62,7 +62,11 @@ const sections = [
     title: "Catalog",
     icon: "mdi-folder",
     options: [
-      { title: "Photos", icon: "mdi-eye", route: "/dashboard/catalog/photos" },
+      {
+        title: "Photos",
+        icon: "mdi-image",
+        route: "/dashboard/catalog/photos",
+      },
       {
         title: "Curate",
         icon: "mdi-eye",
@@ -71,10 +75,14 @@ const sections = [
 
       {
         title: "Collections",
-        icon: "mdi-plus",
+        icon: "mdi-folder",
         route: "/dashboard/catalog/collections",
       },
-      { title: "Search", icon: "mdi-plus", route: "/dashboard/catalog/search" },
+      {
+        title: "Search",
+        icon: "mdi-loupe",
+        route: "/dashboard/catalog/search",
+      },
     ],
   },
   {

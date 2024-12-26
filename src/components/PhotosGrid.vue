@@ -1,13 +1,13 @@
 <template>
-  <div v-if="photosStore.photos.length" class="photos-list">
-    <v-hover v-for="photo in photosStore.photos" :key="photo.id">
+  <div v-if="photos.length" class="photos-list">
+    <v-hover v-for="photo in photos" :key="photo.id">
       <template #default="{ isHovering, props }">
         <v-card
           v-bind="props"
           class="photo-card"
           :color="isHovering ? 'undefined' : 'undefined'"
           :class="{
-            'blurred-photo': photosStore.isAnalyzing && !photo.metadata,
+            'blurred-photo': forCuration && !photo.metadata,
           }"
         >
           <v-img
@@ -15,7 +15,7 @@
             class="photo-image"
           ></v-img>
           <!-- Botonera flotante -->
-          <div v-if="hasToolbar" v-show="isHovering" class="action-buttons">
+          <div v-if="!forCuration" v-show="isHovering" class="action-buttons">
             <v-btn size="small" icon @click="deletePhoto(photo.id)">
               <v-icon>mdi-delete</v-icon>
             </v-btn>
@@ -42,7 +42,8 @@
 import { usePhotosStore } from "@/stores/photos";
 
 const props = defineProps({
-  hasToolbar: Boolean,
+  photos: Array,
+  forCuration: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;

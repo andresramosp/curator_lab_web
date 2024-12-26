@@ -1,6 +1,6 @@
 <template>
   <v-container class="main-container">
-    <PhotosGrid :hasToolbar="true" />
+    <PhotosGrid :photos="photosStore.photos" :forCuration="false" />
     <v-btn class="catalog-button" fab @click="openFileDialog">Add Photos</v-btn>
     <input type="file" ref="fileInput" multiple hidden @change="uploadFiles" />
   </v-container>
