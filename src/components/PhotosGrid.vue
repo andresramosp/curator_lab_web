@@ -25,7 +25,7 @@
             <v-btn size="small" icon @click="analyzePhoto(photo.id)">
               <v-icon>mdi-magnify</v-icon>
             </v-btn>
-            <v-btn size="small" icon @click="viewPhotoInfo(photo.id)">
+            <v-btn size="small" icon @click="viewPhotoInfo(photo)">
               <v-icon>mdi-information</v-icon>
             </v-btn>
           </div>
@@ -36,9 +36,24 @@
   <div v-else class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
   </div>
+
+  <!-- Popup Dialog -->
+  <v-dialog v-model="dialog" max-width="500">
+    <v-card>
+      <v-card-title>Photo Information</v-card-title>
+      <v-card-text>
+        <p><strong>ID:</strong> {{ selectedPhoto.id }}</p>
+        <p><strong>Description:</strong> {{ selectedPhoto.description }}</p>
+      </v-card-text>
+      <v-card-actions>
+        <v-btn text @click="dialog = false">Close</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
+import { ref } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 
 const props = defineProps({
@@ -48,6 +63,9 @@ const props = defineProps({
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
 const photosStore = usePhotosStore();
+
+const dialog = ref(false);
+const selectedPhoto = ref({ id: null, description: "" });
 
 async function deletePhoto(photoId) {
   await photosStore.deletePhoto(photoId);
@@ -62,8 +80,12 @@ function analyzePhoto(photoId) {
   console.log("Analyze photo", photoId);
 }
 
-function viewPhotoInfo(photoId) {
-  console.log("View photo info", photoId);
+function viewPhotoInfo(photo) {
+  selectedPhoto.value = {
+    id: photo.id,
+    description: photo.description || "No description available",
+  };
+  dialog.value = true;
 }
 </script>
 

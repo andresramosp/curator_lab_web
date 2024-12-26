@@ -15,6 +15,12 @@
         outlined
       ></v-text-field>
 
+      <v-select
+        v-model="form.accuracy"
+        :items="[0, 1, 2]"
+        label="accuracy"
+      ></v-select>
+
       <v-text-field
         v-model="form.filename"
         label="Filename"
@@ -38,6 +44,7 @@ const form = ref({
   tags: [],
   description: "",
   filename: "",
+  accuracy: 0,
 });
 
 const photos = ref([]);
