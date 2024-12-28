@@ -7,7 +7,7 @@
           class="photo-card"
           :color="isHovering ? 'undefined' : 'undefined'"
           :class="{
-            'blurred-photo': forCuration && !photo.metadata,
+            'blurred-photo': !photo.metadata,
           }"
         >
           <v-img
@@ -44,6 +44,7 @@
       <v-card-text>
         <p><strong>ID:</strong> {{ selectedPhoto.id }}</p>
         <p><strong>Description:</strong> {{ selectedPhoto.description }}</p>
+        <p><strong>Tags:</strong> {{ selectedPhoto.tags }}</p>
       </v-card-text>
       <v-card-actions>
         <v-btn text @click="dialog = false">Close</v-btn>
@@ -76,14 +77,15 @@ function editPhoto(photoId) {
   console.log("Edit photo", photoId);
 }
 
-function analyzePhoto(photoId) {
-  console.log("Analyze photo", photoId);
+async function analyzePhoto(photoId) {
+  photosStore.analyze([photoId]);
 }
 
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     id: photo.id,
     description: photo.description || "No description available",
+    tags: photo.tags.map((t) => t.name),
   };
   dialog.value = true;
 }

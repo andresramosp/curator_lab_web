@@ -48,8 +48,19 @@ export const usePhotosStore = defineStore("photos", {
       // llamada API
       this.photos = this.photos.filter((photo) => photo.id != photoId);
     },
-    async analyze() {
-      const photosToAnalyze = this.photos.filter((photo) => !photo.metadata);
+    async analyze(photosId = []) {
+      let photosToAnalyze = [];
+      if (photosId.length) {
+        photosToAnalyze = this.photos.filter((photo) =>
+          photosId.includes(photo.id)
+        );
+        for (let photo of photosToAnalyze) {
+          delete photo.metadata;
+        }
+      } else {
+        photosToAnalyze = this.photos.filter((photo) => !photo.metadata);
+      }
+
       if (!photosToAnalyze.length) {
         console.log("No hay imágenes para analizar");
         return;
@@ -75,12 +86,14 @@ export const usePhotosStore = defineStore("photos", {
         console.log("Respuesta del servidor:", data);
 
         // Añadir metadata a cada foto
-        data.results.forEach((result) => {
-          const photo = this.photos.find((p) => p.id === result.id);
-          if (photo) {
-            photo.metadata = result;
-          }
-        });
+        // data.results.forEach((result) => {
+        //   const photo = this.photos.find((p) => p.id === result.id);
+        //   if (photo) {
+        //     photo.metadata = result;
+        //     photo.description = result.
+        //   }
+        // });
+        this.fetchPhotos();
       } catch (error) {
         console.error("Error al analizar imágenes:", error);
       } finally {
