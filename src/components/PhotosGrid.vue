@@ -32,9 +32,27 @@
         </v-card>
       </template>
     </v-hover>
+
+    <!-- Additional card for next iteration -->
+    <v-card class="photo-card add-card" @click="$emit('next-iteration')">
+      <v-card-text class="text-center">
+        <v-btn icon :loading="loadingIteration">
+          <v-icon size="36">mdi-plus</v-icon>
+        </v-btn>
+      </v-card-text>
+    </v-card>
   </div>
-  <div v-else class="catalog-message">
+  <div v-else-if="!photos" class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
+  </div>
+  <div v-else>
+    <v-card class="photo-card add-card" @click="$emit('next-iteration')">
+      <v-card-text class="text-center">
+        <v-btn icon :loading="loadingIteration">
+          <v-icon size="36">mdi-plus</v-icon>
+        </v-btn>
+      </v-card-text>
+    </v-card>
   </div>
 
   <!-- Popup Dialog -->
@@ -60,6 +78,7 @@ import { usePhotosStore } from "@/stores/photos";
 const props = defineProps({
   photos: Array,
   forCuration: Boolean,
+  loadingIteration: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
@@ -130,5 +149,13 @@ function viewPhotoInfo(photo) {
 
 .blurred-photo {
   filter: blur(3px);
+}
+
+.add-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  /* background-color: #f0f0f0; */
 }
 </style>
