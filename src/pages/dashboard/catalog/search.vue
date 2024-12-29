@@ -34,7 +34,7 @@ const form = ref({
   iteration: 1,
 });
 
-const photos = ref([]);
+const photos = ref(null);
 const loading = ref(false);
 const loadingIteration = ref(false);
 
