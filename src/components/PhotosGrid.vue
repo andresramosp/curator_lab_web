@@ -1,5 +1,5 @@
 <template>
-  <div v-if="photos.length" class="photos-list">
+  <div v-if="photos && photos.length" class="photos-list">
     <v-hover v-for="photo in photos" :key="photo.id">
       <template #default="{ isHovering, props }">
         <v-card

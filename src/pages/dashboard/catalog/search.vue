@@ -8,7 +8,7 @@
         outlined
       ></v-text-field>
 
-      <v-btn @click="searchPhotos" :loading="loading"> Search </v-btn>
+      <v-btn @click="searchPhotosByTags" :loading="loading"> Search </v-btn>
     </v-toolbar>
 
     <!-- Photos Grid -->
@@ -35,17 +35,39 @@ const form = ref({
 });
 
 const photos = ref(null);
+// const currentTags = ref(null);
+const currentQueryLogicResult = ref(null);
+const currentExpandedDict = ref(null);
 const loading = ref(false);
 const loadingIteration = ref(false);
 
 const availableTags = ["nature", "portrait", "urban", "macro"];
 
-async function searchPhotos() {
+async function searchPhotosByTags() {
   form.value.iteration = 1;
   loading.value = true;
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`,
+      form.value
+    );
+    photos.value = response.data.results;
+    const { queryLogicResult, expandedDictionary } = response.data;
+    currentQueryLogicResult.value = queryLogicResult;
+    currentExpandedDict.value = expandedDictionary;
+  } catch (error) {
+    console.error("Failed to fetch photos", error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function searchPhotosGPT() {
+  form.value.iteration = 1;
+  loading.value = true;
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_gpt`,
       form.value
     );
     photos.value = response.data.results;
@@ -61,8 +83,13 @@ async function nextIteration() {
   loadingIteration.value = true;
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
-      { ...form.value, currentPhotos: photos.value.map((photo) => photo.id) }
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`,
+      {
+        ...form.value,
+        currentPhotos: photos.value.map((photo) => photo.id),
+        currentQueryLogicResult: currentQueryLogicResult.value,
+        currentExpandedDict: currentExpandedDict.value,
+      }
     );
     photos.value = [...photos.value, ...response.data.results];
   } catch (error) {
