@@ -34,9 +34,13 @@
     </v-hover>
 
     <!-- Additional card for next iteration -->
-    <v-card class="photo-card add-card" @click="$emit('next-iteration')">
+    <v-card :disabled="!hasMoreIterations" class="photo-card add-card">
       <v-card-text class="text-center">
-        <v-btn icon :loading="loadingIteration">
+        <v-btn
+          icon
+          :loading="loadingIteration"
+          @click="$emit('next-iteration')"
+        >
           <v-icon size="36">mdi-plus</v-icon>
         </v-btn>
       </v-card-text>
@@ -54,7 +58,6 @@
       </v-card-text>
     </v-card>
   </div>
-
   <!-- Popup Dialog -->
   <v-dialog v-model="dialog" max-width="500">
     <v-card>
@@ -79,6 +82,7 @@ const props = defineProps({
   photos: Array,
   forCuration: Boolean,
   loadingIteration: Boolean,
+  hasMoreIterations: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
