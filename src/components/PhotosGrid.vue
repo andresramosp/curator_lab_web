@@ -50,7 +50,11 @@
     <p class="text-h5 text-center">No photos yet</p>
   </div>
   <div v-else>
-    <v-card class="photo-card add-card" @click="$emit('next-iteration')">
+    <v-card
+      :disabled="!hasMoreIterations"
+      class="photo-card add-card"
+      @click="$emit('next-iteration')"
+    >
       <v-card-text class="text-center">
         <v-btn icon :loading="loadingIteration">
           <v-icon size="36">mdi-plus</v-icon>

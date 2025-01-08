@@ -22,7 +22,7 @@
     <PhotosGrid
       :photos="photos"
       :forCuration="false"
-      :hasMoreIterations="hasMoreIterations"
+      :hasMoreIterations="hasMoreIterations || tryDescIfEmpty"
       @next-iteration="nextIteration"
       :loadingIteration="loadingIteration"
     />
@@ -42,6 +42,7 @@ const form = ref({
   iteration: 1,
 });
 
+const searchByTags = ref(true);
 const photos = ref(null);
 const currentQueryLogicResult = ref(null);
 const loading = ref(false);
@@ -49,6 +50,7 @@ const loadingIteration = ref(false);
 const hasMoreIterations = ref(true);
 const lastQuery = ref("");
 const disableSearchButton = ref(true);
+const tryDescIfEmpty = ref(false);
 
 const availableTags = ["nature", "portrait", "urban", "macro"];
 
@@ -69,7 +71,9 @@ async function searchPhotosByTags() {
     currentQueryLogicResult.value = queryLogicResult;
     hasMoreIterations.value = response.data.hasMore;
     lastQuery.value = form.value.description;
+    searchByTags.value = response.data.searchType == "TAGS";
     disableSearchButton.value = true;
+    tryDescIfEmpty.value = !photos.value.length && !hasMoreIterations.value;
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {
@@ -82,9 +86,14 @@ async function nextIteration() {
   loadingIteration.value = true;
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`,
+      searchByTags.value && !tryDescIfEmpty.value
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_desc`,
       {
         ...form.value,
+        iteration: tryDescIfEmpty.value
+          ? form.value.iteration - 1
+          : form.value.iteration,
         currentPhotos: photos.value.map((photo) => photo.id),
         currentQueryLogicResult: currentQueryLogicResult.value,
       }
