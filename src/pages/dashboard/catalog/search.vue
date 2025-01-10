@@ -18,6 +18,31 @@
       </v-btn>
     </v-toolbar>
 
+    <!-- Tag Selectors -->
+    <v-row>
+      <v-col cols="4">
+        <TagSelector
+          title="Tags Mandatory"
+          :tags="form.mandatoryTags"
+          @update-tags="(tags) => (form.mandatoryTags = tags)"
+        />
+      </v-col>
+      <v-col cols="4">
+        <TagSelector
+          title="Tags Optional"
+          :tags="form.optionalTags"
+          @update-tags="(tags) => (form.optionalTags = tags)"
+        />
+      </v-col>
+      <v-col cols="4">
+        <TagSelector
+          title="Tags Excluded"
+          :tags="form.excludedTags"
+          @update-tags="(tags) => (form.excludedTags = tags)"
+        />
+      </v-col>
+    </v-row>
+
     <!-- Photos Grid -->
     <PhotosGrid
       :photos="photos"
@@ -33,6 +58,7 @@
 import { ref, watch } from "vue";
 import PhotosGrid from "@/components/photosGrid.vue";
 import axios from "axios";
+import TagSelector from "@/components/TagSelector.vue";
 
 const form = ref({
   tags: [],
@@ -40,6 +66,9 @@ const form = ref({
   filename: "",
   accuracy: 0,
   iteration: 1,
+  mandatoryTags: [],
+  optionalTags: [],
+  excludedTags: [],
 });
 
 const searchByTags = ref(true);
