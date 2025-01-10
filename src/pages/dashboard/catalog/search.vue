@@ -88,7 +88,7 @@ async function nextIteration() {
     const response = await axios.post(
       searchByTags.value && !tryDescIfEmpty.value
         ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_desc`,
+        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`,
       {
         ...form.value,
         iteration: tryDescIfEmpty.value

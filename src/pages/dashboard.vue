@@ -67,21 +67,28 @@ const sections = [
         icon: "mdi-image",
         route: "/dashboard/catalog/photos",
       },
-      {
-        title: "Curate",
-        icon: "mdi-eye",
-        route: "/dashboard/catalog/curate",
-      },
 
       {
         title: "Collections",
         icon: "mdi-folder",
         route: "/dashboard/catalog/collections",
       },
+    ],
+  },
+  {
+    title: "Explore",
+    icon: "mdi-loupe",
+
+    options: [
       {
-        title: "Search",
-        icon: "mdi-loupe",
+        title: "By tags",
+        icon: "mdi-file-plus",
         route: "/dashboard/catalog/search",
+      },
+      {
+        title: "By chat",
+        icon: "mdi-file-document-multiple",
+        route: "/dashboard/catalog/search-chat",
       },
     ],
   },
@@ -106,10 +113,15 @@ const sections = [
     icon: "mdi-cog",
     options: [
       {
-        title: "Vision",
-        icon: "mdi-tune",
-        route: "/dashboard/curator/vision",
+        title: "Curate",
+        icon: "mdi-eye",
+        route: "/dashboard/catalog/curate",
       },
+      // {
+      //   title: "Vision",
+      //   icon: "mdi-tune",
+      //   route: "/dashboard/curator/vision",
+      // },
       {
         title: "Chat",
         icon: "mdi-account",
