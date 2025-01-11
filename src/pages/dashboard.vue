@@ -81,15 +81,11 @@ const sections = [
 
     options: [
       {
-        title: "By tags",
+        title: "By text",
         icon: "mdi-file-plus",
-        route: "/dashboard/explore/search-tags",
+        route: "/dashboard/explore/search-text",
       },
-      {
-        title: "By chat",
-        icon: "mdi-file-plus",
-        route: "/dashboard/explore/search-chat",
-      },
+
       {
         title: "By network",
         icon: "mdi-file-document-multiple",

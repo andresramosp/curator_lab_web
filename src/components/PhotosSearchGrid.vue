@@ -16,7 +16,8 @@
           ></v-img>
           <!-- Botonera flotante -->
           <div v-show="isHovering" class="matching-tags">
-            <span v-for="tag in photo.matchingTags">{{ tag }}</span>
+            <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
+            <span v-else v-for="tag in photo.matchingTags">{{ tag }}</span>
           </div>
         </v-card>
       </template>
@@ -132,11 +133,8 @@ function viewPhotoInfo(photo) {
   bottom: 0;
   left: 0;
   width: 100%; /* Asegura que ocupe todo el ancho del card */
-  display: grid; /* Usamos Grid para mayor control */
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(60px, 1fr)
-  ); /* Tags dinámicos */
+  display: flex;
+  flex-wrap: wrap; /* Permite que los tags salten de línea */
   gap: 8px;
   background: rgba(0, 0, 0, 0.6);
   padding: 8px;
@@ -150,7 +148,8 @@ function viewPhotoInfo(photo) {
   padding: 4px 8px;
   background: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
   border-radius: 4px;
-  white-space: nowrap; /* Evita que los tags se rompan en varias líneas */
+  white-space: break-spaces; /* Permite que las palabras largas salten de línea */
+  word-break: break-word; /* Asegura que las palabras demasiado largas se ajusten al contenedor */
 }
 
 .catalog-message {
