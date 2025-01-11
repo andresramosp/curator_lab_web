@@ -83,12 +83,17 @@ const sections = [
       {
         title: "By tags",
         icon: "mdi-file-plus",
-        route: "/dashboard/catalog/search",
+        route: "/dashboard/explore/search-tags",
       },
       {
         title: "By chat",
+        icon: "mdi-file-plus",
+        route: "/dashboard/explore/search-chat",
+      },
+      {
+        title: "By network",
         icon: "mdi-file-document-multiple",
-        route: "/dashboard/catalog/search-chat",
+        route: "/dashboard/explore/search-network",
       },
     ],
   },
