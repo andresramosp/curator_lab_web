@@ -30,6 +30,7 @@
     </v-toolbar>
 
     <!-- Photos Grid -->
+    {{ tagsExpansors }}
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
@@ -40,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import axios from "axios";
 
 const form = ref({
@@ -50,15 +51,58 @@ const form = ref({
   iteration: 1,
 });
 
-const photos = ref([]);
 const iterationsRecord = ref({});
 const searchType = ref("tags");
 const currentQueryLogicResult = ref(null);
 const loading = ref(false);
 const loadingIteration = ref(false);
-const hasMoreIterations = ref(false);
 const lastQuery = ref("");
 const disableSearchButton = ref(false);
+
+const photos = computed(() => {
+  const iterationKeys = Object.keys(iterationsRecord.value)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const currentIteration = form.value.iteration;
+  const accumulatedPhotos = [];
+
+  for (let i = 0; i < currentIteration; i++) {
+    const key = iterationKeys[i];
+    if (key !== undefined && iterationsRecord.value[key].photos) {
+      accumulatedPhotos.push(...iterationsRecord.value[key].photos);
+    }
+  }
+
+  return accumulatedPhotos;
+});
+
+const tagsExpansors = computed(() => {
+  const iterationKeys = Object.keys(iterationsRecord.value)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const currentIteration = form.value.iteration;
+  let tagsAnd = [];
+  let tagsOr = [];
+  let tagsNot = [];
+
+  const key = iterationKeys[currentIteration - 1];
+  tagsAnd = iterationsRecord.value[key]?.tagsAnd.map((ex) =>
+    ex.map((ex) => ex.tag)
+  );
+
+  tagsOr = iterationsRecord.value[key]?.tagsOr.map((ex) => ex.tag);
+
+  tagsNot = iterationsRecord.value[key]?.tagsNot.map((ex) => ex.tag);
+
+  return { tagsAnd, tagsOr, tagsNot };
+});
+
+const hasMoreIterations = computed(() => {
+  const iterationKeys = Object.keys(iterationsRecord.value).map(Number);
+  return form.value.iteration < iterationKeys.length;
+});
 
 function handleInputChange() {
   // disableSearchButton.value = form.value.description === lastQuery.value;
@@ -82,9 +126,7 @@ async function searchPhotos() {
         currentQueryLogicResult: currentQueryLogicResult.value,
       }
     );
-    // photos.value = [...photos.value, ...processResult(response.data.results)];
     iterationsRecord.value = response.data.results;
-    hasMoreIterations.value = response.data.hasMore;
 
     if (form.value.iteration == 1) {
       const { queryLogicResult } = response.data;
@@ -101,14 +143,14 @@ async function searchPhotos() {
 
 function handleSearch() {
   form.value.iteration = 1;
-  photos.value = [];
+  iterationsRecord.value = {};
   currentQueryLogicResult.value = null;
   searchPhotos();
 }
 
 async function nextIteration() {
   form.value.iteration++;
-  if (searchType !== "tags") searchPhotos();
+  if (searchType.value !== "tags") searchPhotos();
 }
 </script>
 
