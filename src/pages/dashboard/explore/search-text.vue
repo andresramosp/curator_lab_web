@@ -29,8 +29,33 @@
       </v-row>
     </v-toolbar>
 
-    <!-- Photos Grid -->
-    {{ tagsExpansors }}
+    <div
+      v-if="searchType == 'tags' && Object.keys(iterationsRecord).length"
+      class="tag-breadcrumb"
+    >
+      <div
+        v-for="(expansor, tagIndex) in allExpansors"
+        :key="tagIndex"
+        class="tag-line"
+      >
+        <v-sheet class="m-2">
+          <span v-for="(exp, expIndex) in expansor" :key="exp.tag">
+            <v-chip
+              :title="exp.proximity"
+              :color="isTagIncluded(exp.tag) ? 'secondary' : ''"
+              :variant="expIndex !== 0 ? 'tonal' : 'elevated'"
+              :style="{
+                fontWeight: expIndex !== 0 ? '400' : 'bold',
+              }"
+              size="small"
+            >
+              {{ exp.tag }}
+            </v-chip>
+            <span v-if="expIndex < expansor.length - 1"> &rarr; </span>
+          </span>
+        </v-sheet>
+      </div>
+    </div>
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
@@ -77,6 +102,15 @@ const photos = computed(() => {
   return accumulatedPhotos;
 });
 
+const allExpansors = computed(() => {
+  const iterationKeys = Object.keys(iterationsRecord.value)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const lastKey = iterationKeys[iterationKeys.length - 1];
+  return iterationsRecord.value[lastKey]?.tagsAnd || [];
+});
+
 const tagsExpansors = computed(() => {
   const iterationKeys = Object.keys(iterationsRecord.value)
     .map(Number)
@@ -103,6 +137,10 @@ const hasMoreIterations = computed(() => {
   const iterationKeys = Object.keys(iterationsRecord.value).map(Number);
   return form.value.iteration < iterationKeys.length;
 });
+
+function isTagIncluded(tag) {
+  return tagsExpansors.value.tagsAnd.some((group) => group.includes(tag));
+}
 
 function handleInputChange() {
   // disableSearchButton.value = form.value.description === lastQuery.value;
@@ -158,5 +196,25 @@ async function nextIteration() {
 .main-container {
   padding: 16px;
   row-gap: 15px;
+}
+
+.tag-breadcrumb {
+  border-radius: 5px;
+  width: 100%;
+}
+
+.tag-line {
+  display: flex;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 8px;
+  column-gap: 5px;
+  flex-direction: row;
+  align-content: stretch;
+  justify-content: flex-start;
+}
+.tag-line:last-child {
+  margin-bottom: 0;
 }
 </style>
