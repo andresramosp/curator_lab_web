@@ -2,7 +2,7 @@
   <v-container class="main-container">
     <v-toolbar :elevation="8">
       <v-row align="center" justify="space-between">
-        <v-col cols="8">
+        <v-col cols="6">
           <v-text-field
             v-model="form.description"
             label="Description"
@@ -10,12 +10,12 @@
             @input="handleInputChange"
           ></v-text-field>
         </v-col>
-        <v-col cols="2">
-          <v-switch
-            v-model="creative"
-            color="secondary"
-            label="Creative"
-          ></v-switch>
+        <v-col cols="4">
+          <v-radio-group v-model="searchType" inline>
+            <v-radio label="Tags" value="tags"></v-radio>
+            <v-radio label="Semantic" value="semantic"></v-radio>
+            <v-radio label="Creative" value="creative"></v-radio>
+          </v-radio-group>
         </v-col>
         <v-col cols="2" class="d-flex justify-end pr-8">
           <v-btn
@@ -32,7 +32,6 @@
     <!-- Photos Grid -->
     <PhotosSearchGrid
       :photos="photos"
-      :forCuration="false"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
       :loadingIteration="loadingIteration"
@@ -52,11 +51,12 @@ const form = ref({
 });
 
 const photos = ref([]);
-const creative = ref(false);
+const iterationsRecord = ref({});
+const searchType = ref("tags");
 const currentQueryLogicResult = ref(null);
 const loading = ref(false);
 const loadingIteration = ref(false);
-const hasMoreIterations = ref(true);
+const hasMoreIterations = ref(false);
 const lastQuery = ref("");
 const disableSearchButton = ref(false);
 
@@ -68,9 +68,11 @@ async function searchPhotos() {
   loading.value = true;
   try {
     const response = await axios.post(
-      creative.value
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_creative`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`,
+      searchType.value == "tags"
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`
+        : searchType.value == "semantic"
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_desc`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_creative`,
       {
         ...form.value,
         iteration: form.value.iteration,
@@ -80,7 +82,8 @@ async function searchPhotos() {
         currentQueryLogicResult: currentQueryLogicResult.value,
       }
     );
-    photos.value = [...photos.value, ...response.data.results];
+    // photos.value = [...photos.value, ...processResult(response.data.results)];
+    iterationsRecord.value = response.data.results;
     hasMoreIterations.value = response.data.hasMore;
 
     if (form.value.iteration == 1) {
@@ -89,8 +92,6 @@ async function searchPhotos() {
       lastQuery.value = form.value.description;
       // disableSearchButton.value = true;
     }
-
-    // creative.value = response.data.searchType == "GPT";
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {
@@ -107,7 +108,7 @@ function handleSearch() {
 
 async function nextIteration() {
   form.value.iteration++;
-  searchPhotos();
+  if (searchType !== "tags") searchPhotos();
 }
 </script>
 

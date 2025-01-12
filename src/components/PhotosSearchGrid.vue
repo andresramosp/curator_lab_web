@@ -36,10 +36,8 @@
       </v-card-text>
     </v-card>
   </div>
-  <div v-else-if="!photos" class="catalog-message">
-    <p class="text-h5 text-center">No photos yet</p>
-  </div>
-  <div v-else>
+
+  <div v-else-if="hasMoreIterations">
     <v-card
       :disabled="!hasMoreIterations"
       class="photo-card add-card"
@@ -51,6 +49,9 @@
         </v-btn>
       </v-card-text>
     </v-card>
+  </div>
+  <div v-else class="catalog-message">
+    <p class="text-h5 text-center">No photos yet</p>
   </div>
   <!-- Popup Dialog -->
   <v-dialog v-model="dialog" max-width="500">
@@ -118,6 +119,7 @@ function viewPhotoInfo(photo) {
 
 .photo-card {
   width: 220px; /* Tamaño consistente */
+  min-height: 150px;
   position: relative;
   overflow: hidden; /* Garantiza que elementos no se salgan del card */
 }
