@@ -172,7 +172,6 @@ function viewPhotoInfo(photo) {
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  border: 2px dashed #ccc;
   transition: background-color 0.2s;
 }
 

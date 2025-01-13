@@ -108,7 +108,12 @@ const allExpansors = computed(() => {
     .sort((a, b) => a - b);
 
   const lastKey = iterationKeys[iterationKeys.length - 1];
-  return iterationsRecord.value[lastKey]?.tagsAnd || [];
+  return (
+    [
+      ...iterationsRecord.value[lastKey]?.tagsAnd,
+      ...iterationsRecord.value[lastKey]?.tagsOr,
+    ] || []
+  );
 });
 
 const tagsExpansors = computed(() => {
@@ -126,7 +131,9 @@ const tagsExpansors = computed(() => {
     ex.map((ex) => ex.tag)
   );
 
-  tagsOr = iterationsRecord.value[key]?.tagsOr.map((ex) => ex.tag);
+  tagsOr = iterationsRecord.value[key]?.tagsOr.map((ex) =>
+    ex.map((ex) => ex.tag)
+  );
 
   tagsNot = iterationsRecord.value[key]?.tagsNot.map((ex) => ex.tag);
 
@@ -139,7 +146,10 @@ const hasMoreIterations = computed(() => {
 });
 
 function isTagIncluded(tag) {
-  return tagsExpansors.value.tagsAnd.some((group) => group.includes(tag));
+  return (
+    tagsExpansors.value.tagsAnd.some((group) => group.includes(tag)) ||
+    tagsExpansors.value.tagsOr.some((group) => group.includes(tag))
+  );
 }
 
 function handleInputChange() {
