@@ -1,11 +1,12 @@
 <template>
   <v-container class="main-container">
-    <v-toolbar :elevation="8">
+    <v-toolbar :elevation="8" class="sticky-toolbar">
       <v-row align="center" justify="space-between">
         <v-col cols="6">
           <v-text-field
             v-model="form.description"
-            label="Description"
+            :label="queryDescription.text"
+            :placeholder="queryDescription.example"
             outlined
             @input="handleInputChange"
           ></v-text-field>
@@ -20,7 +21,7 @@
         <v-col cols="2" class="d-flex justify-end pr-8">
           <v-btn
             @click="handleSearch"
-            :loading="loading"
+            :loading="loading && !loadingIteration"
             :disabled="disableSearchButton"
           >
             Search
@@ -36,9 +37,9 @@
       <div
         v-for="(expansor, tagIndex) in allExpansors"
         :key="tagIndex"
-        class="tag-line"
+        class="tag-section"
       >
-        <v-sheet class="m-2">
+        <v-sheet class="m-2 tag-line">
           <span v-for="(exp, expIndex) in expansor" :key="exp.tag">
             <v-chip
               :title="exp.proximity"
@@ -56,6 +57,7 @@
         </v-sheet>
       </div>
     </div>
+
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
@@ -83,6 +85,27 @@ const loading = ref(false);
 const loadingIteration = ref(false);
 const lastQuery = ref("");
 const disableSearchButton = ref(false);
+const semanticSearchHasMore = ref(false);
+
+const queryDescription = computed(() => {
+  if (searchType.value == "tags") {
+    return {
+      text: "Browse photos accurately through their tags",
+      example: "Show me images with kids and friendly pets",
+    };
+  } else if (searchType.value == "semantic") {
+    return {
+      text: "Explore photos with some semantic flexibility",
+      example: "Photos showing some adventurous scenes",
+    };
+  } else {
+    return {
+      text: "Allow the engine to search for photos in a more creative way",
+      example:
+        "I want images that resonate with the concept of the supernatural",
+    };
+  }
+});
 
 const photos = computed(() => {
   const iterationKeys = Object.keys(iterationsRecord.value)
@@ -141,8 +164,12 @@ const tagsExpansors = computed(() => {
 });
 
 const hasMoreIterations = computed(() => {
-  const iterationKeys = Object.keys(iterationsRecord.value).map(Number);
-  return form.value.iteration < iterationKeys.length;
+  if (searchType.value == "tags") {
+    const iterationKeys = Object.keys(iterationsRecord.value).map(Number);
+    return form.value.iteration < iterationKeys.length;
+  } else {
+    return semanticSearchHasMore.value;
+  }
 });
 
 function isTagIncluded(tag) {
@@ -174,18 +201,31 @@ async function searchPhotos() {
         currentQueryLogicResult: currentQueryLogicResult.value,
       }
     );
-    iterationsRecord.value = response.data.results;
-
-    if (form.value.iteration == 1) {
-      const { queryLogicResult } = response.data;
-      currentQueryLogicResult.value = queryLogicResult;
-      lastQuery.value = form.value.description;
-      // disableSearchButton.value = true;
-    }
+    processResult(response);
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {
     loading.value = false;
+  }
+}
+
+function processResult(response) {
+  if (searchType.value == "tags") {
+    iterationsRecord.value = response.data.results;
+  } else {
+    iterationsRecord.value = {
+      ...iterationsRecord.value,
+      ...response.data.results,
+    };
+    semanticSearchHasMore.value = response.data.hasMore;
+    form.value.iteration = response.data.iteration;
+  }
+
+  if (searchType.value == "tags" && form.value.iteration == 1) {
+    const { queryLogicResult } = response.data;
+    currentQueryLogicResult.value = queryLogicResult;
+    lastQuery.value = form.value.description;
+    // disableSearchButton.value = true;
   }
 }
 
@@ -197,8 +237,16 @@ function handleSearch() {
 }
 
 async function nextIteration() {
-  form.value.iteration++;
-  if (searchType.value !== "tags") searchPhotos();
+  if (searchType.value == "tags") {
+    form.value.iteration++;
+  } else {
+    if (searchType.value == "creative") {
+      form.value.iteration++; // quitar cuando se ponga el while
+    }
+    loadingIteration.value = true;
+    if (searchType.value !== "tags") await searchPhotos();
+    loadingIteration.value = false;
+  }
 }
 </script>
 
@@ -208,21 +256,34 @@ async function nextIteration() {
   row-gap: 15px;
 }
 
+.sticky-toolbar {
+  position: sticky;
+  top: 10px;
+  z-index: 10;
+}
+
 .tag-breadcrumb {
   border-radius: 5px;
   width: 100%;
+  position: sticky;
+  /* top: 80px; 
+  z-index: 9; */
 }
 
 .tag-line {
   display: flex;
-  margin-bottom: 10px;
   flex-wrap: wrap;
   align-items: center;
   row-gap: 8px;
   column-gap: 5px;
+  padding: 5px;
   flex-direction: row;
   align-content: stretch;
   justify-content: flex-start;
+}
+
+.tag-section {
+  margin-bottom: 10px;
 }
 .tag-line:last-child {
   margin-bottom: 0;
