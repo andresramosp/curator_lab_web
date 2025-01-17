@@ -18,6 +18,9 @@
           <div v-show="isHovering" class="matching-tags">
             <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
             <span v-else v-for="tag in photo.matchingTags">{{ tag }}</span>
+            <v-btn size="small" icon @click="viewPhotoInfo(photo)">
+              <v-icon>mdi-information</v-icon>
+            </v-btn>
           </div>
         </v-card>
       </template>
@@ -102,7 +105,7 @@ function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     id: photo.id,
     description: photo.description || "No description available",
-    tags: photo.tags.map((t) => t.name),
+    // tags: photo.tags.map((t) => t.name),
   };
   dialog.value = true;
 }
