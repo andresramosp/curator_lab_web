@@ -2,7 +2,7 @@
   <v-container class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar">
       <v-row align="center" justify="space-between">
-        <v-col cols="6">
+        <v-col cols="5">
           <v-text-field
             v-model="form.description"
             :label="queryDescription.text"
@@ -18,7 +18,16 @@
             <v-radio label="Creative" value="creative"></v-radio>
           </v-radio-group>
         </v-col>
-        <v-col cols="2" class="d-flex justify-end pr-8">
+        <v-col cols="2">
+          <v-switch
+            color="secondary"
+            v-model="form.useEmbeddings"
+            label="Fast search"
+            class="ml-4"
+            inset
+          ></v-switch>
+        </v-col>
+        <v-col cols="1" class="d-flex justify-end pr-8">
           <v-btn
             @click="handleSearch"
             :loading="loading && !loadingIteration"
@@ -76,6 +85,7 @@ const form = ref({
   description: "",
   filename: "",
   iteration: 1,
+  useEmbeddings: false,
 });
 
 const iterationsRecord = ref({});
@@ -90,19 +100,18 @@ const semanticSearchHasMore = ref(false);
 const queryDescription = computed(() => {
   if (searchType.value == "tags") {
     return {
-      text: "Browse photos accurately through their tags",
+      text: "Browse photos quickly through their tags",
       example: "Show me images with kids and friendly pets",
     };
   } else if (searchType.value == "semantic") {
     return {
-      text: "Explore photos with some semantic flexibility",
-      example: "Photos showing some adventurous scenes",
+      text: "Search photos in natural language",
+      example: "Photos of people eating on a boat",
     };
   } else {
     return {
-      text: "Allow the engine to search for photos in a more creative way",
-      example:
-        "I want images that resonate with the concept of the supernatural",
+      text: "Explore your catalogue in a more creative way",
+      example: "I want images that resonate with StarWars movies",
     };
   }
 });
@@ -184,6 +193,7 @@ function handleInputChange() {
 }
 
 async function searchPhotos() {
+  // form.value.iteration = 1
   loading.value = true;
   try {
     const response = await axios.post(
@@ -240,9 +250,6 @@ async function nextIteration() {
   if (searchType.value == "tags") {
     form.value.iteration++;
   } else {
-    if (searchType.value == "creative") {
-      form.value.iteration++; // quitar cuando se ponga el while
-    }
     loadingIteration.value = true;
     if (searchType.value !== "tags") await searchPhotos();
     loadingIteration.value = false;

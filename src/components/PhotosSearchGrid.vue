@@ -13,6 +13,7 @@
           <v-img
             :src="photosBaseURL + '/' + photo.name"
             class="photo-image"
+            :class="{ 'grayscale-photo': !photo.isIncluded }"
           ></v-img>
           <!-- Botonera flotante -->
           <div v-show="isHovering" class="matching-tags">
@@ -105,7 +106,7 @@ function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     id: photo.id,
     description: photo.description || "No description available",
-    // tags: photo.tags.map((t) => t.name),
+    tags: photo.tags.map((t) => t.name),
   };
   dialog.value = true;
 }
@@ -178,7 +179,7 @@ function viewPhotoInfo(photo) {
   transition: background-color 0.2s;
 }
 
-/* .add-card:hover {
-  background-color: #e0e0e0;
-} */
+.grayscale-photo {
+  filter: grayscale(100%);
+}
 </style>
