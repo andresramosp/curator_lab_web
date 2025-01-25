@@ -22,7 +22,7 @@
           <v-switch
             color="secondary"
             v-model="form.useEmbeddings"
-            label="Fast search"
+            label="Broad search"
             class="ml-4"
             inset
           ></v-switch>
@@ -73,6 +73,13 @@
       @next-iteration="nextIteration"
       :loadingIteration="loadingIteration"
     />
+    <v-switch
+      color="secondary"
+      v-model="onlySelected"
+      label="Only Selected"
+      class="ml-4"
+      inset
+    ></v-switch>
   </v-container>
 </template>
 
@@ -96,6 +103,7 @@ const loadingIteration = ref(false);
 const lastQuery = ref("");
 const disableSearchButton = ref(false);
 const semanticSearchHasMore = ref(false);
+const onlySelected = ref(false);
 
 const queryDescription = computed(() => {
   if (searchType.value == "tags") {
@@ -131,7 +139,12 @@ const photos = computed(() => {
     }
   }
 
-  return accumulatedPhotos;
+  return accumulatedPhotos.filter(
+    (ph) =>
+      !ph.hasOwnProperty("isIncluded") ||
+      (onlySelected.value && ph.isIncluded) ||
+      !onlySelected.value
+  );
 });
 
 const allExpansors = computed(() => {

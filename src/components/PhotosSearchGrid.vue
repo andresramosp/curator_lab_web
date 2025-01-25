@@ -13,7 +13,7 @@
           <v-img
             :src="photosBaseURL + '/' + photo.name"
             class="photo-image"
-            :class="{ 'grayscale-photo': !photo.isIncluded }"
+            :class="{ 'photo-included': photo.isIncluded }"
           ></v-img>
           <!-- Botonera flotante -->
           <div v-show="isHovering" class="matching-tags">
@@ -21,6 +21,13 @@
             <span v-else v-for="tag in photo.matchingTags">{{ tag }}</span>
             <v-btn size="small" icon @click="viewPhotoInfo(photo)">
               <v-icon>mdi-information</v-icon>
+            </v-btn>
+            <v-btn size="small" icon @click="analyzePhoto(photo.id)">
+              <v-icon>mdi-magnify</v-icon>
+            </v-btn>
+            <v-btn size="small" icon @click="switchSelected(photo)">
+              <v-icon v-if="!photo.isIncluded">mdi-plus</v-icon>
+              <v-icon v-else>mdi-minus</v-icon>
             </v-btn>
           </div>
         </v-card>
@@ -89,15 +96,6 @@ const photosStore = usePhotosStore();
 const dialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "" });
 
-async function deletePhoto(photoId) {
-  await photosStore.deletePhoto(photoId);
-  console.log("Delete photo", photoId);
-}
-
-function editPhoto(photoId) {
-  console.log("Edit photo", photoId);
-}
-
 async function analyzePhoto(photoId) {
   photosStore.analyze([photoId]);
 }
@@ -109,6 +107,9 @@ function viewPhotoInfo(photo) {
     tags: photo.tags.map((t) => t.name),
   };
   dialog.value = true;
+}
+function switchSelected(photo) {
+  photo.isIncluded = !photo.isIncluded;
 }
 </script>
 
@@ -181,5 +182,10 @@ function viewPhotoInfo(photo) {
 
 .grayscale-photo {
   filter: grayscale(100%);
+}
+
+.photo-included {
+  border: 3px solid rgb(var(--v-theme-secondary)); /* Usamos el color secondary del tema */
+  border-radius: 5px; /* Opcional, para suavizar los bordes */
 }
 </style>
