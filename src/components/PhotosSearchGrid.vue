@@ -1,87 +1,108 @@
 <template>
-  <div v-if="photos && photos.length" class="photos-list">
-    <v-hover v-for="photo in photos" :key="photo.id">
-      <template #default="{ isHovering, props }">
-        <v-card
-          v-bind="props"
-          class="photo-card"
-          :color="isHovering ? 'undefined' : 'undefined'"
-          :class="{
-            'blurred-photo': !photo.metadata,
-          }"
-        >
-          <v-img
-            :src="photosBaseURL + '/' + photo.name"
-            class="photo-image"
-            :class="{ 'photo-included': photo.isIncluded }"
-          ></v-img>
-          <!-- Botonera flotante -->
-          <div v-show="isHovering" class="matching-tags">
-            <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
-            <span v-else v-for="tag in photo.matchingTags">{{ tag }}</span>
-            <v-btn size="small" icon @click="viewPhotoInfo(photo)">
-              <v-icon>mdi-information</v-icon>
-            </v-btn>
-            <v-btn size="small" icon @click="analyzePhoto(photo.id)">
-              <v-icon>mdi-magnify</v-icon>
-            </v-btn>
-            <v-btn size="small" icon @click="switchSelected(photo)">
-              <v-icon v-if="!photo.isIncluded">mdi-plus</v-icon>
-              <v-icon v-else>mdi-minus</v-icon>
-            </v-btn>
-          </div>
-        </v-card>
-      </template>
-    </v-hover>
+  <div v-if="photos && photos.length" class="photos-grid">
+    <!-- Fotos seleccionadas -->
+    <v-card class="photos-container selected-photos">
+      <!-- <v-card-title class="section-title">Matches</v-card-title> -->
+      <v-card-text>
+        <div class="photos-list">
+          <v-hover v-for="photo in selectedPhotos" :key="photo.id">
+            <template #default="{ isHovering, props }">
+              <v-card
+                v-bind="props"
+                class="photo-card"
+                :color="isHovering ? 'undefined' : 'undefined'"
+                :class="{
+                  'blurred-photo': !photo.metadata,
+                }"
+              >
+                <v-img
+                  :src="photosBaseURL + '/' + photo.name"
+                  class="photo-image photo-included"
+                ></v-img>
+                <!-- Botonera flotante -->
+                <div v-show="isHovering" class="matching-tags">
+                  <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
+                  <span v-else v-for="tag in photo.matchingTags">{{
+                    tag
+                  }}</span>
+                  <v-btn size="small" icon @click="viewPhotoInfo(photo)">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="analyzePhoto(photo.id)">
+                    <v-icon>mdi-magnify</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="switchSelected(photo)">
+                    <v-icon>mdi-minus</v-icon>
+                  </v-btn>
+                </div>
+              </v-card>
+            </template>
+          </v-hover>
 
-    <!-- Additional card for next iteration -->
-    <v-card :disabled="!hasMoreIterations" class="photo-card add-card">
-      <v-card-text class="text-center">
-        <v-btn
-          icon
-          :loading="loadingIteration"
-          @click="$emit('next-iteration')"
-        >
-          <v-icon size="36">mdi-plus</v-icon>
-        </v-btn>
+          <!-- Botón para aumentar iteración -->
+          <v-card :disabled="!hasMoreIterations" class="photo-card add-card">
+            <v-card-text class="text-center">
+              <v-btn
+                icon
+                :loading="loadingIteration"
+                @click="$emit('next-iteration')"
+                class="centered-btn"
+              >
+                <v-icon size="36">mdi-plus</v-icon>
+              </v-btn>
+            </v-card-text>
+          </v-card>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <!-- Fotos no seleccionadas -->
+    <v-card class="photos-container unselected-photos">
+      <v-card-title class="section-title">Excluded</v-card-title>
+      <v-card-text>
+        <div class="photos-list">
+          <v-hover v-for="photo in reversedUnselectedPhotos" :key="photo.id">
+            <template #default="{ isHovering, props }">
+              <v-card
+                v-bind="props"
+                class="photo-card"
+                :color="isHovering ? 'undefined' : 'undefined'"
+              >
+                <v-img
+                  :src="photosBaseURL + '/' + photo.name"
+                  class="photo-image"
+                ></v-img>
+                <!-- Botonera flotante -->
+                <div v-show="isHovering" class="matching-tags">
+                  <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
+                  <span v-else v-for="tag in photo.matchingTags">{{
+                    tag
+                  }}</span>
+                  <v-btn size="small" icon @click="viewPhotoInfo(photo)">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="analyzePhoto(photo.id)">
+                    <v-icon>mdi-magnify</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="switchSelected(photo)">
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
+                </div>
+              </v-card>
+            </template>
+          </v-hover>
+        </div>
       </v-card-text>
     </v-card>
   </div>
 
-  <div v-else-if="hasMoreIterations">
-    <v-card
-      :disabled="!hasMoreIterations"
-      class="photo-card add-card"
-      @click="$emit('next-iteration')"
-    >
-      <v-card-text class="text-center">
-        <v-btn icon :loading="loadingIteration">
-          <v-icon size="36">mdi-plus</v-icon>
-        </v-btn>
-      </v-card-text>
-    </v-card>
-  </div>
   <div v-else class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
   </div>
-  <!-- Popup Dialog -->
-  <v-dialog v-model="dialog" max-width="500">
-    <v-card>
-      <v-card-title>Photo Information</v-card-title>
-      <v-card-text>
-        <p><strong>ID:</strong> {{ selectedPhoto.id }}</p>
-        <p><strong>Description:</strong> {{ selectedPhoto.description }}</p>
-        <p><strong>Tags:</strong> {{ selectedPhoto.tags }}</p>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn text @click="dialog = false">Close</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 
 const props = defineProps({
@@ -96,6 +117,16 @@ const photosStore = usePhotosStore();
 const dialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "" });
 
+const selectedPhotos = computed(() =>
+  props.photos.filter((photo) => photo.isIncluded)
+);
+const unselectedPhotos = computed(() =>
+  props.photos.filter((photo) => !photo.isIncluded)
+);
+const reversedUnselectedPhotos = computed(() =>
+  [...unselectedPhotos.value].reverse()
+);
+
 async function analyzePhoto(photoId) {
   photosStore.analyze([photoId]);
 }
@@ -108,12 +139,26 @@ function viewPhotoInfo(photo) {
   };
   dialog.value = true;
 }
+
 function switchSelected(photo) {
   photo.isIncluded = !photo.isIncluded;
 }
 </script>
 
 <style scoped>
+.photos-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.photos-container {
+  padding: 16px;
+  border: 1px solid var(--v-theme-on-surface);
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 .photos-list {
   display: flex;
   flex-wrap: wrap;
@@ -122,41 +167,64 @@ function switchSelected(photo) {
   align-items: flex-start;
 }
 
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: var(--v-theme-primary);
+}
+
+.selected-photos .section-title {
+  color: var(--v-theme-primary);
+}
+
+.unselected-photos .section-title {
+  color: var(--v-theme-secondary);
+}
+
+.unselected-photos {
+  filter: grayscale(100%);
+}
+
 .photo-card {
-  width: 220px; /* Tamaño consistente */
+  width: 220px;
   min-height: 150px;
   position: relative;
-  overflow: hidden; /* Garantiza que elementos no se salgan del card */
+  overflow: hidden;
 }
 
 .photo-image {
   height: 150px;
-  object-fit: cover; /* Ajusta imagenes al contenedor */
+  object-fit: cover;
   width: 100%;
 }
+
+/* .blurred-photo {
+  filter: blur(3px);
+} */
 
 .matching-tags {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%; /* Asegura que ocupe todo el ancho del card */
+  width: 100%;
   display: flex;
-  flex-wrap: wrap; /* Permite que los tags salten de línea */
+  flex-wrap: wrap;
   gap: 8px;
   background: rgba(0, 0, 0, 0.6);
   padding: 8px;
-  border-radius: 0 0 8px 8px; /* Bordes solo en la parte inferior */
+  border-radius: 0 0 8px 8px;
   text-align: center;
 }
 
 .matching-tags span {
-  color: #fff; /* Color del texto para contraste */
+  color: #fff;
   font-size: 12px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
-  white-space: break-spaces; /* Permite que las palabras largas salten de línea */
-  word-break: break-word; /* Asegura que las palabras demasiado largas se ajusten al contenedor */
+  white-space: break-spaces;
+  word-break: break-word;
 }
 
 .catalog-message {
@@ -168,24 +236,8 @@ function switchSelected(photo) {
   font-size: 18px;
 }
 
-.blurred-photo {
-  filter: blur(3px);
-}
-
-.add-card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.grayscale-photo {
-  filter: grayscale(100%);
-}
-
-.photo-included {
-  border: 3px solid rgb(var(--v-theme-secondary)); /* Usamos el color secondary del tema */
-  border-radius: 5px; /* Opcional, para suavizar los bordes */
+.centered-btn {
+  margin: auto;
+  display: block;
 }
 </style>

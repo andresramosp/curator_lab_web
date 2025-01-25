@@ -119,7 +119,7 @@ const queryDescription = computed(() => {
   } else {
     return {
       text: "Explore your catalogue in a more creative way",
-      example: "I want images that resonate with StarWars movies",
+      example: "Images which atmosphere resonate with StarWars movies",
     };
   }
 });
