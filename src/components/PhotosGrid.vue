@@ -32,36 +32,11 @@
         </v-card>
       </template>
     </v-hover>
-
-    <!-- Additional card for next iteration -->
-    <v-card :disabled="!hasMoreIterations" class="photo-card add-card">
-      <v-card-text class="text-center">
-        <v-btn
-          icon
-          :loading="loadingIteration"
-          @click="$emit('next-iteration')"
-        >
-          <v-icon size="36">mdi-plus</v-icon>
-        </v-btn>
-      </v-card-text>
-    </v-card>
   </div>
   <div v-else-if="!photos" class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
   </div>
-  <div v-else>
-    <v-card
-      :disabled="!hasMoreIterations"
-      class="photo-card add-card"
-      @click="$emit('next-iteration')"
-    >
-      <v-card-text class="text-center">
-        <v-btn icon :loading="loadingIteration">
-          <v-icon size="36">mdi-plus</v-icon>
-        </v-btn>
-      </v-card-text>
-    </v-card>
-  </div>
+
   <!-- Popup Dialog -->
   <v-dialog v-model="dialog" max-width="500">
     <v-card>
@@ -157,13 +132,5 @@ function viewPhotoInfo(photo) {
 
 .blurred-photo {
   filter: blur(3px);
-}
-
-.add-card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  /* background-color: #f0f0f0; */
 }
 </style>

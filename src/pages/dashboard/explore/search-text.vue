@@ -1,32 +1,36 @@
 <template>
-  <v-container class="main-container">
+  <div class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar">
       <v-row align="center" justify="space-between">
-        <v-col cols="5">
+        <v-col cols="7">
           <v-text-field
             v-model="form.description"
             :label="queryDescription.text"
             :placeholder="queryDescription.example"
             outlined
-            @input="handleInputChange"
           ></v-text-field>
         </v-col>
-        <v-col cols="4">
-          <v-radio-group v-model="searchType" inline>
-            <v-radio label="Tags" value="tags"></v-radio>
-            <v-radio label="Semantic" value="semantic"></v-radio>
-            <v-radio label="Creative" value="creative"></v-radio>
-          </v-radio-group>
-        </v-col>
-        <v-col cols="2">
+        <v-col cols="4" class="d-flex pr-8">
+          <v-slider
+            :disabled="form.useEmbeddings"
+            :max="2"
+            color="secondary"
+            v-model="searchType"
+            :ticks="searchTypes"
+            show-ticks="always"
+            step="1"
+            tick-size="4"
+          ></v-slider>
+
           <v-switch
             color="secondary"
             v-model="form.useEmbeddings"
-            label="Broad search"
+            label="Quick search"
             class="ml-4"
             inset
           ></v-switch>
         </v-col>
+
         <v-col cols="1" class="d-flex justify-end pr-8">
           <v-btn
             @click="handleSearch"
@@ -39,48 +43,21 @@
       </v-row>
     </v-toolbar>
 
-    <div
-      v-if="searchType == 'tags' && Object.keys(iterationsRecord).length"
-      class="tag-breadcrumb"
-    >
-      <div
-        v-for="(expansor, tagIndex) in allExpansors"
-        :key="tagIndex"
-        class="tag-section"
-      >
-        <v-sheet class="m-2 tag-line">
-          <span v-for="(exp, expIndex) in expansor" :key="exp.tag">
-            <v-chip
-              :title="exp.proximity"
-              :color="isTagIncluded(exp.tag) ? 'secondary' : ''"
-              :variant="expIndex !== 0 ? 'tonal' : 'elevated'"
-              :style="{
-                fontWeight: expIndex !== 0 ? '400' : 'bold',
-              }"
-              size="small"
-            >
-              {{ exp.tag }}
-            </v-chip>
-            <span v-if="expIndex < expansor.length - 1"> &rarr; </span>
-          </span>
-        </v-sheet>
-      </div>
-    </div>
-
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
       :loadingIteration="loadingIteration"
     />
-    <v-switch
+    <!-- <v-switch
+      v-show="photos.length"
       color="secondary"
       v-model="onlySelected"
       label="Only Selected"
       class="ml-4"
       inset
-    ></v-switch>
-  </v-container>
+    ></v-switch> -->
+  </div>
 </template>
 
 <script setup>
@@ -88,38 +65,41 @@ import { ref, computed } from "vue";
 import axios from "axios";
 
 const form = ref({
-  tags: [],
   description: "",
   filename: "",
   iteration: 1,
   useEmbeddings: false,
 });
 
+const searchType = ref(1);
+
+const searchTypes = {
+  0: "Logical",
+  1: "Semantic",
+  2: "Creative",
+};
+
 const iterationsRecord = ref({});
-const searchType = ref("tags");
-const currentQueryLogicResult = ref(null);
 const loading = ref(false);
 const loadingIteration = ref(false);
-const lastQuery = ref("");
-const disableSearchButton = ref(false);
-const semanticSearchHasMore = ref(false);
+const hasMoreIterations = ref(false);
 const onlySelected = ref(false);
 
 const queryDescription = computed(() => {
-  if (searchType.value == "tags") {
+  if (searchType.value == 0) {
     return {
-      text: "Browse photos quickly through their tags",
-      example: "Show me images with kids and friendly pets",
+      text: "Search with a logical, more strict syntax",
+      example: "Photos with dogs and umbrellas, but not people",
     };
-  } else if (searchType.value == "semantic") {
+  } else if (searchType.value == 1) {
     return {
-      text: "Search photos in natural language",
-      example: "Photos of people eating on a boat",
+      text: "Search the catalog with natural language",
+      example: "Images of people eating in a board",
     };
   } else {
     return {
       text: "Explore your catalogue in a more creative way",
-      example: "Images which atmosphere resonate with StarWars movies",
+      example: "Images which atmosphere resonates with StarWars movies",
     };
   }
 });
@@ -135,7 +115,7 @@ const photos = computed(() => {
   for (let i = 0; i < currentIteration; i++) {
     const key = iterationKeys[i];
     if (key !== undefined && iterationsRecord.value[key].photos) {
-      accumulatedPhotos.push(...iterationsRecord.value[key].photos);
+      accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
     }
   }
 
@@ -147,81 +127,19 @@ const photos = computed(() => {
   );
 });
 
-const allExpansors = computed(() => {
-  const iterationKeys = Object.keys(iterationsRecord.value)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  const lastKey = iterationKeys[iterationKeys.length - 1];
-  return (
-    [
-      ...iterationsRecord.value[lastKey]?.tagsAnd,
-      ...iterationsRecord.value[lastKey]?.tagsOr,
-    ] || []
-  );
-});
-
-const tagsExpansors = computed(() => {
-  const iterationKeys = Object.keys(iterationsRecord.value)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  const currentIteration = form.value.iteration;
-  let tagsAnd = [];
-  let tagsOr = [];
-  let tagsNot = [];
-
-  const key = iterationKeys[currentIteration - 1];
-  tagsAnd = iterationsRecord.value[key]?.tagsAnd.map((ex) =>
-    ex.map((ex) => ex.tag)
-  );
-
-  tagsOr = iterationsRecord.value[key]?.tagsOr.map((ex) =>
-    ex.map((ex) => ex.tag)
-  );
-
-  tagsNot = iterationsRecord.value[key]?.tagsNot.map((ex) => ex.tag);
-
-  return { tagsAnd, tagsOr, tagsNot };
-});
-
-const hasMoreIterations = computed(() => {
-  if (searchType.value == "tags") {
-    const iterationKeys = Object.keys(iterationsRecord.value).map(Number);
-    return form.value.iteration < iterationKeys.length;
-  } else {
-    return semanticSearchHasMore.value;
-  }
-});
-
-function isTagIncluded(tag) {
-  return (
-    tagsExpansors.value.tagsAnd.some((group) => group.includes(tag)) ||
-    tagsExpansors.value.tagsOr.some((group) => group.includes(tag))
-  );
-}
-
-function handleInputChange() {
-  // disableSearchButton.value = form.value.description === lastQuery.value;
-}
-
 async function searchPhotos() {
   // form.value.iteration = 1
   loading.value = true;
   try {
     const response = await axios.post(
-      searchType.value == "tags"
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`
-        : searchType.value == "semantic"
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_desc`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_creative`,
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
       {
         ...form.value,
+        searchType: searchTypes[searchType.value].toLowerCase(),
         iteration: form.value.iteration,
         currentPhotos: photos.value
           ? photos.value.map((photo) => photo.id)
           : null,
-        currentQueryLogicResult: currentQueryLogicResult.value,
       }
     );
     processResult(response);
@@ -233,40 +151,24 @@ async function searchPhotos() {
 }
 
 function processResult(response) {
-  if (searchType.value == "tags") {
-    iterationsRecord.value = response.data.results;
-  } else {
-    iterationsRecord.value = {
-      ...iterationsRecord.value,
-      ...response.data.results,
-    };
-    semanticSearchHasMore.value = response.data.hasMore;
-    form.value.iteration = response.data.iteration;
-  }
-
-  if (searchType.value == "tags" && form.value.iteration == 1) {
-    const { queryLogicResult } = response.data;
-    currentQueryLogicResult.value = queryLogicResult;
-    lastQuery.value = form.value.description;
-    // disableSearchButton.value = true;
-  }
+  iterationsRecord.value = {
+    ...iterationsRecord.value,
+    ...response.data.results,
+  };
+  hasMoreIterations.value = response.data.hasMore;
+  form.value.iteration = response.data.iteration;
 }
 
 function handleSearch() {
   form.value.iteration = 1;
   iterationsRecord.value = {};
-  currentQueryLogicResult.value = null;
   searchPhotos();
 }
 
 async function nextIteration() {
-  if (searchType.value == "tags") {
-    form.value.iteration++;
-  } else {
-    loadingIteration.value = true;
-    if (searchType.value !== "tags") await searchPhotos();
-    loadingIteration.value = false;
-  }
+  loadingIteration.value = true;
+  await searchPhotos();
+  loadingIteration.value = false;
 }
 </script>
 

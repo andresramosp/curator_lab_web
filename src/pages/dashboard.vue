@@ -91,6 +91,11 @@ const sections = [
         icon: "mdi-file-document-multiple",
         route: "/dashboard/explore/search-network",
       },
+      {
+        title: "By tags",
+        icon: "mdi-file-plus",
+        route: "/dashboard/explore/search-tags",
+      },
     ],
   },
   {

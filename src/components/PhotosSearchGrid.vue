@@ -58,7 +58,7 @@
 
     <!-- Fotos no seleccionadas -->
     <v-card class="photos-container unselected-photos">
-      <v-card-title class="section-title">Excluded</v-card-title>
+      <!-- <v-card-title class="section-title">Processed</v-card-title> -->
       <v-card-text>
         <div class="photos-list">
           <v-hover v-for="photo in reversedUnselectedPhotos" :key="photo.id">
@@ -99,11 +99,14 @@
   <div v-else class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
   </div>
+
+  <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
 </template>
 
 <script setup>
 import { ref, computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
+import PhotoDialog from "./PhotoDialog.vue";
 
 const props = defineProps({
   photos: Array,
@@ -114,7 +117,7 @@ const props = defineProps({
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
 const photosStore = usePhotosStore();
 
-const dialog = ref(false);
+const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "" });
 
 const selectedPhotos = computed(() =>
@@ -123,8 +126,8 @@ const selectedPhotos = computed(() =>
 const unselectedPhotos = computed(() =>
   props.photos.filter((photo) => !photo.isIncluded)
 );
-const reversedUnselectedPhotos = computed(() =>
-  [...unselectedPhotos.value].reverse()
+const reversedUnselectedPhotos = computed(
+  () => [...unselectedPhotos.value] //.reverse()
 );
 
 async function analyzePhoto(photoId) {
@@ -133,11 +136,12 @@ async function analyzePhoto(photoId) {
 
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
-    id: photo.id,
+    ...photo,
+    name: photo.name.split("-")[1],
     description: photo.description || "No description available",
     tags: photo.tags.map((t) => t.name),
   };
-  dialog.value = true;
+  showDialog.value = true;
 }
 
 function switchSelected(photo) {
@@ -191,6 +195,14 @@ function switchSelected(photo) {
   min-height: 150px;
   position: relative;
   overflow: hidden;
+}
+
+.add-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  /* background-color: #f0f0f0; */
 }
 
 .photo-image {
