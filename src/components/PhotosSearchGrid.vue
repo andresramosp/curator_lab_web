@@ -9,7 +9,7 @@
             <template #default="{ isHovering, props }">
               <v-card
                 v-bind="props"
-                class="photo-card"
+                class="photo-card fade-in"
                 :color="isHovering ? 'undefined' : 'undefined'"
                 :class="{
                   'blurred-photo': !photo.metadata,
@@ -40,7 +40,13 @@
           </v-hover>
 
           <!-- Botón para aumentar iteración -->
-          <v-card :disabled="!hasMoreIterations" class="photo-card add-card">
+          <v-card
+            :disabled="!hasMoreIterations"
+            :loading="loadingIteration"
+            class="photo-card add-card"
+            elevation="16"
+            hover
+          >
             <v-card-text class="text-center">
               <v-btn
                 icon
@@ -61,11 +67,11 @@
       <!-- <v-card-title class="section-title">Processed</v-card-title> -->
       <v-card-text>
         <div class="photos-list">
-          <v-hover v-for="photo in reversedUnselectedPhotos" :key="photo.id">
+          <v-hover v-for="photo in unselectedPhotos" :key="photo.id">
             <template #default="{ isHovering, props }">
               <v-card
                 v-bind="props"
-                class="photo-card"
+                class="photo-card fade-in"
                 :color="isHovering ? 'undefined' : 'undefined'"
               >
                 <v-img
@@ -125,9 +131,6 @@ const selectedPhotos = computed(() =>
 );
 const unselectedPhotos = computed(() =>
   props.photos.filter((photo) => !photo.isIncluded)
-);
-const reversedUnselectedPhotos = computed(
-  () => [...unselectedPhotos.value] //.reverse()
 );
 
 async function analyzePhoto(photoId) {
@@ -251,5 +254,21 @@ function switchSelected(photo) {
 .centered-btn {
   margin: auto;
   display: block;
+}
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInAnimation 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeInAnimation {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
