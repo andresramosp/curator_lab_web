@@ -25,7 +25,7 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-    <v-navigation-drawer app right v-if="selectedSection" width="240">
+    <v-navigation-drawer app right v-if="selectedSection" width="200">
       <v-list>
         <v-list-item
           v-for="option in selectedSection.options"

@@ -1,19 +1,24 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
-    <!-- Fotos seleccionadas -->
-    <v-card class="photos-container selected-photos">
-      <!-- <v-card-title class="section-title">Matches</v-card-title> -->
+    {{ isQuickSearch }}
+    <v-card
+      v-show="!isQuickSearch && selectedPhotos.length"
+      class="photos-container selected-photos"
+    >
       <v-card-text>
         <div class="photos-list">
-          <v-hover v-for="photo in selectedPhotos" :key="photo.id">
+          <v-hover v-for="(photo, index) in selectedPhotos" :key="photo.id">
             <template #default="{ isHovering, props }">
               <v-card
                 v-bind="props"
                 class="photo-card fade-in"
-                :color="isHovering ? 'undefined' : 'undefined'"
-                :class="{
-                  'blurred-photo': !photo.metadata,
+                :style="{
+                  animationDelay: `${
+                    photoFadeInDelays.length ? photoFadeInDelays[index] : 0
+                  }ms`,
                 }"
+                :class="{ 'blurred-photo': !photo.metadata }"
+                :color="isHovering ? 'undefined' : 'undefined'"
               >
                 <v-img
                   :src="photosBaseURL + '/' + photo.name"
@@ -43,9 +48,16 @@
           <v-card
             :disabled="!hasMoreIterations"
             :loading="loadingIteration"
-            class="photo-card add-card"
+            class="photo-card add-card fade-in"
             elevation="16"
             hover
+            :style="{
+              animationDelay: `${
+                photoFadeInDelays.length
+                  ? photoFadeInDelays[photoFadeInDelays.length - 1]
+                  : 0
+              }ms`,
+            }"
           >
             <v-card-text class="text-center">
               <v-btn
@@ -67,11 +79,16 @@
       <!-- <v-card-title class="section-title">Processed</v-card-title> -->
       <v-card-text>
         <div class="photos-list">
-          <v-hover v-for="photo in unselectedPhotos" :key="photo.id">
+          <v-hover v-for="(photo, index) in unselectedPhotos" :key="photo.id">
             <template #default="{ isHovering, props }">
               <v-card
                 v-bind="props"
                 class="photo-card fade-in"
+                :style="{
+                  animationDelay: `${
+                    photoFadeInDelays.length ? photoFadeInDelays[index] : 0
+                  }ms`,
+                }"
                 :color="isHovering ? 'undefined' : 'undefined'"
               >
                 <v-img
@@ -110,7 +127,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch, shallowRef } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import PhotoDialog from "./PhotoDialog.vue";
 
@@ -118,6 +135,7 @@ const props = defineProps({
   photos: Array,
   loadingIteration: Boolean,
   hasMoreIterations: Boolean,
+  isQuickSearch: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
@@ -137,6 +155,24 @@ async function analyzePhoto(photoId) {
   photosStore.analyze([photoId]);
 }
 
+const photoFadeInDelays = ref([]);
+const previousPhotosLength = shallowRef(props.photos.length);
+
+watch(
+  () => props.photos.length,
+  (newLength, oldLength) => {
+    if (newLength > oldLength) {
+      photoFadeInDelays.value = props.photos.map(
+        (_, index) => index * (props.isQuickSearch ? 10 : 250)
+      );
+      previousPhotosLength.value = newLength;
+    } else {
+      photoFadeInDelays.value = [];
+    }
+  },
+  { immediate: true }
+);
+
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     ...photo,
@@ -149,6 +185,12 @@ function viewPhotoInfo(photo) {
 
 function switchSelected(photo) {
   photo.isIncluded = !photo.isIncluded;
+  if (photo.isIncluded) {
+    photo._reasoning = photo.reasoning;
+    photo.reasoning = "Selected by user";
+  } else {
+    photo.reasoning = photo._reasoning;
+  }
 }
 </script>
 
@@ -170,7 +212,7 @@ function switchSelected(photo) {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  justify-content: center;
+  /* justify-content: center; */
   align-items: flex-start;
 }
 

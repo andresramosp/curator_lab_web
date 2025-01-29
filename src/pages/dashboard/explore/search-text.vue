@@ -47,16 +47,9 @@
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
+      :isQuickSearch="form.useEmbeddings"
       :loadingIteration="loadingIteration"
     />
-    <!-- <v-switch
-      v-show="photos.length"
-      color="secondary"
-      v-model="onlySelected"
-      label="Only Selected"
-      class="ml-4"
-      inset
-    ></v-switch> -->
   </div>
 </template>
 
