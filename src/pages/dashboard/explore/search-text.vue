@@ -54,8 +54,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import axios from "axios";
+import { io } from "socket.io-client";
+
+const socket = io(import.meta.env.VITE_API_WS_URL);
 
 const form = ref({
   description: "",
@@ -65,7 +68,6 @@ const form = ref({
 });
 
 const searchType = ref(1);
-
 const searchTypes = {
   0: "Logical",
   1: "Semantic",
@@ -107,8 +109,12 @@ const photos = computed(() => {
 
   for (let i = 0; i < currentIteration; i++) {
     const key = iterationKeys[i];
-    if (key !== undefined && iterationsRecord.value[key].photos) {
-      accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
+    if (key !== undefined && iterationsRecord.value[key]?.photos) {
+      if (form.value.useEmbeddings) {
+        accumulatedPhotos.push(...iterationsRecord.value[key].photos);
+      } else {
+        accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
+      }
     }
   }
 
@@ -121,10 +127,9 @@ const photos = computed(() => {
 });
 
 async function searchPhotos() {
-  // form.value.iteration = 1
   loading.value = true;
   try {
-    const response = await axios.post(
+    await axios.post(
       `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
       {
         ...form.value,
@@ -135,21 +140,11 @@ async function searchPhotos() {
           : null,
       }
     );
-    processResult(response);
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {
     loading.value = false;
   }
-}
-
-function processResult(response) {
-  iterationsRecord.value = {
-    ...iterationsRecord.value,
-    ...response.data.results,
-  };
-  hasMoreIterations.value = response.data.hasMore;
-  form.value.iteration = response.data.iteration;
 }
 
 function handleSearch() {
@@ -163,14 +158,58 @@ async function nextIteration() {
   await searchPhotos();
   loadingIteration.value = false;
 }
+
+// WebSocket handlers
+onMounted(() => {
+  socket.on("embeddings", (data) => {
+    Object.entries(data.results).forEach(([iteration, result]) => {
+      iterationsRecord.value[iteration] = {
+        photos: result.photos.map((photo) => ({
+          ...photo,
+        })),
+      };
+    });
+    if (form.value.useEmbeddings) {
+      debugger;
+      hasMoreIterations.value = data.hasMore;
+      form.value.iteration = data.iteration + 1;
+    }
+  });
+
+  socket.on("result", (data) => {
+    Object.entries(data.results).forEach(([iteration, result]) => {
+      if (!iterationsRecord.value[iteration]) return;
+
+      iterationsRecord.value[iteration].photos = iterationsRecord.value[
+        iteration
+      ].photos.map((existingPhoto) => {
+        const updatedPhoto = result.photos.find(
+          (p) => p.id === existingPhoto.id
+        );
+        return updatedPhoto
+          ? {
+              ...existingPhoto,
+              isIncluded: updatedPhoto.isIncluded,
+              reasoning: updatedPhoto.reasoning,
+            }
+          : existingPhoto;
+      });
+    });
+
+    console.log(data);
+
+    hasMoreIterations.value = data.hasMore;
+    form.value.iteration = data.iteration + 1;
+  });
+});
+
+onUnmounted(() => {
+  socket.off("embeddings");
+  socket.off("result");
+});
 </script>
 
 <style scoped>
-.main-container {
-  padding: 16px;
-  row-gap: 15px;
-}
-
 .sticky-toolbar {
   position: sticky;
   top: 10px;

@@ -112,9 +112,4 @@ async function nextIteration() {
 }
 </script>
 
-<style scoped>
-.main-container {
-  padding: 16px;
-  row-gap: 15px;
-}
-</style>
+<style scoped></style>

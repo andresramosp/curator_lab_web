@@ -21,10 +21,6 @@ import { usePhotosStore } from "@/stores/photos";
   justify-content: center;
 }
 
-.photo-card {
-  width: 200px;
-}
-
 .photo-image {
   height: 150px;
 }

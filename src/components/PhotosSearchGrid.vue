@@ -1,10 +1,6 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
-    {{ isQuickSearch }}
-    <v-card
-      v-show="!isQuickSearch && selectedPhotos.length"
-      class="photos-container selected-photos"
-    >
+    <v-card v-show="!isQuickSearch" class="photos-container selected-photos">
       <v-card-text>
         <div class="photos-list">
           <v-hover v-for="(photo, index) in selectedPhotos" :key="photo.id">
@@ -17,7 +13,6 @@
                     photoFadeInDelays.length ? photoFadeInDelays[index] : 0
                   }ms`,
                 }"
-                :class="{ 'blurred-photo': !photo.metadata }"
                 :color="isHovering ? 'undefined' : 'undefined'"
               >
                 <v-img
@@ -25,17 +20,15 @@
                   class="photo-image photo-included"
                 ></v-img>
                 <!-- Botonera flotante -->
-                <div v-show="isHovering" class="matching-tags">
-                  <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
-                  <span v-else v-for="tag in photo.matchingTags">{{
-                    tag
-                  }}</span>
+                <div v-show="isHovering" class="photo-buttons">
+                  <!-- <span v-if="photo.reasoning">{{ photo.reasoning }}</span> -->
+                  <span v-for="tag in photo.matchingTags">{{ tag }}</span>
                   <v-btn size="small" icon @click="viewPhotoInfo(photo)">
                     <v-icon>mdi-information</v-icon>
                   </v-btn>
-                  <v-btn size="small" icon @click="analyzePhoto(photo.id)">
+                  <!-- <v-btn size="small" icon @click="analyzePhoto(photo.id)">
                     <v-icon>mdi-magnify</v-icon>
-                  </v-btn>
+                  </v-btn> -->
                   <v-btn size="small" icon @click="switchSelected(photo)">
                     <v-icon>mdi-minus</v-icon>
                   </v-btn>
@@ -66,7 +59,7 @@
                 @click="$emit('next-iteration')"
                 class="centered-btn"
               >
-                <v-icon size="36">mdi-plus</v-icon>
+                <v-icon size="36">mdi-autorenew</v-icon>
               </v-btn>
             </v-card-text>
           </v-card>
@@ -75,7 +68,12 @@
     </v-card>
 
     <!-- Fotos no seleccionadas -->
-    <v-card class="photos-container unselected-photos">
+    <v-card
+      class="photos-container"
+      :class="{
+        'unselected-photos': !isQuickSearch,
+      }"
+    >
       <!-- <v-card-title class="section-title">Processed</v-card-title> -->
       <v-card-text>
         <div class="photos-list">
@@ -95,25 +93,55 @@
                   :src="photosBaseURL + '/' + photo.name"
                   class="photo-image"
                 ></v-img>
-                <!-- Botonera flotante -->
-                <div v-show="isHovering" class="matching-tags">
-                  <span v-if="photo.reasoning">{{ photo.reasoning }}</span>
-                  <span v-else v-for="tag in photo.matchingTags">{{
-                    tag
-                  }}</span>
-                  <v-btn size="small" icon @click="viewPhotoInfo(photo)">
-                    <v-icon>mdi-information</v-icon>
-                  </v-btn>
-                  <v-btn size="small" icon @click="analyzePhoto(photo.id)">
-                    <v-icon>mdi-magnify</v-icon>
-                  </v-btn>
-                  <v-btn size="small" icon @click="switchSelected(photo)">
-                    <v-icon>mdi-plus</v-icon>
+                <div class="photo-overlay" v-show="isThinking(photo)">
+                  <span
+                    v-show="isThinking(photo)"
+                    v-for="(letter, index) in 'Reviewing'.split('')"
+                    :key="index"
+                    class="thinking-letter"
+                    :style="{ animationDelay: `${index * 0.1}s` }"
+                  >
+                    {{ letter }}
+                  </span>
+                </div>
+                <div
+                  class="photo-overlay"
+                  v-show="isHovering && !isThinking(photo) && !isQuickSearch"
+                >
+                  <v-btn icon @click="switchSelected(photo)">
+                    <v-icon size="36">mdi-plus</v-icon>
                   </v-btn>
                 </div>
               </v-card>
             </template>
           </v-hover>
+
+          <v-card
+            v-show="isQuickSearch"
+            :disabled="!hasMoreIterations"
+            :loading="loadingIteration"
+            class="photo-card add-card fade-in"
+            elevation="16"
+            hover
+            :style="{
+              animationDelay: `${
+                photoFadeInDelays.length
+                  ? photoFadeInDelays[photoFadeInDelays.length - 1]
+                  : 0
+              }ms`,
+            }"
+          >
+            <v-card-text class="text-center">
+              <v-btn
+                icon
+                :loading="loadingIteration"
+                @click="$emit('next-iteration')"
+                class="centered-btn"
+              >
+                <v-icon size="36">mdi-autorenew</v-icon>
+              </v-btn>
+            </v-card-text>
+          </v-card>
         </div>
       </v-card-text>
     </v-card>
@@ -158,12 +186,16 @@ async function analyzePhoto(photoId) {
 const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
 
+const isThinking = (photo) => {
+  return !props.isQuickSearch && photo.isIncluded == undefined;
+};
+
 watch(
   () => props.photos.length,
   (newLength, oldLength) => {
     if (newLength > oldLength) {
       photoFadeInDelays.value = props.photos.map(
-        (_, index) => index * (props.isQuickSearch ? 10 : 250)
+        (_, index) => index * (props.isQuickSearch ? 10 : 150)
       );
       previousPhotosLength.value = newLength;
     } else {
@@ -235,13 +267,6 @@ function switchSelected(photo) {
   filter: grayscale(100%);
 }
 
-.photo-card {
-  width: 220px;
-  min-height: 150px;
-  position: relative;
-  overflow: hidden;
-}
-
 .add-card {
   display: flex;
   justify-content: center;
@@ -256,11 +281,11 @@ function switchSelected(photo) {
   width: 100%;
 }
 
-/* .blurred-photo {
+.blurred-photo {
   filter: blur(3px);
-} */
+}
 
-.matching-tags {
+.photo-buttons {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -270,8 +295,8 @@ function switchSelected(photo) {
   gap: 8px;
   background: rgba(0, 0, 0, 0.6);
   padding: 8px;
-  border-radius: 0 0 8px 8px;
   text-align: center;
+  justify-content: center;
 }
 
 .matching-tags span {
@@ -279,7 +304,6 @@ function switchSelected(photo) {
   font-size: 12px;
   padding: 4px 8px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
   white-space: break-spaces;
   word-break: break-word;
 }
@@ -311,6 +335,45 @@ function switchSelected(photo) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.photo-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.thinking-letter {
+  display: inline-block;
+  opacity: 0.4; /* Inicialmente tenue */
+  animation: typingEffect 1s infinite ease-in-out;
+}
+
+/* Animación de parpadeo secuencial */
+@keyframes typingEffect {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
   }
 }
 </style>

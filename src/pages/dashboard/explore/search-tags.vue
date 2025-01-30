@@ -271,11 +271,6 @@ async function nextIteration() {
 </script>
 
 <style scoped>
-.main-container {
-  padding: 16px;
-  row-gap: 15px;
-}
-
 .sticky-toolbar {
   position: sticky;
   top: 10px;

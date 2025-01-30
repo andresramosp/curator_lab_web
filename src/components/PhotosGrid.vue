@@ -101,11 +101,6 @@ function viewPhotoInfo(photo) {
   justify-content: center;
 }
 
-.photo-card {
-  width: 200px;
-  position: relative;
-}
-
 .photo-image {
   height: 150px;
 }
