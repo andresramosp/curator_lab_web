@@ -92,8 +92,14 @@
                 <v-img
                   :src="photosBaseURL + '/' + photo.name"
                   class="photo-image"
+                  :class="{
+                    'blurred-photo': isThinking(photo) && !searchEnd,
+                  }"
                 ></v-img>
-                <div class="photo-overlay" v-show="isThinking(photo)">
+                <div
+                  class="photo-overlay"
+                  v-show="isThinking(photo) && !searchEnd"
+                >
                   <span
                     v-show="isThinking(photo)"
                     v-for="(letter, index) in 'Reviewing'.split('')"
@@ -164,6 +170,7 @@ const props = defineProps({
   loadingIteration: Boolean,
   hasMoreIterations: Boolean,
   isQuickSearch: Boolean,
+  searchEnd: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;

@@ -49,12 +49,13 @@
       @next-iteration="nextIteration"
       :isQuickSearch="form.useEmbeddings"
       :loadingIteration="loadingIteration"
+      :searchEnd="searchEnd"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
 
@@ -66,7 +67,7 @@ const form = ref({
   iteration: 1,
   useEmbeddings: false,
 });
-
+const searchEnd = ref(false);
 const searchType = ref(1);
 const searchTypes = {
   0: "Logical",
@@ -128,6 +129,7 @@ const photos = computed(() => {
 
 async function searchPhotos() {
   loading.value = true;
+  searchEnd.value = false;
   try {
     await axios.post(
       `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
@@ -159,6 +161,12 @@ async function nextIteration() {
   loadingIteration.value = false;
 }
 
+watch(
+  () => form.value.useEmbeddings,
+  () => {
+    iterationsRecord.value = {};
+  }
+);
 // WebSocket handlers
 onMounted(() => {
   socket.on("embeddings", (data) => {
@@ -170,7 +178,6 @@ onMounted(() => {
       };
     });
     if (form.value.useEmbeddings) {
-      debugger;
       hasMoreIterations.value = data.hasMore;
       form.value.iteration = data.iteration + 1;
     }
@@ -200,6 +207,10 @@ onMounted(() => {
 
     hasMoreIterations.value = data.hasMore;
     form.value.iteration = data.iteration + 1;
+  });
+
+  socket.on("searchEnd", (data) => {
+    searchEnd.value = true;
   });
 });
 
