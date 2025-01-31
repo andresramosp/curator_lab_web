@@ -43,13 +43,26 @@
       </v-row>
     </v-toolbar>
 
+    <div class="alert-message">
+      <v-alert
+        v-if="maxPageAttempts"
+        class="bottom-0 mb-5"
+        position="fixed"
+        color="secondary"
+        closable
+        :text="`It seems unlikely that we will find more pictures related to ${clearQuery}. We suggest you adjust the search or try a different mode.`"
+        theme="dark"
+      >
+      </v-alert>
+    </div>
+
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
       :isQuickSearch="form.useEmbeddings"
       :loadingIteration="loadingIteration"
-      :searchEnd="searchEnd"
+      :maxPageAttempts="maxPageAttempts"
     />
   </div>
 </template>
@@ -67,7 +80,7 @@ const form = ref({
   iteration: 1,
   useEmbeddings: false,
 });
-const searchEnd = ref(false);
+const maxPageAttempts = ref(false);
 const searchType = ref(1);
 const searchTypes = {
   0: "Logical",
@@ -80,6 +93,7 @@ const loading = ref(false);
 const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
 const onlySelected = ref(false);
+const clearQuery = ref(null);
 
 const queryDescription = computed(() => {
   if (searchType.value == 0) {
@@ -129,7 +143,7 @@ const photos = computed(() => {
 
 async function searchPhotos() {
   loading.value = true;
-  searchEnd.value = false;
+  maxPageAttempts.value = false;
   try {
     await axios.post(
       `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
@@ -207,16 +221,20 @@ onMounted(() => {
 
     hasMoreIterations.value = data.hasMore;
     form.value.iteration = data.iteration + 1;
+    clearQuery.value = data.enrichmentResult.clear
+      .replace("AND", "")
+      .split("|")[0];
   });
 
-  socket.on("searchEnd", (data) => {
-    searchEnd.value = true;
+  socket.on("maxPageAttempts", (data) => {
+    maxPageAttempts.value = true;
   });
 });
 
 onUnmounted(() => {
   socket.off("embeddings");
   socket.off("result");
+  socket.off("maxPageAttempts");
 });
 </script>
 
@@ -252,5 +270,12 @@ onUnmounted(() => {
 }
 .tag-line:last-child {
   margin-bottom: 0;
+}
+
+.alert-message {
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

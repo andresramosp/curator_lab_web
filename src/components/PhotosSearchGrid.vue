@@ -1,13 +1,15 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
     <v-card v-show="!isQuickSearch" class="photos-container selected-photos">
+      <v-card-title class="section-title"> High-score matches</v-card-title>
+
       <v-card-text>
         <div class="photos-list">
           <v-hover v-for="(photo, index) in selectedPhotos" :key="photo.id">
             <template #default="{ isHovering, props }">
               <v-card
                 v-bind="props"
-                class="photo-card fade-in"
+                class="photo-card fade-in-selected"
                 :style="{
                   animationDelay: `${
                     photoFadeInDelays.length ? photoFadeInDelays[index] : 0
@@ -17,7 +19,7 @@
               >
                 <v-img
                   :src="photosBaseURL + '/' + photo.name"
-                  class="photo-image photo-included"
+                  class="photo-image"
                 ></v-img>
                 <!-- Botonera flotante -->
                 <div v-show="isHovering" class="photo-buttons">
@@ -74,14 +76,14 @@
         'unselected-photos': !isQuickSearch,
       }"
     >
-      <!-- <v-card-title class="section-title">Processed</v-card-title> -->
+      <v-card-title class="section-title"> Potential matches</v-card-title>
       <v-card-text>
         <div class="photos-list">
           <v-hover v-for="(photo, index) in unselectedPhotos" :key="photo.id">
             <template #default="{ isHovering, props }">
               <v-card
                 v-bind="props"
-                class="photo-card fade-in"
+                class="photo-card fade-in-unselected"
                 :style="{
                   animationDelay: `${
                     photoFadeInDelays.length ? photoFadeInDelays[index] : 0
@@ -93,12 +95,18 @@
                   :src="photosBaseURL + '/' + photo.name"
                   class="photo-image"
                   :class="{
-                    'blurred-photo': isThinking(photo) && !searchEnd,
+                    'blurred-photo': isThinking(photo) && !maxPageAttempts,
                   }"
                 ></v-img>
+                <div v-show="isHovering && isQuickSearch" class="photo-buttons">
+                  <span v-for="tag in photo.matchingTags">{{ tag }}</span>
+                  <v-btn size="small" icon @click="viewPhotoInfo(photo)">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
+                </div>
                 <div
                   class="photo-overlay"
-                  v-show="isThinking(photo) && !searchEnd"
+                  v-show="isThinking(photo) && !maxPageAttempts"
                 >
                   <span
                     v-show="isThinking(photo)"
@@ -126,7 +134,7 @@
             v-show="isQuickSearch"
             :disabled="!hasMoreIterations"
             :loading="loadingIteration"
-            class="photo-card add-card fade-in"
+            class="photo-card add-card"
             elevation="16"
             hover
             :style="{
@@ -170,7 +178,7 @@ const props = defineProps({
   loadingIteration: Boolean,
   hasMoreIterations: Boolean,
   isQuickSearch: Boolean,
-  searchEnd: Boolean,
+  maxPageAttempts: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
@@ -202,7 +210,7 @@ watch(
   (newLength, oldLength) => {
     if (newLength > oldLength) {
       photoFadeInDelays.value = props.photos.map(
-        (_, index) => index * (props.isQuickSearch ? 10 : 150)
+        (_, index) => index * (props.isQuickSearch ? 10 : 100)
       );
       previousPhotosLength.value = newLength;
     } else {
@@ -215,7 +223,6 @@ watch(
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     ...photo,
-    name: photo.name.split("-")[1],
     description: photo.description || "No description available",
     tags: photo.tags.map((t) => t.name),
   };
@@ -256,9 +263,8 @@ function switchSelected(photo) {
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 16px;
+  font-size: 16px;
+  margin-bottom: 10px;
   color: var(--v-theme-primary);
 }
 
@@ -328,13 +334,36 @@ function switchSelected(photo) {
   margin: auto;
   display: block;
 }
-.fade-in {
+.fade-in-selected {
   opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInAnimation 0.5s ease-in-out forwards;
+  transform: translateY(50px);
+  filter: grayscale(100%);
+  filter: blur(3px);
+  animation: fadeInSelectedAnimation 0.7s ease-in-out forwards;
 }
 
-@keyframes fadeInAnimation {
+.fade-in-unselected {
+  opacity: 0;
+  transform: translateY(50px);
+  animation: fadeInUnselectedAnimation 0.3s ease-in-out forwards;
+}
+
+@keyframes fadeInSelectedAnimation {
+  from {
+    opacity: 0;
+    filter: grayscale(100%);
+    filter: blur(3px);
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    filter: grayscale(0%);
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUnselectedAnimation {
   from {
     opacity: 0;
     transform: translateY(50px);
@@ -356,7 +385,7 @@ function switchSelected(photo) {
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
   color: white;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 2px;

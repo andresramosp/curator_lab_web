@@ -5,7 +5,7 @@
     max-width="750"
   >
     <v-card>
-      <!-- <v-card-title>Photo Information</v-card-title> -->
+      <!-- <v-card-title>{{ selectedPhoto.name.split("-")[1] }}</v-card-title> -->
       <v-card-text>
         <v-container>
           <v-row no-gutters>
@@ -13,7 +13,7 @@
               <strong>Id:</strong> {{ selectedPhoto.id }}
             </v-col>
             <v-col cols="12">
-              <strong>Name:</strong> {{ selectedPhoto.name }}
+              <strong>Name:</strong> {{ selectedPhoto.name.split("-")[1] }}
             </v-col>
             <v-col cols="12">
               <strong>File: </strong>
@@ -26,6 +26,11 @@
               </a>
             </v-col>
           </v-row>
+
+          <v-img
+            :src="photosBaseURL + '/' + selectedPhoto.name"
+            class="photo-image"
+          ></v-img>
 
           <v-row>
             <v-col cols="12">
@@ -67,9 +72,20 @@
 
 <script setup>
 import { defineProps } from "vue";
+const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
+
 const props = defineProps({
   selectedPhoto: Object,
   dialog: Boolean,
 });
 defineEmits(["update:dialog"]);
 </script>
+<style lang="css" scoped>
+.photo-image {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  height: 350px;
+  object-fit: cover;
+  width: 100%;
+}
+</style>
