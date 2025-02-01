@@ -22,18 +22,28 @@
                   class="photo-image"
                 ></v-img>
                 <!-- Botonera flotante -->
-                <div v-show="isHovering" class="photo-buttons">
-                  <!-- <span v-if="photo.reasoning">{{ photo.reasoning }}</span> -->
+                <div class="high-score-overlay" v-show="isHovering">
+                  <span
+                    class="reasoning-text"
+                    v-if="showReasoning && photo.reasoning"
+                    >{{ photo.reasoning }}</span
+                  >
                   <span v-for="tag in photo.matchingTags">{{ tag }}</span>
-                  <v-btn size="small" icon @click="viewPhotoInfo(photo)">
-                    <v-icon>mdi-information</v-icon>
-                  </v-btn>
-                  <!-- <v-btn size="small" icon @click="analyzePhoto(photo.id)">
-                    <v-icon>mdi-magnify</v-icon>
-                  </v-btn> -->
-                  <v-btn size="small" icon @click="switchSelected(photo)">
-                    <v-icon>mdi-minus</v-icon>
-                  </v-btn>
+                  <div class="photo-buttons">
+                    <v-btn size="small" icon @click="viewPhotoInfo(photo)">
+                      <v-icon>mdi-information</v-icon>
+                    </v-btn>
+                    <v-btn size="small" icon @click="switchSelected(photo)">
+                      <v-icon>mdi-minus</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
+                <div class="photo-icons">
+                  <v-icon
+                    v-if="photo.isIncludedByUser == true"
+                    color="secondary"
+                    >mdi-account-check</v-icon
+                  >
                 </div>
               </v-card>
             </template>
@@ -41,9 +51,9 @@
 
           <!-- Botón para aumentar iteración -->
           <v-card
-            :disabled="!hasMoreIterations"
+            :disabled="!hasMoreIterations || !selectedPhotos.length"
             :loading="loadingIteration"
-            class="photo-card add-card fade-in"
+            class="photo-card add-card"
             elevation="16"
             hover
             :style="{
@@ -70,12 +80,7 @@
     </v-card>
 
     <!-- Fotos no seleccionadas -->
-    <v-card
-      class="photos-container"
-      :class="{
-        'unselected-photos': !isQuickSearch,
-      }"
-    >
+    <v-card class="photos-container">
       <v-card-title class="section-title"> Potential matches</v-card-title>
       <v-card-text>
         <div class="photos-list">
@@ -84,12 +89,14 @@
               <v-card
                 v-bind="props"
                 class="photo-card fade-in-unselected"
+                :class="{
+                  'unselected-photos': !isQuickSearch && !isHovering,
+                }"
                 :style="{
                   animationDelay: `${
                     photoFadeInDelays.length ? photoFadeInDelays[index] : 0
                   }ms`,
                 }"
-                :color="isHovering ? 'undefined' : 'undefined'"
               >
                 <v-img
                   :src="photosBaseURL + '/' + photo.name"
@@ -98,6 +105,7 @@
                     'blurred-photo': isThinking(photo) && !maxPageAttempts,
                   }"
                 ></v-img>
+
                 <div v-show="isHovering && isQuickSearch" class="photo-buttons">
                   <span v-for="tag in photo.matchingTags">{{ tag }}</span>
                   <v-btn size="small" icon @click="viewPhotoInfo(photo)">
@@ -125,6 +133,13 @@
                   <v-btn icon @click="switchSelected(photo)">
                     <v-icon size="36">mdi-plus</v-icon>
                   </v-btn>
+                </div>
+                <div class="photo-icons">
+                  <v-icon
+                    v-if="photo.isIncludedByUser == false"
+                    color="secondary"
+                    >mdi-delete</v-icon
+                  >
                 </div>
               </v-card>
             </template>
@@ -179,6 +194,7 @@ const props = defineProps({
   hasMoreIterations: Boolean,
   isQuickSearch: Boolean,
   maxPageAttempts: Boolean,
+  showReasoning: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
@@ -234,21 +250,25 @@ function switchSelected(photo) {
   if (photo.isIncluded) {
     photo._reasoning = photo.reasoning;
     photo.reasoning = "Selected by user";
+    photo.isIncludedByUser =
+      photo.isIncludedByUser == undefined ? true : undefined;
   } else {
     photo.reasoning = photo._reasoning;
+    photo.isIncludedByUser =
+      photo.isIncludedByUser == undefined ? false : undefined;
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .photos-grid {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px;
 }
 
 .photos-container {
-  padding: 16px;
+  padding: 4px;
   border: 1px solid var(--v-theme-on-surface);
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
@@ -264,7 +284,6 @@ function switchSelected(photo) {
 
 .section-title {
   font-size: 16px;
-  margin-bottom: 10px;
   color: var(--v-theme-primary);
 }
 
@@ -298,18 +317,49 @@ function switchSelected(photo) {
   filter: blur(3px);
 }
 
+.fade-in-unselected {
+  .photo-buttons {
+    background: rgba(0, 0, 0, 0.6);
+
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    padding: 8px;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
 .photo-buttons {
-  position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.6);
+
   padding: 8px;
   text-align: center;
   justify-content: center;
+}
+
+.high-score-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  position: absolute;
+  bottom: 0;
+  height: 100%;
+  padding: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  flex-direction: column;
 }
 
 .matching-tags span {
@@ -411,5 +461,15 @@ function switchSelected(photo) {
     opacity: 0.4;
     transform: scale(1);
   }
+}
+
+.photo-icons {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.reasoning-text {
+  font-size: 11px;
 }
 </style>

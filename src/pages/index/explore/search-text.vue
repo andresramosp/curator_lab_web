@@ -12,14 +12,13 @@
         </v-col>
         <v-col cols="4" class="d-flex pr-8">
           <v-slider
-            :disabled="form.useEmbeddings"
             :max="2"
             color="secondary"
             v-model="searchType"
             :ticks="searchTypes"
             show-ticks="always"
             step="1"
-            tick-size="4"
+            tick-size="0"
           ></v-slider>
 
           <v-switch
@@ -35,7 +34,7 @@
           <v-btn
             @click="handleSearch"
             :loading="loading && !loadingIteration"
-            :disabled="disableSearchButton"
+            :disabled="!form.description.length"
           >
             Search
           </v-btn>
@@ -63,6 +62,7 @@
       :isQuickSearch="form.useEmbeddings"
       :loadingIteration="loadingIteration"
       :maxPageAttempts="maxPageAttempts"
+      :showReasoning="searchType == 2"
     />
   </div>
 </template>
@@ -104,7 +104,7 @@ const queryDescription = computed(() => {
   } else if (searchType.value == 1) {
     return {
       text: "Search the catalog with natural language",
-      example: "Images of people eating in a board",
+      example: "Images of people eating on a boat",
     };
   } else {
     return {
@@ -145,17 +145,14 @@ async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
   try {
-    await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search`,
-      {
-        ...form.value,
-        searchType: searchTypes[searchType.value].toLowerCase(),
-        iteration: form.value.iteration,
-        currentPhotos: photos.value
-          ? photos.value.map((photo) => photo.id)
-          : null,
-      }
-    );
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
+      ...form.value,
+      searchType: searchTypes[searchType.value].toLowerCase(),
+      iteration: form.value.iteration,
+      currentPhotos: photos.value
+        ? photos.value.map((photo) => photo.id)
+        : null,
+    });
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {

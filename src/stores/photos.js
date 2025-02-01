@@ -1,103 +1,55 @@
 // stores/photos.js
 import { defineStore } from "pinia";
+import axios from "axios";
 
 export const usePhotosStore = defineStore("photos", {
   state: () => ({
     photos: [],
-    isLoading: false, // Estado para manejar el loading
-    isAnalyzing: false,
+    isLoading: false, // Manejo del estado global de carga
+    isAnalyzing: false, // Indica si hay fotos en análisis
   }),
+
   actions: {
-    async fetchPhotos() {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/catalog`
-        );
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const { photos: allPhotos } = await response.json();
-        this.photos = allPhotos; // Actualizar el estado con todas las fotos
-      } catch (error) {
-        console.error("Error fetching photos:", error);
+    /** 🔹 Setea las fotos en el estado y marca las que están en análisis */
+    setPhotos(photos) {
+      this.photos = photos.map((photo) => ({
+        ...photo,
+        analyzing: !photo.metadata, // Si no tiene metadata, está en análisis
+      }));
+
+      this.isAnalyzing = this.photos.some((photo) => photo.analyzing);
+    },
+
+    /** 🔹 Agrega nuevas fotos al store evitando duplicados */
+    addPhotos(newPhotos) {
+      const newPhotoIds = newPhotos.map((p) => p.id);
+      this.photos = [
+        ...this.photos.filter((p) => !newPhotoIds.includes(p.id)),
+        ...newPhotos.map((photo) => ({
+          ...photo,
+          analyzing: !photo.metadata,
+        })),
+      ];
+    },
+
+    /** 🔹 Actualiza el estado de una foto específica */
+    updatePhotoStatus(photoId, newStatus) {
+      const photo = this.photos.find((p) => p.id === photoId);
+      if (photo) {
+        Object.assign(photo, newStatus);
+        this.isAnalyzing = this.photos.some((p) => p.analyzing);
       }
     },
-    async uploadPhotos(files) {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append("photos", file);
-      });
 
+    /** 🔹 Elimina una foto y hace la llamada API */
+    async deletePhoto(photoId) {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/catalog/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
+        await axios.delete(
+          `${import.meta.env.VITE_API_BASE_URL}/api/photos/${photoId}`
         );
-
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const { savedPhotos } = await response.json();
-        this.photos = [...this.photos, ...savedPhotos]; // Añadir las nuevas fotos al estado actual
+        this.photos = this.photos.filter((photo) => photo.id !== photoId);
       } catch (error) {
-        console.error("Error uploading photos:", error);
-      }
-    },
-    deletePhoto(photoId) {
-      // llamada API
-      this.photos = this.photos.filter((photo) => photo.id != photoId);
-    },
-    async analyze(photosId = []) {
-      let photosToAnalyze = [];
-      if (photosId.length) {
-        photosToAnalyze = this.photos.filter((photo) =>
-          photosId.includes(photo.id)
-        );
-        for (let photo of photosToAnalyze) {
-          delete photo.metadata;
-        }
-      } else {
-        photosToAnalyze = this.photos.filter((photo) => !photo.metadata);
-      }
-
-      if (!photosToAnalyze.length) {
-        console.log("No hay imágenes para analizar");
-        return;
-      }
-      this.isAnalyzing = true;
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/analyzer/`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json", // Indica que el body es JSON
-            },
-            body: JSON.stringify({ photos: photosToAnalyze }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Error en el procesamiento de imágenes");
-        }
-
-        const data = await response.json();
-        console.log("Respuesta del servidor:", data);
-
-        // Añadir metadata a cada foto
-        // data.results.forEach((result) => {
-        //   const photo = this.photos.find((p) => p.id === result.id);
-        //   if (photo) {
-        //     photo.metadata = result;
-        //     photo.description = result.
-        //   }
-        // });
-        this.fetchPhotos();
-      } catch (error) {
-        console.error("Error al analizar imágenes:", error);
-      } finally {
-        this.isAnalyzing = false;
+        console.error("Error deleting photo:", error);
       }
     },
   },
