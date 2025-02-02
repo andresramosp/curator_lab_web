@@ -18,7 +18,8 @@
                 :color="isHovering ? 'undefined' : 'undefined'"
               >
                 <v-img
-                  :src="photosBaseURL + '/' + photo.name"
+                  :src="photo.url || `${photosBaseURL}/${photo.name}`"
+                  @error="fallbackImage(photo)"
                   class="photo-image"
                 ></v-img>
                 <!-- Botonera flotante -->
@@ -99,7 +100,8 @@
                 }"
               >
                 <v-img
-                  :src="photosBaseURL + '/' + photo.name"
+                  :src="photo.url || `${photosBaseURL}/${photo.name}`"
+                  @error="fallbackImage(photo)"
                   class="photo-image"
                   :class="{
                     'blurred-photo': isThinking(photo) && !maxPageAttempts,
@@ -256,6 +258,11 @@ function switchSelected(photo) {
     photo.reasoning = photo._reasoning;
     photo.isIncludedByUser =
       photo.isIncludedByUser == undefined ? false : undefined;
+  }
+}
+function fallbackImage(photo) {
+  if (photo.url) {
+    photo.url = null;
   }
 }
 </script>

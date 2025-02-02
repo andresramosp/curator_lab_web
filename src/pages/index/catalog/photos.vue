@@ -1,32 +1,74 @@
 <template>
   <div class="main-container">
-    <PhotosGrid :photos="photosStore.photos" />
+    <PhotosGrid
+      :photos="photosStore.photos"
+      :uploadingPhotos="uploadingPhotos"
+    />
 
-    <div v-if="!photosStore.photos.length" class="sync-buttons-init">
+    <div
+      v-if="!photosStore.photos.length && uploadingPhotos == 0"
+      class="sync-buttons-init"
+    >
       <v-btn class="sync-button" @click="openFileDialog"> 📁 Local </v-btn>
       <v-btn class="sync-button" @click="syncGooglePhotos">
         Google Photos
       </v-btn>
     </div>
-    <div v-else class="add-photos-button">
+    <!-- <div v-else class="add-photos-button">
       <v-btn class="sync-button" @click="openFileDialog"> 📁 Add Photos </v-btn>
-    </div>
+    </div> -->
 
-    <input type="file" ref="fileInput" multiple hidden @change="uploadFiles" />
+    <input
+      type="file"
+      ref="fileInput"
+      multiple
+      hidden
+      @change="uploadLocalFiles"
+    />
+
+    <v-dialog v-model="showAlbumsDialog" max-width="500px">
+      <v-card>
+        <v-card-title>Select a Google Photos Album</v-card-title>
+        <v-card-text>
+          <v-list>
+            <v-list-item
+              v-for="album in googleAlbums"
+              :key="album.id"
+              @click="selectAlbum(album)"
+            >
+              <v-list-item-content>
+                <v-list-item-title>{{ album.title }}</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="showAlbumsDialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <div class="alert-message">
-      <v-alert v-if="photosStore.isAnalyzing" dense class="alert-progress">
+      <v-alert
+        v-if="isAnalyzing || uploadingPhotos > 0"
+        dense
+        class="alert-progress"
+      >
         <div class="processing-content">
-          <v-icon class="processing-icon" size="40">mdi-progress-clock</v-icon>
+          <v-icon class="processing-icon" size="40">{{
+            isAnalyzing ? "mdi-progress-clock" : "mdi-file"
+          }}</v-icon>
           <div class="processing-text">
             <v-progress-linear
               indeterminate
               color="secondary"
               class="progress-bar"
             ></v-progress-linear>
-            We are now processing your photos. This process may take several
-            minutes. You can close the application in the meantime. You can also
-            add more photos during this process.
+            {{
+              isAnalyzing
+                ? "We are now processing your photos. This process may take several minutes. You can close the application in the meantime."
+                : "Your photos are being uploaded. Please wait and don't close this window."
+            }}
           </div>
         </div>
       </v-alert>
@@ -42,7 +84,13 @@ import { io } from "socket.io-client";
 
 const photosStore = usePhotosStore();
 const fileInput = ref(null);
-const socket = io(import.meta.env.VITE_API_BASE_URL); // Conexión al WebSocket
+const socket = io(import.meta.env.VITE_API_BASE_URL);
+const googleAccessToken = ref(null);
+const googleAlbums = ref([]);
+const showAlbumsDialog = ref(false);
+// Estados de carga
+const isAnalyzing = ref(false);
+const uploadingPhotos = ref(0);
 
 /** 🔹 Abre el selector de archivos */
 function openFileDialog() {
@@ -50,7 +98,7 @@ function openFileDialog() {
 }
 
 /** 🔹 Sube fotos seleccionadas y actualiza la UI */
-async function uploadFiles(event) {
+async function uploadLocalFiles(event) {
   const selectedFiles = Array.from(event.target.files);
   if (selectedFiles.length === 0) return;
 
@@ -60,52 +108,82 @@ async function uploadFiles(event) {
   });
 
   try {
-    photosStore.isLoading = true; // Iniciamos loading
-    await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/catalog/upload`, {
-      method: "POST",
-      body: formData,
-    });
+    uploadingPhotos.value = selectedFiles.length;
 
-    await fetchFiles(); // Refrescar la lista de fotos después de subirlas
+    await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/uploadLocal`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    await fetchFiles();
   } catch (error) {
     console.error("❌ Error uploading photos:", error);
   } finally {
-    photosStore.isLoading = false; // Terminamos loading
-    event.target.value = ""; // Reset input file
+    uploadingPhotos.value = 0;
+    event.target.value = "";
+  }
+}
+
+async function uploadGooglePhotos(mediaItems) {
+  if (!mediaItems.length) return;
+
+  try {
+    uploadingPhotos.value = mediaItems.length;
+
+    await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/uploadGooglePhotos`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          photos: mediaItems.map((item) => ({
+            ...item,
+          })),
+        }),
+      }
+    );
+
+    uploadingPhotos.value = 0;
+
+    await fetchFiles(); // Refrescar la lista de fotos
+  } catch (error) {
+    console.error("❌ Error uploading Google Photos:", error);
+  } finally {
   }
 }
 
 /** 🔹 Obtiene la lista de fotos y detecta si hay fotos en análisis */
 async function fetchFiles() {
   try {
-    photosStore.isLoading = true;
     const response = await axios.get(
       `${import.meta.env.VITE_API_BASE_URL}/api/catalog`
     );
 
-    // 🔹 Añadir un flag explícito de análisis para la UI
     const photos = response.data.photos.map((photo) => ({
       ...photo,
-      analyzing: !photo.metadata, // Si no tiene metadata, está en análisis
+      analyzing: !photo.metadata,
     }));
 
     photosStore.setPhotos(photos);
 
-    // 🔹 Si hay fotos sin metadata, iniciar/enganchar al análisis
     if (photos.some((photo) => photo.analyzing)) {
       analyze();
     }
   } catch (error) {
     console.error("❌ Error fetching photos:", error);
   } finally {
-    photosStore.isLoading = false;
   }
 }
 
 /** 🔹 Inicia el análisis de fotos */
 async function analyze() {
   try {
-    photosStore.isAnalyzing = true;
+    isAnalyzing.value = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
     });
@@ -114,14 +192,96 @@ async function analyze() {
   }
 }
 
-/** 🔹 Simulación de sincronización con Google Photos */
-function syncGooglePhotos() {
-  console.log("🔄 Sync Google Photos (Futuro desarrollo)");
+/** 🔹 Autenticación con Google y sincronización de fotos */
+async function syncGooglePhotos() {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/google/sync`
+    );
+    window.location.href = response.data.authUrl; // ✅ Esto redirige al usuario al login de Google
+  } catch (error) {
+    console.error("❌ Error autenticando con Google Photos:", error);
+  }
 }
+
+/** 🔹 Obtiene los álbumes del usuario desde Google Photos */
+async function fetchGoogleAlbums(pageToken = null) {
+  if (!googleAccessToken.value) return;
+
+  try {
+    const params = {
+      pageSize: 50, // Establece el número de álbumes por solicitud
+    };
+
+    if (pageToken) {
+      params.pageToken = pageToken; // Agrega el token de página si existe
+    }
+
+    const response = await axios.get(
+      "https://photoslibrary.googleapis.com/v1/albums",
+      {
+        headers: { Authorization: `Bearer ${googleAccessToken.value}` },
+        params,
+      }
+    );
+
+    if (response.data.albums) {
+      googleAlbums.value.push(...response.data.albums); // Agrega los álbumes obtenidos
+    }
+
+    // Si hay un token para la siguiente página, realiza una nueva solicitud
+    if (response.data.nextPageToken) {
+      await fetchGoogleAlbums(response.data.nextPageToken);
+    } else {
+      showAlbumsDialog.value = true; // Muestra el diálogo cuando se hayan cargado todos los álbumes
+    }
+  } catch (error) {
+    console.error("❌ Error obteniendo álbumes de Google Photos:", error);
+  }
+}
+
+/** 🔹 Selecciona un álbum y obtiene sus fotos */
+async function selectAlbum(album) {
+  try {
+    const response = await axios.post(
+      "https://photoslibrary.googleapis.com/v1/mediaItems:search",
+      {
+        albumId: album.id,
+        pageSize: 50, // Ajusta según sea necesario
+      },
+      {
+        headers: { Authorization: `Bearer ${googleAccessToken.value}` },
+      }
+    );
+
+    uploadGooglePhotos(response.data.mediaItems);
+    showAlbumsDialog.value = false;
+  } catch (error) {
+    console.error("❌ Error obteniendo fotos del álbum:", error);
+  }
+}
+
+const loginGooglePhotos = () => {
+  const query = new URLSearchParams(window.location.search);
+  const token = query.get("access_token");
+
+  if (token) {
+    googleAccessToken.value = token;
+    fetchGoogleAlbums();
+    window.history.replaceState({}, document.title, "/catalog/photos"); // Limpia la URL
+    return true;
+  }
+  return false;
+};
 
 /** 🔹 Configuración de WebSockets */
 onMounted(() => {
-  fetchFiles(); // Cargar las fotos al inicio
+  if (!loginGooglePhotos()) fetchFiles();
+
+  socket.on("analysisComplete", (data) => {
+    console.log("✔️ Análisis completado. Costo total:", data.cost);
+    isAnalyzing.value = false;
+  });
 
   socket.on("photoProcessed", (data) => {
     console.log("✅ Foto procesada:", data);
@@ -129,11 +289,6 @@ onMounted(() => {
       analyzing: false,
       metadata: data.metadata,
     });
-  });
-
-  socket.on("analysisComplete", (data) => {
-    console.log("✔️ Análisis completado. Costo total:", data.cost);
-    photosStore.isAnalyzing = false; // Marcar que el análisis ha terminado
   });
 });
 </script>
@@ -170,7 +325,7 @@ onMounted(() => {
   left: 50%;
   transform: translateX(-50%);
   position: absolute;
-  top: 10;
+  bottom: 10px;
   flex-direction: row;
 }
 

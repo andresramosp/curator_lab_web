@@ -3,16 +3,13 @@
     <div v-if="photos && photos.length" class="photos-list">
       <v-hover v-for="photo in photos" :key="photo.id">
         <template #default="{ isHovering, props }">
-          <v-card
-            v-bind="props"
-            class="photo-card"
-            :class="{ 'blurred-photo': photo.analyzing }"
-          >
+          <v-card v-bind="props" class="photo-card">
             <v-img
-              :src="photosBaseURL + '/' + photo.name"
+              :src="photo.url || `${photosBaseURL}/${photo.name}`"
               class="photo-image"
+              :class="{ 'blurred-photo': photo.analyzing }"
+              @error="fallbackImage(photo)"
             ></v-img>
-
             <!-- Botonera flotante -->
             <div v-show="isHovering && !photo.analyzing" class="action-buttons">
               <v-btn size="small" icon @click="deletePhoto(photo.id)">
@@ -32,8 +29,10 @@
         </template>
       </v-hover>
     </div>
-    <div v-else-if="!photos" class="catalog-message">
-      <p class="text-h5 text-center">No photos yet</p>
+    <div v-else class="photos-list">
+      <v-card v-for="n in uploadingPhotos" v-bind="props" class="photo-card">
+        <v-skeleton-loader :key="n" type="image" class="photo-skeleton"
+      /></v-card>
     </div>
 
     <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
@@ -47,6 +46,7 @@ import PhotoDialog from "./PhotoDialog.vue";
 
 const props = defineProps({
   photos: Array,
+  uploadingPhotos: Number,
   loadingIteration: Boolean,
   hasMoreIterations: Boolean,
 });
@@ -78,6 +78,12 @@ function viewPhotoInfo(photo) {
   };
   showDialog.value = true;
 }
+
+function fallbackImage(photo) {
+  if (photo.url) {
+    photo.url = null;
+  }
+}
 </script>
 
 <style scoped>
@@ -94,6 +100,11 @@ function viewPhotoInfo(photo) {
 .photo-image {
   height: 150px;
   object-fit: cover;
+  width: 100%;
+}
+
+.photo-skeleton {
+  height: 150px;
   width: 100%;
 }
 
