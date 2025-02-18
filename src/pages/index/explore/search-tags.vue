@@ -1,37 +1,41 @@
 <template>
-  <v-container class="main-container">
+  <div class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar">
       <v-row align="center" justify="space-between">
-        <v-col cols="5">
+        <v-col cols="6">
           <v-text-field
             v-model="form.description"
             :label="queryDescription.text"
             :placeholder="queryDescription.example"
             outlined
-            @input="handleInputChange"
           ></v-text-field>
         </v-col>
-        <v-col cols="4">
-          <v-radio-group v-model="searchType" inline>
-            <v-radio label="Tags" value="tags"></v-radio>
-            <v-radio label="Semantic" value="semantic"></v-radio>
-            <v-radio label="Creative" value="creative"></v-radio>
-          </v-radio-group>
-        </v-col>
-        <v-col cols="2">
+        <v-col cols="4" class="d-flex pr-8" style="column-gap: 20px">
+          <v-slider
+            :max="2"
+            :disabled="form.isQuickSearch"
+            color="secondary"
+            v-model="searchType"
+            :ticks="searchTypes"
+            show-ticks="always"
+            step="1"
+            tick-size="0"
+          ></v-slider>
+
           <v-switch
             color="secondary"
-            v-model="form.useEmbeddings"
-            label="Broad search"
+            v-model="form.isQuickSearch"
+            label="Quick search"
             class="ml-4"
             inset
           ></v-switch>
         </v-col>
+
         <v-col cols="1" class="d-flex justify-end pr-8">
           <v-btn
             @click="handleSearch"
             :loading="loading && !loadingIteration"
-            :disabled="disableSearchButton"
+            :disabled="!form.description.length"
           >
             Search
           </v-btn>
@@ -39,82 +43,77 @@
       </v-row>
     </v-toolbar>
 
-    <div
-      v-if="searchType == 'tags' && Object.keys(iterationsRecord).length"
-      class="tag-breadcrumb"
-    >
-      <div
-        v-for="(expansor, tagIndex) in allExpansors"
-        :key="tagIndex"
-        class="tag-section"
+    <div class="alert-message">
+      <v-alert
+        v-if="maxPageAttempts"
+        class="bottom-0 mb-5"
+        position="fixed"
+        color="secondary"
+        closable
+        :text="`It seems unlikely that we will find more pictures related to ${clearQuery}. We suggest you adjust the search or try a different mode.`"
+        theme="dark"
       >
-        <v-sheet class="m-2 tag-line">
-          <span v-for="(exp, expIndex) in expansor" :key="exp.tag">
-            <v-chip
-              :title="exp.proximity"
-              :color="isTagIncluded(exp.tag) ? 'secondary' : ''"
-              :variant="expIndex !== 0 ? 'tonal' : 'elevated'"
-              :style="{
-                fontWeight: expIndex !== 0 ? '400' : 'bold',
-              }"
-              size="small"
-            >
-              {{ exp.tag }}
-            </v-chip>
-            <span v-if="expIndex < expansor.length - 1"> &rarr; </span>
-          </span>
-        </v-sheet>
-      </div>
+      </v-alert>
     </div>
 
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
+      :withInsights="withInsights"
       :loadingIteration="loadingIteration"
+      :maxPageAttempts="maxPageAttempts"
+      :searchType="searchType"
     />
-    <v-switch
-      color="secondary"
-      v-model="onlySelected"
-      label="Only Selected"
-      class="ml-4"
-      inset
-    ></v-switch>
-  </v-container>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import axios from "axios";
+import { io } from "socket.io-client";
+import { de } from "vuetify/locale";
+
+const socket = io(import.meta.env.VITE_API_WS_URL);
 
 const form = ref({
-  tags: [],
   description: "",
   filename: "",
   iteration: 1,
-  useEmbeddings: false,
+  isQuickSearch: false,
+  // withInsights: false,
+});
+
+const maxPageAttempts = ref(false);
+const searchType = ref(1);
+const searchTypes = {
+  0: "Logical",
+  1: "Semantic",
+  2: "Creative",
+};
+
+// Provisional hasta que se decida si "creative" estará disponible sin insights, y cómo sería el botón de "get insights"
+const withInsights = computed(() => {
+  return searchType.value == 2 && !form.value.isQuickSearch;
 });
 
 const iterationsRecord = ref({});
-const searchType = ref("tags");
-const currentQueryLogicResult = ref(null);
 const loading = ref(false);
 const loadingIteration = ref(false);
-const lastQuery = ref("");
-const disableSearchButton = ref(false);
-const semanticSearchHasMore = ref(false);
+const hasMoreIterations = ref(false);
 const onlySelected = ref(false);
+const clearQuery = ref(null);
 
 const queryDescription = computed(() => {
-  if (searchType.value == "tags") {
+  if (searchType.value == 0) {
     return {
-      text: "Browse photos quickly through their tags",
-      example: "Show me images with kids and friendly pets",
+      text: "Search with a logical, more strict syntax",
+      example: "Photos with dogs and umbrellas, but not people",
     };
-  } else if (searchType.value == "semantic") {
+  } else if (searchType.value == 1) {
     return {
-      text: "Search photos in natural language",
-      example: "Photos of people eating on a boat",
+      text: "Search the catalog with natural language",
+      example: "Images of people eating on a boat",
     };
   } else {
     return {
@@ -134,8 +133,12 @@ const photos = computed(() => {
 
   for (let i = 0; i < currentIteration; i++) {
     const key = iterationKeys[i];
-    if (key !== undefined && iterationsRecord.value[key].photos) {
-      accumulatedPhotos.push(...iterationsRecord.value[key].photos);
+    if (key !== undefined && iterationsRecord.value[key]?.photos) {
+      if (!withInsights.value) {
+        accumulatedPhotos.push(...iterationsRecord.value[key].photos);
+      } else {
+        accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
+      }
     }
   }
 
@@ -147,84 +150,19 @@ const photos = computed(() => {
   );
 });
 
-const allExpansors = computed(() => {
-  const iterationKeys = Object.keys(iterationsRecord.value)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  const lastKey = iterationKeys[iterationKeys.length - 1];
-  return (
-    [
-      ...iterationsRecord.value[lastKey]?.tagsAnd,
-      ...iterationsRecord.value[lastKey]?.tagsOr,
-    ] || []
-  );
-});
-
-const tagsExpansors = computed(() => {
-  const iterationKeys = Object.keys(iterationsRecord.value)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  const currentIteration = form.value.iteration;
-  let tagsAnd = [];
-  let tagsOr = [];
-  let tagsNot = [];
-
-  const key = iterationKeys[currentIteration - 1];
-  tagsAnd = iterationsRecord.value[key]?.tagsAnd.map((ex) =>
-    ex.map((ex) => ex.tag)
-  );
-
-  tagsOr = iterationsRecord.value[key]?.tagsOr.map((ex) =>
-    ex.map((ex) => ex.tag)
-  );
-
-  tagsNot = iterationsRecord.value[key]?.tagsNot.map((ex) => ex.tag);
-
-  return { tagsAnd, tagsOr, tagsNot };
-});
-
-const hasMoreIterations = computed(() => {
-  if (searchType.value == "tags") {
-    const iterationKeys = Object.keys(iterationsRecord.value).map(Number);
-    return form.value.iteration < iterationKeys.length;
-  } else {
-    return semanticSearchHasMore.value;
-  }
-});
-
-function isTagIncluded(tag) {
-  return (
-    tagsExpansors.value.tagsAnd.some((group) => group.includes(tag)) ||
-    tagsExpansors.value.tagsOr.some((group) => group.includes(tag))
-  );
-}
-
-function handleInputChange() {
-  // disableSearchButton.value = form.value.description === lastQuery.value;
-}
-
 async function searchPhotos() {
-  // form.value.iteration = 1
   loading.value = true;
+  maxPageAttempts.value = false;
   try {
-    const response = await axios.post(
-      searchType.value == "tags"
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_tags`
-        : searchType.value == "semantic"
-        ? `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_desc`
-        : `${import.meta.env.VITE_API_BASE_URL}/api/catalog/search_creative`,
-      {
-        ...form.value,
-        iteration: form.value.iteration,
-        currentPhotos: photos.value
-          ? photos.value.map((photo) => photo.id)
-          : null,
-        currentQueryLogicResult: currentQueryLogicResult.value,
-      }
-    );
-    processResult(response);
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
+      ...form.value,
+      withInsights: withInsights.value,
+      searchType: searchTypes[searchType.value].toLowerCase(),
+      iteration: form.value.iteration,
+      currentPhotos: photos.value
+        ? photos.value.map((photo) => photo.id)
+        : null,
+    });
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {
@@ -232,42 +170,84 @@ async function searchPhotos() {
   }
 }
 
-function processResult(response) {
-  if (searchType.value == "tags") {
-    iterationsRecord.value = response.data.results;
-  } else {
-    iterationsRecord.value = {
-      ...iterationsRecord.value,
-      ...response.data.results,
-    };
-    semanticSearchHasMore.value = response.data.hasMore;
-    form.value.iteration = response.data.iteration;
-  }
-
-  if (searchType.value == "tags" && form.value.iteration == 1) {
-    const { queryLogicResult } = response.data;
-    currentQueryLogicResult.value = queryLogicResult;
-    lastQuery.value = form.value.description;
-    // disableSearchButton.value = true;
-  }
-}
-
 function handleSearch() {
   form.value.iteration = 1;
   iterationsRecord.value = {};
-  currentQueryLogicResult.value = null;
   searchPhotos();
 }
 
 async function nextIteration() {
-  if (searchType.value == "tags") {
-    form.value.iteration++;
-  } else {
-    loadingIteration.value = true;
-    if (searchType.value !== "tags") await searchPhotos();
-    loadingIteration.value = false;
-  }
+  loadingIteration.value = true;
+  await searchPhotos();
+  loadingIteration.value = false;
 }
+
+watch(
+  () => withInsights.value,
+  () => {
+    iterationsRecord.value = {};
+  }
+);
+
+// WebSocket handlers
+onMounted(() => {
+  socket.on("embeddings", (data) => {
+    Object.entries(data.results).forEach(([iteration, result]) => {
+      iterationsRecord.value[iteration] = {
+        photos: result.photos.map((photo) => ({
+          ...photo,
+          score: data.scores.find((score) => score.photo.id == photo.id)
+            .totalScore,
+          queryMatched: data.scores.find((score) => score.photo.id == photo.id)
+            .queryMatched,
+        })),
+      };
+    });
+    if (!withInsights.value) {
+      hasMoreIterations.value = data.hasMore;
+      form.value.iteration = data.iteration + 1;
+    }
+
+    console.log(data);
+  });
+
+  socket.on("result", (data) => {
+    Object.entries(data.results).forEach(([iteration, result]) => {
+      if (!iterationsRecord.value[iteration]) return;
+
+      iterationsRecord.value[iteration].photos = iterationsRecord.value[
+        iteration
+      ].photos.map((existingPhoto) => {
+        const updatedPhoto = result.photos.find(
+          (p) => p.id === existingPhoto.id
+        );
+        return updatedPhoto
+          ? {
+              ...existingPhoto,
+              isIncluded: updatedPhoto.isIncluded,
+              reasoning: updatedPhoto.reasoning,
+            }
+          : existingPhoto;
+      });
+    });
+
+    console.log(data);
+
+    hasMoreIterations.value = data.hasMore;
+    form.value.iteration = data.iteration + 1;
+    clearQuery.value = data.structuredResult.original;
+  });
+
+  socket.on("maxPageAttempts", (data) => {
+    maxPageAttempts.value = true;
+  });
+});
+
+onUnmounted(() => {
+  socket.off("embeddings");
+  socket.off("result");
+  socket.off("maxPageAttempts");
+});
 </script>
 
 <style scoped>
@@ -302,5 +282,12 @@ async function nextIteration() {
 }
 .tag-line:last-child {
   margin-bottom: 0;
+}
+
+.alert-message {
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

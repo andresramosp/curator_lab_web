@@ -1,7 +1,7 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
-    <v-card v-show="!isQuickSearch" class="photos-container selected-photos">
-      <v-card-title class="section-title"> High-score matches</v-card-title>
+    <v-card v-show="withInsights" class="photos-container selected-photos">
+      <v-card-title class="section-title"> Insights</v-card-title>
 
       <v-card-text>
         <div class="photos-list">
@@ -24,12 +24,12 @@
                 ></v-img>
                 <!-- Botonera flotante -->
                 <div class="high-score-overlay" v-show="isHovering">
-                  <span
-                    class="reasoning-text"
-                    v-if="showReasoning && photo.reasoning"
-                    >{{ photo.reasoning }}</span
-                  >
-                  <span v-for="tag in photo.matchingTags">{{ tag }}</span>
+                  <span class="reasoning-text" v-if="photo.reasoning">{{
+                    photo.reasoning
+                  }}</span>
+                  <!-- <span v-else v-for="tag in photo.matchingTags">{{
+                    tag
+                  }}</span> -->
                   <div class="photo-buttons">
                     <v-btn size="small" icon @click="viewPhotoInfo(photo)">
                       <v-icon>mdi-information</v-icon>
@@ -80,9 +80,9 @@
       </v-card-text>
     </v-card>
 
-    <!-- Fotos no seleccionadas -->
+    <!-- Matches -->
     <v-card class="photos-container">
-      <v-card-title class="section-title"> Potential matches</v-card-title>
+      <v-card-title class="section-title"> Matches</v-card-title>
       <v-card-text>
         <div class="photos-list">
           <v-hover v-for="(photo, index) in unselectedPhotos" :key="photo.id">
@@ -91,7 +91,8 @@
                 v-bind="props"
                 class="photo-card fade-in-unselected"
                 :class="{
-                  'unselected-photos': !isQuickSearch && !isHovering,
+                  'unselected-photos':
+                    withInsights && !isHovering && isThinking(photo),
                 }"
                 :style="{
                   animationDelay: `${
@@ -100,16 +101,18 @@
                 }"
               >
                 <v-img
-                  :src="photo.url || `${photosBaseURL}/${photo.name}`"
+                  :src="`${photosBaseURL}/${photo.name}`"
                   @error="fallbackImage(photo)"
                   class="photo-image"
                   :class="{
                     'blurred-photo': isThinking(photo) && !maxPageAttempts,
+                    'top-score-photo': isTopScore(photo),
                   }"
                 ></v-img>
 
-                <div v-show="isHovering && isQuickSearch" class="photo-buttons">
-                  <span v-for="tag in photo.matchingTags">{{ tag }}</span>
+                <div v-show="isHovering && !withInsights" class="photo-buttons">
+                  <span>{{ photo.matchPercent }}</span>
+                  <!-- <span v-for="tag in photo.matchingTags">{{ tag }}</span> -->
                   <v-btn size="small" icon @click="viewPhotoInfo(photo)">
                     <v-icon>mdi-information</v-icon>
                   </v-btn>
@@ -130,7 +133,7 @@
                 </div>
                 <div
                   class="photo-overlay"
-                  v-show="isHovering && !isThinking(photo) && !isQuickSearch"
+                  v-show="isHovering && !isThinking(photo) && withInsights"
                 >
                   <v-btn icon @click="switchSelected(photo)">
                     <v-icon size="36">mdi-plus</v-icon>
@@ -148,7 +151,7 @@
           </v-hover>
 
           <v-card
-            v-show="isQuickSearch"
+            v-show="!withInsights"
             :disabled="!hasMoreIterations"
             :loading="loadingIteration"
             class="photo-card add-card"
@@ -194,16 +197,15 @@ const props = defineProps({
   photos: Array,
   loadingIteration: Boolean,
   hasMoreIterations: Boolean,
-  isQuickSearch: Boolean,
+  withInsights: Boolean,
   maxPageAttempts: Boolean,
-  showReasoning: Boolean,
 });
 
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
 const photosStore = usePhotosStore();
 
 const showDialog = ref(false);
-const selectedPhoto = ref({ id: null, description: "" });
+const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
 
 const selectedPhotos = computed(() =>
   props.photos.filter((photo) => photo.isIncluded)
@@ -220,7 +222,11 @@ const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
 
 const isThinking = (photo) => {
-  return !props.isQuickSearch && photo.isIncluded == undefined;
+  return props.withInsights && photo.isIncluded == undefined;
+};
+
+const isTopScore = (photo) => {
+  return photo.matchPercent > 80;
 };
 
 watch(
@@ -228,7 +234,7 @@ watch(
   (newLength, oldLength) => {
     if (newLength > oldLength) {
       photoFadeInDelays.value = props.photos.map(
-        (_, index) => index * (props.isQuickSearch ? 10 : 100)
+        (_, index) => index * (!props.withInsights ? 10 : 100)
       );
       previousPhotosLength.value = newLength;
     } else {
@@ -243,6 +249,8 @@ function viewPhotoInfo(photo) {
     ...photo,
     description: photo.description || "No description available",
     tags: photo.tags.map((t) => t.name),
+    matchingTags: photo.matchingTags,
+    matchingChunks: photo.matchingChunks,
   };
   showDialog.value = true;
 }
@@ -367,6 +375,10 @@ function fallbackImage(photo) {
   text-align: center;
   justify-content: center;
   flex-direction: column;
+}
+
+.top-score-photo {
+  border: 3px solid rgb(var(--v-theme-secondary));
 }
 
 .matching-tags span {

@@ -85,16 +85,15 @@ const sections = [
         icon: "mdi-file-plus",
         route: "/explore/search-text",
       },
-
-      {
-        title: "By network",
-        icon: "mdi-file-document-multiple",
-        route: "/explore/search-network",
-      },
       {
         title: "By tags",
         icon: "mdi-file-plus",
         route: "/explore/search-tags",
+      },
+      {
+        title: "By network",
+        icon: "mdi-file-document-multiple",
+        route: "/explore/search-network",
       },
     ],
   },

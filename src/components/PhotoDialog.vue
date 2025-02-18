@@ -5,7 +5,6 @@
     max-width="750"
   >
     <v-card>
-      <!-- <v-card-title>{{ selectedPhoto.name.split("-")[1] }}</v-card-title> -->
       <v-card-text>
         <v-container>
           <v-row no-gutters>
@@ -42,6 +41,9 @@
                         v-for="tag in selectedPhoto.tags"
                         :key="tag"
                         class="ma-1"
+                        :class="{
+                          'highlight-tag': isMatchingTag(tag),
+                        }"
                       >
                         {{ tag }}
                       </v-chip>
@@ -52,9 +54,7 @@
                   <v-expansion-panel-text>
                     <p>
                       <strong>Description:</strong>
-                      {{
-                        selectedPhoto.description || "No description available"
-                      }}
+                      <span v-html="highlightedDescription"></span>
                     </p>
                   </v-expansion-panel-text>
                 </v-expansion-panel>
@@ -71,15 +71,40 @@
 </template>
 
 <script setup>
-import { defineProps } from "vue";
+import { computed, defineProps } from "vue";
+
 const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
 
 const props = defineProps({
   selectedPhoto: Object,
   dialog: Boolean,
 });
+
 defineEmits(["update:dialog"]);
+
+const isMatchingTag = (tag) => {
+  return props.selectedPhoto.matchingTags?.includes(tag);
+};
+
+const highlightedDescription = computed(() => {
+  if (!props.selectedPhoto.description) return "No description available";
+
+  let description = props.selectedPhoto.description;
+
+  props.selectedPhoto.matchingChunks?.forEach((item) => {
+    const regex = new RegExp(item.chunk, "gi");
+    description = description.replace(
+      regex,
+      item.proximity >= 0
+        ? `<span class="highlight-chunk-positive">${item.chunk}</span>`
+        : `<span class="highlight-chunk-negative">${item.chunk}</span>`
+    );
+  });
+
+  return description;
+});
 </script>
+
 <style lang="css" scoped>
 .photo-image {
   margin-top: 20px;
@@ -87,5 +112,18 @@ defineEmits(["update:dialog"]);
   height: 350px;
   object-fit: cover;
   width: 100%;
+}
+</style>
+<style>
+.highlight-chunk-positive {
+  background-color: rgb(var(--v-theme-secondary));
+  color: darkslategray;
+}
+.highlight-chunk-negative {
+  background-color: red;
+}
+.highlight-tag {
+  background-color: rgb(var(--v-theme-secondary)) !important;
+  color: darkslategray !important;
 }
 </style>

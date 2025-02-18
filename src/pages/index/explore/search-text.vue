@@ -2,39 +2,47 @@
   <div class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar">
       <v-row align="center" justify="space-between">
-        <v-col cols="7">
+        <v-col cols="6">
           <v-text-field
-            v-model="form.description"
+            v-model="description"
             :label="queryDescription.text"
             :placeholder="queryDescription.example"
             outlined
+            persistent-placeholder
           ></v-text-field>
         </v-col>
-        <v-col cols="4" class="d-flex pr-8">
-          <v-slider
-            :max="2"
-            color="secondary"
-            v-model="searchType"
-            :ticks="searchTypes"
-            show-ticks="always"
-            step="1"
-            tick-size="0"
-          ></v-slider>
-
+        <v-col cols="4" class="d-flex pr-5" style="column-gap: 10px">
           <v-switch
             color="secondary"
-            v-model="form.useEmbeddings"
-            label="Quick search"
+            :disabled="isQuickSearch"
+            v-model="isCreative"
+            label="Creative"
             class="ml-4"
             inset
           ></v-switch>
+
+          <v-switch
+            color="secondary"
+            :disabled="isQuickSearch"
+            v-model="withInsights"
+            label="Insights"
+            class="ml-4"
+            inset
+          ></v-switch>
+
+          <v-checkbox
+            v-model="isQuickSearch"
+            color="secondary"
+            label="Quick Search"
+            hide-details
+          ></v-checkbox>
         </v-col>
 
         <v-col cols="1" class="d-flex justify-end pr-8">
           <v-btn
             @click="handleSearch"
             :loading="loading && !loadingIteration"
-            :disabled="!form.description.length"
+            :disabled="!description.length"
           >
             Search
           </v-btn>
@@ -59,10 +67,9 @@
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
-      :isQuickSearch="form.useEmbeddings"
+      :withInsights="withInsights"
       :loadingIteration="loadingIteration"
       :maxPageAttempts="maxPageAttempts"
-      :showReasoning="searchType == 2"
     />
   </div>
 </template>
@@ -74,42 +81,44 @@ import { io } from "socket.io-client";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
-const form = ref({
-  description: "",
-  filename: "",
-  iteration: 1,
-  useEmbeddings: false,
-});
+const description = ref("");
+const iteration = ref(1);
+const isQuickSearch = ref(false);
+const isCreative = ref(false);
+const withInsights = ref(false);
+const currentMatchPercent = ref(0);
+
 const maxPageAttempts = ref(false);
-const searchType = ref(1);
-const searchTypes = {
-  0: "Logical",
-  1: "Semantic",
-  2: "Creative",
-};
 
 const iterationsRecord = ref({});
 const loading = ref(false);
 const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
-const onlySelected = ref(false);
 const clearQuery = ref(null);
 
+watch(isQuickSearch, () => {
+  if (isQuickSearch.value) {
+    isCreative.value = false;
+    withInsights.value = false;
+  }
+});
+
 const queryDescription = computed(() => {
-  if (searchType.value == 0) {
+  if (isQuickSearch.value) {
     return {
-      text: "Search with a logical, more strict syntax",
-      example: "Photos with dogs and umbrellas, but not people",
+      text: "Find photos quickly with specific and simple words",
+      example: "Images of black cats",
     };
-  } else if (searchType.value == 1) {
+  }
+  if (!isCreative.value) {
     return {
-      text: "Search the catalog with natural language",
-      example: "Images of people eating on a boat",
+      text: "Search the catalogue with natural language and logic precission",
+      example: "Images of people eating on a boat, during a happy day",
     };
   } else {
     return {
-      text: "Explore your catalogue in a more creative way",
-      example: "Images which atmosphere resonates with StarWars movies",
+      text: "Explore your catalogue in a more fexible and conceptual way",
+      example: "Look for photos that resonate with StarWars movies",
     };
   }
 });
@@ -119,13 +128,13 @@ const photos = computed(() => {
     .map(Number)
     .sort((a, b) => a - b);
 
-  const currentIteration = form.value.iteration;
+  const currentIteration = iteration.value;
   const accumulatedPhotos = [];
 
   for (let i = 0; i < currentIteration; i++) {
     const key = iterationKeys[i];
     if (key !== undefined && iterationsRecord.value[key]?.photos) {
-      if (form.value.useEmbeddings) {
+      if (!withInsights.value) {
         accumulatedPhotos.push(...iterationsRecord.value[key].photos);
       } else {
         accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
@@ -133,12 +142,7 @@ const photos = computed(() => {
     }
   }
 
-  return accumulatedPhotos.filter(
-    (ph) =>
-      !ph.hasOwnProperty("isIncluded") ||
-      (onlySelected.value && ph.isIncluded) ||
-      !onlySelected.value
-  );
+  return accumulatedPhotos;
 });
 
 async function searchPhotos() {
@@ -146,12 +150,11 @@ async function searchPhotos() {
   maxPageAttempts.value = false;
   try {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
-      ...form.value,
-      searchType: searchTypes[searchType.value].toLowerCase(),
-      iteration: form.value.iteration,
-      currentPhotos: photos.value
-        ? photos.value.map((photo) => photo.id)
-        : null,
+      description: description.value,
+      withInsights: withInsights.value,
+      isQuickSearch: isQuickSearch.value,
+      searchType: isCreative.value ? "creative" : "semantic",
+      iteration: iteration.value,
     });
   } catch (error) {
     console.error("Failed to fetch photos", error);
@@ -161,7 +164,7 @@ async function searchPhotos() {
 }
 
 function handleSearch() {
-  form.value.iteration = 1;
+  iteration.value = 1;
   iterationsRecord.value = {};
   searchPhotos();
 }
@@ -173,37 +176,45 @@ async function nextIteration() {
 }
 
 watch(
-  () => form.value.useEmbeddings,
+  () => withInsights.value,
   () => {
     iterationsRecord.value = {};
   }
 );
+
 // WebSocket handlers
 onMounted(() => {
-  socket.on("embeddings", (data) => {
-    Object.entries(data.results).forEach(([iteration, result]) => {
+  socket.on("matches", (data) => {
+    Object.entries(data.results).forEach(([iteration, richPhotos]) => {
       iterationsRecord.value[iteration] = {
-        photos: result.photos.map((photo) => ({
-          ...photo,
+        photos: richPhotos.map((item) => ({
+          ...item.photo,
+          matchPercent: item.matchPercent,
         })),
       };
+      currentMatchPercent.value = Math.min(
+        Math.max(...richPhotos.map((item) => item.matchPercent)),
+        100
+      );
     });
-    if (form.value.useEmbeddings) {
+    if (!withInsights.value) {
       hasMoreIterations.value = data.hasMore;
-      form.value.iteration = data.iteration + 1;
+      iteration.value = data.iteration + 1;
     }
+    console.log(data);
   });
 
-  socket.on("result", (data) => {
-    Object.entries(data.results).forEach(([iteration, result]) => {
+  socket.on("insights", (data) => {
+    Object.entries(data.results).forEach(([iteration, richPhotos]) => {
       if (!iterationsRecord.value[iteration]) return;
 
       iterationsRecord.value[iteration].photos = iterationsRecord.value[
         iteration
       ].photos.map((existingPhoto) => {
-        const updatedPhoto = result.photos.find(
-          (p) => p.id === existingPhoto.id
+        const updatedPhoto = richPhotos.find(
+          (item) => item.photo.id === existingPhoto.id
         );
+        console.log(updatedPhoto);
         return updatedPhoto
           ? {
               ...existingPhoto,
@@ -217,10 +228,8 @@ onMounted(() => {
     console.log(data);
 
     hasMoreIterations.value = data.hasMore;
-    form.value.iteration = data.iteration + 1;
-    clearQuery.value = data.enrichmentResult.clear
-      .replace("AND", "")
-      .split("|")[0];
+    iteration.value = data.iteration + 1;
+    clearQuery.value = data.structuredResult.original;
   });
 
   socket.on("maxPageAttempts", (data) => {

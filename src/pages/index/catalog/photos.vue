@@ -5,18 +5,21 @@
       :uploadingPhotos="uploadingPhotos"
     />
 
-    <div
-      v-if="!photosStore.photos.length && uploadingPhotos == 0"
-      class="sync-buttons-init"
-    >
+    <div v-if="!googleAccessToken" class="sync-buttons-init">
       <v-btn class="sync-button" @click="openFileDialog"> 📁 Local </v-btn>
       <v-btn class="sync-button" @click="syncGooglePhotos">
-        Google Photos
+        Sync Google Photos
       </v-btn>
     </div>
-    <!-- <div v-else class="add-photos-button">
-      <v-btn class="sync-button" @click="openFileDialog"> 📁 Add Photos </v-btn>
-    </div> -->
+    <div
+      v-else-if="!isAnalyzing && uploadingPhotos == 0"
+      class="add-photos-button"
+    >
+      <v-btn class="sync-button" @click="fetchGoogleAlbums()">
+        📁 Add Photos
+      </v-btn>
+      <v-btn class="sync-button" @click="openFileDialog"> 📁 Local </v-btn>
+    </div>
 
     <input
       type="file"
@@ -85,7 +88,7 @@ import { io } from "socket.io-client";
 const photosStore = usePhotosStore();
 const fileInput = ref(null);
 const socket = io(import.meta.env.VITE_API_BASE_URL);
-const googleAccessToken = ref(null);
+const googleAccessToken = ref(localStorage.getItem("access_token") || null);
 const googleAlbums = ref([]);
 const showAlbumsDialog = ref(false);
 // Estados de carga
@@ -241,42 +244,55 @@ async function fetchGoogleAlbums(pageToken = null) {
 }
 
 /** 🔹 Selecciona un álbum y obtiene sus fotos */
-async function selectAlbum(album) {
+async function selectAlbum(album, maxPhotos = 500) {
+  // 🔹 Puedes cambiar el límite aquí
   try {
-    const response = await axios.post(
-      "https://photoslibrary.googleapis.com/v1/mediaItems:search",
-      {
-        albumId: album.id,
-        pageSize: 50, // Ajusta según sea necesario
-      },
-      {
-        headers: { Authorization: `Bearer ${googleAccessToken.value}` },
-      }
-    );
+    let allPhotos = [];
+    let nextPageToken = null;
 
-    uploadGooglePhotos(response.data.mediaItems);
+    do {
+      const response = await axios.post(
+        "https://photoslibrary.googleapis.com/v1/mediaItems:search",
+        {
+          albumId: album.id,
+          pageSize: 100, // 🔹 Máximo permitido por Google
+          pageToken: nextPageToken, // 🔹 Token de la siguiente página
+        },
+        {
+          headers: { Authorization: `Bearer ${googleAccessToken.value}` },
+        }
+      );
+
+      if (response.data.mediaItems) {
+        const remaining = maxPhotos - allPhotos.length; // 🔹 Cuántas fotos faltan para el límite
+        allPhotos.push(...response.data.mediaItems.slice(0, remaining)); // 🔹 Solo agrega lo necesario
+      }
+
+      nextPageToken = response.data.nextPageToken || null;
+    } while (nextPageToken && allPhotos.length < maxPhotos); // 🔹 Detener cuando se alcanza el límite
+
+    uploadGooglePhotos(allPhotos);
     showAlbumsDialog.value = false;
   } catch (error) {
     console.error("❌ Error obteniendo fotos del álbum:", error);
   }
 }
 
-const loginGooglePhotos = () => {
+const checkGooglePhotosCallback = () => {
   const query = new URLSearchParams(window.location.search);
   const token = query.get("access_token");
 
   if (token) {
+    localStorage.setItem("access_token", token);
     googleAccessToken.value = token;
-    fetchGoogleAlbums();
     window.history.replaceState({}, document.title, "/catalog/photos"); // Limpia la URL
-    return true;
   }
-  return false;
 };
 
 /** 🔹 Configuración de WebSockets */
 onMounted(() => {
-  if (!loginGooglePhotos()) fetchFiles();
+  checkGooglePhotosCallback();
+  fetchFiles();
 
   socket.on("analysisComplete", (data) => {
     console.log("✔️ Análisis completado. Costo total:", data.cost);
