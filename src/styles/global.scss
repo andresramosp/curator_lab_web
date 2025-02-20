@@ -22,3 +22,21 @@
 .v-img__img--contain {
   object-fit: cover;
 }
+
+.v-btn:not(.switch) {
+  background-color: rgb(var(--v-theme-secondary)) !important;
+  color: rgb(var(--v-theme-on-secondary)) !important;
+}
+
+.v-btn.switch {
+  border-radius: 15px;
+}
+
+.v-btn.switch.on {
+  background-color: rgb(var(--v-theme-secondary)) !important;
+  color: rgb(var(--v-theme-surface)) !important;
+}
+
+.v-btn.switch.off {
+  background-color: transparent !important;
+}

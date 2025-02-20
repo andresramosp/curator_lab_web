@@ -1,53 +1,36 @@
 <template>
   <div class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar">
-      <v-row align="center" justify="space-between">
-        <v-col cols="6">
-          <v-text-field
-            v-model="description"
-            :label="queryDescription.text"
-            :placeholder="queryDescription.example"
-            outlined
-            persistent-placeholder
-          ></v-text-field>
-        </v-col>
-        <v-col cols="4" class="d-flex pr-5" style="column-gap: 10px">
-          <v-switch
-            color="secondary"
-            :disabled="isQuickSearch"
-            v-model="isCreative"
-            label="Creative"
-            class="ml-4"
-            inset
-          ></v-switch>
+      <v-text-field
+        v-model="description"
+        :label="queryDescription.text"
+        :placeholder="queryDescription.example"
+        outlined
+        persistent-placeholder
+        style="width: 60%"
+        class="mx-3"
+      ></v-text-field>
+      <v-spacer></v-spacer>
 
-          <v-switch
-            color="secondary"
-            :disabled="isQuickSearch"
-            v-model="withInsights"
-            label="Insights"
-            class="ml-4"
-            inset
-          ></v-switch>
+      <SwitchButton icon="mdi-magnify-scan" v-model="isQuickSearch"
+        >Quick Search</SwitchButton
+      >
+      <SwitchButton icon="mdi-palette" v-model="isCreative"
+        >Creative</SwitchButton
+      >
 
-          <v-checkbox
-            v-model="isQuickSearch"
-            color="secondary"
-            label="Quick Search"
-            hide-details
-          ></v-checkbox>
-        </v-col>
+      <SwitchButton icon="mdi-eye-outline" v-model="withInsights"
+        >Insights</SwitchButton
+      >
 
-        <v-col cols="1" class="d-flex justify-end pr-8">
-          <v-btn
-            @click="handleSearch"
-            :loading="loading && !loadingIteration"
-            :disabled="!description.length"
-          >
-            Search
-          </v-btn>
-        </v-col>
-      </v-row>
+      <v-btn
+        @click="handleSearch"
+        :loading="loading && !loadingIteration"
+        :disabled="!description.length"
+        class="mx-3 toolbar-control"
+      >
+        Search
+      </v-btn>
     </v-toolbar>
 
     <div class="alert-message">
@@ -59,8 +42,7 @@
         closable
         :text="`It seems unlikely that we will find more pictures related to ${clearQuery}. We suggest you adjust the search or try a different mode.`"
         theme="dark"
-      >
-      </v-alert>
+      ></v-alert>
     </div>
 
     <PhotosSearchGrid
@@ -101,6 +83,12 @@ watch(isQuickSearch, () => {
   if (isQuickSearch.value) {
     isCreative.value = false;
     withInsights.value = false;
+  }
+});
+
+watch([isCreative, withInsights], ([creative, insights]) => {
+  if (creative || insights) {
+    isQuickSearch.value = false;
   }
 });
 
@@ -250,33 +238,11 @@ onUnmounted(() => {
   position: sticky;
   top: 10px;
   z-index: 10;
-}
-
-.tag-breadcrumb {
-  border-radius: 5px;
   width: 100%;
-  position: sticky;
-  /* top: 80px; 
-  z-index: 9; */
 }
 
-.tag-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  row-gap: 8px;
-  column-gap: 5px;
-  padding: 5px;
-  flex-direction: row;
-  align-content: stretch;
-  justify-content: flex-start;
-}
-
-.tag-section {
-  margin-bottom: 10px;
-}
-.tag-line:last-child {
-  margin-bottom: 0;
+.toolbar-control {
+  font-size: 11px !important;
 }
 
 .alert-message {

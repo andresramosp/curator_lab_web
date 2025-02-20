@@ -26,12 +26,14 @@ const vuetify = createVuetify({
       },
     },
   },
-  defaults: {
-    VBtn: {
-      style:
-        "background-color: rgb(var(--v-theme-secondary)) !important; color: rgb(var(--v-theme-on-secondary));",
-    },
-  },
+  // defaults: {
+  //   VBtn: {
+  //     style: (props) =>
+  //       !props.outlined
+  //         ? "color: rgb(var(--v-theme-secondary)) !important;"
+  //         : "background-color: rgb(var(--v-theme-secondary)) !important; color: rgb(var(--v-theme-on-secondary));",
+  //   },
+  // },
 });
 
 export default vuetify;
