@@ -5,7 +5,7 @@
         <template #default="{ isHovering, props }">
           <v-card v-bind="props" class="photo-card">
             <v-img
-              :src="photo.url || `${photosBaseURL}/${photo.name}`"
+              :src="`${photosBaseURL}/${photo.name}`"
               class="photo-image"
               :class="{ 'blurred-photo': photo.analyzing }"
               @error="fallbackImage(photo)"

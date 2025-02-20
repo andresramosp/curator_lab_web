@@ -42,7 +42,8 @@
                         :key="tag"
                         class="ma-1"
                         :class="{
-                          'highlight-tag': isMatchingTag(tag),
+                          'highlight-tag-positive': isMatchingPositiveTag(tag),
+                          'highlight-tag-negative': isMatchingNegativeTag(tag),
                         }"
                       >
                         {{ tag }}
@@ -82,8 +83,18 @@ const props = defineProps({
 
 defineEmits(["update:dialog"]);
 
-const isMatchingTag = (tag) => {
-  return props.selectedPhoto.matchingTags?.includes(tag);
+const isMatchingPositiveTag = (tagName) => {
+  let matchingTag = props.selectedPhoto.matchingTags?.find(
+    (tag) => tag.name == tagName
+  );
+  return matchingTag && matchingTag.proximity > 0;
+};
+
+const isMatchingNegativeTag = (tagName) => {
+  let matchingTag = props.selectedPhoto.matchingTags?.find(
+    (tag) => tag.name == tagName
+  );
+  return matchingTag && matchingTag.proximity < 0;
 };
 
 const highlightedDescription = computed(() => {
@@ -122,8 +133,11 @@ const highlightedDescription = computed(() => {
 .highlight-chunk-negative {
   background-color: red;
 }
-.highlight-tag {
+.highlight-tag-positive {
   background-color: rgb(var(--v-theme-secondary)) !important;
   color: darkslategray !important;
+}
+.highlight-tag-negative {
+  background-color: red !important;
 }
 </style>

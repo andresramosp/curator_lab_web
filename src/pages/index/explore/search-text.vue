@@ -70,6 +70,7 @@
       :withInsights="withInsights"
       :loadingIteration="loadingIteration"
       :maxPageAttempts="maxPageAttempts"
+      :isCreative="isCreative"
     />
   </div>
 </template>
@@ -107,18 +108,18 @@ const queryDescription = computed(() => {
   if (isQuickSearch.value) {
     return {
       text: "Find photos quickly with specific and simple words",
-      example: "Images of black cats",
+      example: "Black cats",
     };
   }
   if (!isCreative.value) {
     return {
       text: "Search the catalogue with natural language and logic precission",
-      example: "Images of people eating on a boat, during a happy day",
+      example: "People eating on a boat, during a sunny day",
     };
   } else {
     return {
       text: "Explore your catalogue in a more fexible and conceptual way",
-      example: "Look for photos that resonate with StarWars movies",
+      example: "Images that resonate with StarWars universe",
     };
   }
 });

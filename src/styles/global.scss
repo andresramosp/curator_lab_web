@@ -18,3 +18,7 @@
   position: relative;
   overflow: hidden;
 }
+
+.v-img__img--contain {
+  object-fit: cover;
+}
