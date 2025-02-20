@@ -1,6 +1,8 @@
 <template>
-  <v-card v-show="withInsights" class="photos-container selected-photos">
-    <v-card-title class="section-title">Insights</v-card-title>
+  <v-card class="photos-container selected-photos">
+    <v-card-title class="section-title">{{
+      withInsights ? "Top Selection" : "User Selection"
+    }}</v-card-title>
     <v-card-text>
       <div class="photos-list">
         <PhotoCard
@@ -11,10 +13,14 @@
           :fade-delay="photoFadeInDelays[index] || 0"
           @view-info="handleViewInfo"
           @switch-selected="handleSwitchSelected"
+          :show-match-percent="false"
         >
           <template #overlay="{ isHovering, photo }">
             <div v-if="isHovering" class="reasoning-overlay">
-              <span v-if="photo.reasoning" class="reasoning-text">
+              <span
+                v-if="withInsights && photo.reasoning"
+                class="reasoning-text"
+              >
                 {{ photo.reasoning }}
               </span>
               <div class="photo-buttons">
@@ -31,6 +37,7 @@
 
         <!-- Botón para aumentar iteración -->
         <v-card
+          v-show="withInsights"
           :disabled="!hasMoreIterations || !selectedPhotos.length"
           :loading="loadingIteration"
           class="photo-card add-card"

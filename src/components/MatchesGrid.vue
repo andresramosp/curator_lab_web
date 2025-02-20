@@ -1,8 +1,6 @@
 <template>
   <v-card class="photos-container">
-    <v-card-title class="section-title">{{
-      withInsights ? "Potential Matches" : "Matches"
-    }}</v-card-title>
+    <v-card-title class="section-title">{{ "Potential Matches" }}</v-card-title>
     <v-card-text>
       <div class="photos-list">
         <PhotoCard
@@ -14,13 +12,14 @@
           @view-info="handleViewInfo"
           @switch-selected="handleSwitchSelected"
           :numerical-match="false"
+          :show-match-percent="!withInsights"
         >
           <template #overlay="{ isHovering, photo }">
             <!-- Overlays para Insights' -->
-            <div v-if="withInsights">
+            <div v-if="true">
               <div
                 class="photo-overlay"
-                v-show="isHovering && !isThinking(photo) && withInsights"
+                v-show="isHovering && !isThinking(photo)"
               >
                 <v-btn icon @click="handleSwitchSelected(photo)">
                   <v-icon size="36">mdi-plus</v-icon>
@@ -42,13 +41,13 @@
               </div>
             </div>
             <!-- Overlays para búsqueda normal' -->
-            <div v-else-if="isHovering">
+            <!-- <div v-else-if="isHovering">
               <div class="photo-buttons">
                 <v-btn size="small" icon @click="handleViewInfo(photo)">
                   <v-icon>mdi-information</v-icon>
                 </v-btn>
               </div>
-            </div>
+            </div> -->
           </template>
         </PhotoCard>
 

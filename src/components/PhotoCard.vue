@@ -15,7 +15,7 @@
         <!-- Slot para overlay, se espera que el componente padre lo provea -->
         <slot name="overlay" :isHovering="isHovering" :photo="photo"></slot>
 
-        <!-- Iconos informativos -->
+        <!-- Iconos informativos seleccion/deselección -->
         <div class="photo-icons">
           <v-icon v-if="photo.isIncludedByUser === true" color="secondary">
             mdi-account-check
@@ -26,7 +26,7 @@
           >
             mdi-delete
           </v-icon>
-          <div v-show="!withInsights" :class="[matchPercentClass]">
+          <div v-show="showMatchPercent" :class="[matchPercentClass]">
             <template v-if="numericalMatch">
               <span>{{ photo.matchPercent.toFixed(0) }}%</span>
             </template>
@@ -60,6 +60,7 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showMatchPercent: { type: Boolean, default: true },
   maxPageAttempts: Boolean,
 });
 

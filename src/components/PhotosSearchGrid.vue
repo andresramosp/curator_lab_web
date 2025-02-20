@@ -2,7 +2,6 @@
   <div v-if="photos && photos.length" class="photos-grid">
     <!-- Insights Section -->
     <InsightsGrid
-      v-if="withInsights"
       :photos="photos"
       :with-insights="withInsights"
       :loading-iteration="loadingIteration"
@@ -31,7 +30,7 @@
 
 <script setup>
 import { ref, watch, shallowRef } from "vue";
-import InsightsGrid from "./InsightsGrid.vue";
+import InsightsGrid from "./SelectionGrid.vue";
 import MatchesGrid from "./MatchesGrid.vue";
 import PhotoDialog from "./PhotoDialog.vue";
 
