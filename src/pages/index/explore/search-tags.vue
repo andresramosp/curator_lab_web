@@ -15,6 +15,7 @@
         class="mx-2"
       />
 
+      <!-- CAJA EXCLUDE -->
       <v-combobox
         v-model="excludedTags"
         v-model:search="searchInputExcluded"
@@ -64,7 +65,7 @@
         :photos="photos"
         :hasMoreIterations="hasMoreIterations"
         @next-iteration="nextIteration"
-        :withInsights="withInsights"
+        :withInsights="false"
         :loadingIteration="loadingIteration"
         :maxPageAttempts="maxPageAttempts"
         :isCreative="isCreative"
@@ -97,11 +98,7 @@ const photos = computed(() => {
   for (let i = 0; i < iteration.value; i++) {
     const key = iterationKeys[i];
     if (key !== undefined && iterationsRecord.value[key]?.photos) {
-      if (!withInsights.value) {
-        accumulatedPhotos.push(...iterationsRecord.value[key].photos);
-      } else {
-        accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
-      }
+      accumulatedPhotos.push(...iterationsRecord.value[key].photos);
     }
   }
   return accumulatedPhotos;
@@ -115,57 +112,59 @@ const excludedTagSuggestions = ref([]);
 const searchInputIncluded = ref("");
 const searchInputExcluded = ref("");
 
-// Función que simula sugerencias de tags
-function simulateSuggestions(query) {
-  const allTags = [
-    "dog",
-    "cat",
-    "nature",
-    "city",
-    "sunset",
-    "mountain",
-    "water",
-  ];
-  return allTags.filter((tag) =>
-    tag.toLowerCase().includes(query.toLowerCase())
-  );
-}
+// Debounce timers
+let debounceTimeoutIncluded = null;
+let debounceTimeoutExcluded = null;
 
-// Función que simula la llamada al endpoint /api/tags/search
+// Función que llama al endpoint real /api/tags/search
 async function fetchTagSuggestions(query) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ data: { tags: simulateSuggestions(query) } });
-    }, 300);
-  });
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/api/tags/search`,
+      {
+        params: { term: query },
+      }
+    );
+    // Se asume que cada tag tiene una propiedad 'name'
+    return response.data.result.map((tag) => tag.name);
+  } catch (error) {
+    console.error("Error fetching tag suggestions", error);
+    return [];
+  }
 }
 
 async function onSearchInputIncluded(val) {
   searchInputIncluded.value = val;
-  if (val.trim() === "") {
+  if (debounceTimeoutIncluded) clearTimeout(debounceTimeoutIncluded);
+  if (val.trim().length < 2) {
     includedTagSuggestions.value = [];
     return;
   }
-  try {
-    const response = await fetchTagSuggestions(val);
-    includedTagSuggestions.value = response.data.tags;
-  } catch (error) {
-    console.error("Error fetching included tag suggestions", error);
-  }
+  debounceTimeoutIncluded = setTimeout(async () => {
+    try {
+      const suggestions = await fetchTagSuggestions(val);
+      includedTagSuggestions.value = suggestions;
+    } catch (error) {
+      console.error("Error fetching included tag suggestions", error);
+    }
+  }, 500);
 }
 
 async function onSearchInputExcluded(val) {
   searchInputExcluded.value = val;
-  if (val.trim() === "") {
+  if (debounceTimeoutExcluded) clearTimeout(debounceTimeoutExcluded);
+  if (val.trim().length < 2) {
     excludedTagSuggestions.value = [];
     return;
   }
-  try {
-    const response = await fetchTagSuggestions(val);
-    excludedTagSuggestions.value = response.data.tags;
-  } catch (error) {
-    console.error("Error fetching excluded tag suggestions", error);
-  }
+  debounceTimeoutExcluded = setTimeout(async () => {
+    try {
+      const suggestions = await fetchTagSuggestions(val);
+      excludedTagSuggestions.value = suggestions;
+    } catch (error) {
+      console.error("Error fetching excluded tag suggestions", error);
+    }
+  }, 300);
 }
 
 async function searchPhotos() {
@@ -212,10 +211,8 @@ onMounted(() => {
         100
       );
     });
-    if (!withInsights.value) {
-      hasMoreIterations.value = data.hasMore;
-      iteration.value = data.iteration + 1;
-    }
+    hasMoreIterations.value = data.hasMore;
+    iteration.value = data.iteration + 1;
     console.log(data);
   });
 
