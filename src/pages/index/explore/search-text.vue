@@ -54,15 +54,17 @@
       ></v-alert>
     </div>
 
-    <PhotosSearchGrid
-      :photos="photos"
-      :hasMoreIterations="hasMoreIterations"
-      @next-iteration="nextIteration"
-      :withInsights="withInsights"
-      :loadingIteration="loadingIteration"
-      :maxPageAttempts="maxPageAttempts"
-      :isCreative="isCreative"
-    />
+    <div class="photo-grid-container">
+      <PhotosSearchGrid
+        :photos="photos"
+        :hasMoreIterations="hasMoreIterations"
+        @next-iteration="nextIteration"
+        :withInsights="withInsights"
+        :loadingIteration="loadingIteration"
+        :maxPageAttempts="maxPageAttempts"
+        :isCreative="isCreative"
+      />
+    </div>
   </div>
 </template>
 
@@ -236,8 +238,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  socket.off("embeddings");
-  socket.off("result");
+  socket.off("matches");
+  socket.off("insights");
   socket.off("maxPageAttempts");
 });
 </script>

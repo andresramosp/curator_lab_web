@@ -1,46 +1,50 @@
 <template>
   <div class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar">
-      <v-row align="center" justify="space-between">
-        <v-col cols="6">
-          <v-text-field
-            v-model="form.description"
-            :label="queryDescription.text"
-            :placeholder="queryDescription.example"
-            outlined
-          ></v-text-field>
-        </v-col>
-        <v-col cols="4" class="d-flex pr-8" style="column-gap: 20px">
-          <v-slider
-            :max="2"
-            :disabled="form.isQuickSearch"
-            color="secondary"
-            v-model="searchType"
-            :ticks="searchTypes"
-            show-ticks="always"
-            step="1"
-            tick-size="0"
-          ></v-slider>
+      <!-- CAJA INCLUDE -->
+      <v-combobox
+        v-model="includedTags"
+        v-model:search="searchInputIncluded"
+        :items="includedTagSuggestions"
+        label="Tags incluidos"
+        multiple
+        chips
+        clearable
+        open-on-focus
+        @update:search="onSearchInputIncluded"
+        class="mx-2"
+      />
 
-          <v-switch
-            color="secondary"
-            v-model="form.isQuickSearch"
-            label="Quick search"
-            class="ml-4"
-            inset
-          ></v-switch>
-        </v-col>
+      <v-combobox
+        v-model="excludedTags"
+        v-model:search="searchInputExcluded"
+        :items="excludedTagSuggestions"
+        label="Tags excluidos"
+        multiple
+        chips
+        clearable
+        open-on-focus
+        @update:search="onSearchInputExcluded"
+        class="mx-2"
+      />
 
-        <v-col cols="1" class="d-flex justify-end pr-8">
-          <v-btn
-            @click="handleSearch"
-            :loading="loading && !loadingIteration"
-            :disabled="!form.description.length"
-          >
-            Search
-          </v-btn>
-        </v-col>
-      </v-row>
+      <v-spacer></v-spacer>
+
+      <SwitchButton
+        icon="mdi-magnify-scan"
+        v-model="isQuickSearch"
+        tooltip="Performs a quick surface search. Ideal for searching for dogs and cats."
+        >Quick Search</SwitchButton
+      >
+
+      <v-btn
+        @click="handleSearch"
+        :loading="loading && !loadingIteration"
+        :disabled="false"
+        class="mx-3 toolbar-control"
+      >
+        Search
+      </v-btn>
     </v-toolbar>
 
     <div class="alert-message">
@@ -52,86 +56,45 @@
         closable
         :text="`It seems unlikely that we will find more pictures related to ${clearQuery}. We suggest you adjust the search or try a different mode.`"
         theme="dark"
-      >
-      </v-alert>
+      ></v-alert>
     </div>
 
-    <PhotosSearchGrid
-      :photos="photos"
-      :hasMoreIterations="hasMoreIterations"
-      @next-iteration="nextIteration"
-      :withInsights="withInsights"
-      :loadingIteration="loadingIteration"
-      :maxPageAttempts="maxPageAttempts"
-      :searchType="searchType"
-    />
+    <div class="photo-grid-container">
+      <PhotosSearchGrid
+        :photos="photos"
+        :hasMoreIterations="hasMoreIterations"
+        @next-iteration="nextIteration"
+        :withInsights="withInsights"
+        :loadingIteration="loadingIteration"
+        :maxPageAttempts="maxPageAttempts"
+        :isCreative="isCreative"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
-import { de } from "vuetify/locale";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
-const form = ref({
-  description: "",
-  filename: "",
-  iteration: 1,
-  isQuickSearch: false,
-  // withInsights: false,
-});
-
+const iteration = ref(1);
+const isQuickSearch = ref(false);
+const currentMatchPercent = ref(0);
 const maxPageAttempts = ref(false);
-const searchType = ref(1);
-const searchTypes = {
-  0: "Logical",
-  1: "Semantic",
-  2: "Creative",
-};
-
-// Provisional hasta que se decida si "creative" estará disponible sin insights, y cómo sería el botón de "get insights"
-const withInsights = computed(() => {
-  return searchType.value == 2 && !form.value.isQuickSearch;
-});
-
 const iterationsRecord = ref({});
 const loading = ref(false);
 const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
-const onlySelected = ref(false);
-const clearQuery = ref(null);
-
-const queryDescription = computed(() => {
-  if (searchType.value == 0) {
-    return {
-      text: "Search with a logical, more strict syntax",
-      example: "Photos with dogs and umbrellas, but not people",
-    };
-  } else if (searchType.value == 1) {
-    return {
-      text: "Search the catalog with natural language",
-      example: "Images of people eating on a boat",
-    };
-  } else {
-    return {
-      text: "Explore your catalogue in a more creative way",
-      example: "Images which atmosphere resonates with StarWars movies",
-    };
-  }
-});
 
 const photos = computed(() => {
   const iterationKeys = Object.keys(iterationsRecord.value)
     .map(Number)
     .sort((a, b) => a - b);
-
-  const currentIteration = form.value.iteration;
   const accumulatedPhotos = [];
-
-  for (let i = 0; i < currentIteration; i++) {
+  for (let i = 0; i < iteration.value; i++) {
     const key = iterationKeys[i];
     if (key !== undefined && iterationsRecord.value[key]?.photos) {
       if (!withInsights.value) {
@@ -141,27 +104,79 @@ const photos = computed(() => {
       }
     }
   }
-
-  return accumulatedPhotos.filter(
-    (ph) =>
-      !ph.hasOwnProperty("isIncluded") ||
-      (onlySelected.value && ph.isIncluded) ||
-      !onlySelected.value
-  );
+  return accumulatedPhotos;
 });
+
+// Variables para tags incluidos y excluidos
+const includedTags = ref([]);
+const excludedTags = ref([]);
+const includedTagSuggestions = ref([]);
+const excludedTagSuggestions = ref([]);
+const searchInputIncluded = ref("");
+const searchInputExcluded = ref("");
+
+// Función que simula sugerencias de tags
+function simulateSuggestions(query) {
+  const allTags = [
+    "dog",
+    "cat",
+    "nature",
+    "city",
+    "sunset",
+    "mountain",
+    "water",
+  ];
+  return allTags.filter((tag) =>
+    tag.toLowerCase().includes(query.toLowerCase())
+  );
+}
+
+// Función que simula la llamada al endpoint /api/tags/search
+async function fetchTagSuggestions(query) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ data: { tags: simulateSuggestions(query) } });
+    }, 300);
+  });
+}
+
+async function onSearchInputIncluded(val) {
+  searchInputIncluded.value = val;
+  if (val.trim() === "") {
+    includedTagSuggestions.value = [];
+    return;
+  }
+  try {
+    const response = await fetchTagSuggestions(val);
+    includedTagSuggestions.value = response.data.tags;
+  } catch (error) {
+    console.error("Error fetching included tag suggestions", error);
+  }
+}
+
+async function onSearchInputExcluded(val) {
+  searchInputExcluded.value = val;
+  if (val.trim() === "") {
+    excludedTagSuggestions.value = [];
+    return;
+  }
+  try {
+    const response = await fetchTagSuggestions(val);
+    excludedTagSuggestions.value = response.data.tags;
+  } catch (error) {
+    console.error("Error fetching excluded tag suggestions", error);
+  }
+}
 
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
   try {
-    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
-      ...form.value,
-      withInsights: withInsights.value,
-      searchType: searchTypes[searchType.value].toLowerCase(),
-      iteration: form.value.iteration,
-      currentPhotos: photos.value
-        ? photos.value.map((photo) => photo.id)
-        : null,
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/searchByTags`, {
+      included: includedTags.value,
+      excluded: excludedTags.value,
+      isQuickSearch: isQuickSearch.value,
+      iteration: iteration.value,
     });
   } catch (error) {
     console.error("Failed to fetch photos", error);
@@ -171,7 +186,7 @@ async function searchPhotos() {
 }
 
 function handleSearch() {
-  form.value.iteration = 1;
+  iteration.value = 1;
   iterationsRecord.value = {};
   searchPhotos();
 }
@@ -182,70 +197,35 @@ async function nextIteration() {
   loadingIteration.value = false;
 }
 
-watch(
-  () => withInsights.value,
-  () => {
-    iterationsRecord.value = {};
-  }
-);
-
 // WebSocket handlers
 onMounted(() => {
-  socket.on("embeddings", (data) => {
-    Object.entries(data.results).forEach(([iteration, result]) => {
-      iterationsRecord.value[iteration] = {
-        photos: result.photos.map((photo) => ({
-          ...photo,
-          score: data.scores.find((score) => score.photo.id == photo.id)
-            .totalScore,
-          queryMatched: data.scores.find((score) => score.photo.id == photo.id)
-            .queryMatched,
+  socket.on("matches", (data) => {
+    Object.entries(data.results).forEach(([iter, richPhotos]) => {
+      iterationsRecord.value[iter] = {
+        photos: richPhotos.map((item) => ({
+          ...item.photo,
+          matchPercent: item.matchPercent,
         })),
       };
+      currentMatchPercent.value = Math.min(
+        Math.max(...richPhotos.map((item) => item.matchPercent)),
+        100
+      );
     });
     if (!withInsights.value) {
       hasMoreIterations.value = data.hasMore;
-      form.value.iteration = data.iteration + 1;
+      iteration.value = data.iteration + 1;
     }
-
     console.log(data);
   });
 
-  socket.on("result", (data) => {
-    Object.entries(data.results).forEach(([iteration, result]) => {
-      if (!iterationsRecord.value[iteration]) return;
-
-      iterationsRecord.value[iteration].photos = iterationsRecord.value[
-        iteration
-      ].photos.map((existingPhoto) => {
-        const updatedPhoto = result.photos.find(
-          (p) => p.id === existingPhoto.id
-        );
-        return updatedPhoto
-          ? {
-              ...existingPhoto,
-              isIncluded: updatedPhoto.isIncluded,
-              reasoning: updatedPhoto.reasoning,
-            }
-          : existingPhoto;
-      });
-    });
-
-    console.log(data);
-
-    hasMoreIterations.value = data.hasMore;
-    form.value.iteration = data.iteration + 1;
-    clearQuery.value = data.structuredResult.original;
-  });
-
-  socket.on("maxPageAttempts", (data) => {
+  socket.on("maxPageAttempts", () => {
     maxPageAttempts.value = true;
   });
 });
 
 onUnmounted(() => {
-  socket.off("embeddings");
-  socket.off("result");
+  socket.off("matches");
   socket.off("maxPageAttempts");
 });
 </script>
@@ -255,35 +235,11 @@ onUnmounted(() => {
   position: sticky;
   top: 10px;
   z-index: 10;
-}
-
-.tag-breadcrumb {
-  border-radius: 5px;
   width: 100%;
-  position: sticky;
-  /* top: 80px; 
-  z-index: 9; */
 }
-
-.tag-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  row-gap: 8px;
-  column-gap: 5px;
-  padding: 5px;
-  flex-direction: row;
-  align-content: stretch;
-  justify-content: flex-start;
+.toolbar-control {
+  font-size: 11px !important;
 }
-
-.tag-section {
-  margin-bottom: 10px;
-}
-.tag-line:last-child {
-  margin-bottom: 0;
-}
-
 .alert-message {
   z-index: 1;
   display: flex;

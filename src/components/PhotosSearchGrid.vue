@@ -90,6 +90,7 @@ function switchSelected(photo) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
 .catalog-message {

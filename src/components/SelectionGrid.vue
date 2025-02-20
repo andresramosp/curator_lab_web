@@ -166,4 +166,10 @@ function handleSwitchSelected(photo) {
 .reasoning-text {
   font-size: 11px;
 }
+
+.selected-photos {
+  /* position: sticky;
+  top: 0px;
+  z-index: 1; */
+}
 </style>
