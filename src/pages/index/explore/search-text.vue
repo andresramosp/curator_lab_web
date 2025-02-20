@@ -12,14 +12,23 @@
       ></v-text-field>
       <v-spacer></v-spacer>
 
-      <SwitchButton icon="mdi-magnify-scan" v-model="isQuickSearch"
+      <SwitchButton
+        icon="mdi-magnify-scan"
+        v-model="isQuickSearch"
+        tooltip="Performs a quick surface search. Ideal for searching for dogs and cats."
         >Quick Search</SwitchButton
       >
-      <SwitchButton icon="mdi-palette" v-model="isCreative"
+      <SwitchButton
+        icon="mdi-palette"
+        v-model="isCreative"
+        tooltip="Allows the engine to find indirect and figurative associations"
         >Creative</SwitchButton
       >
 
-      <SwitchButton icon="mdi-eye-outline" v-model="withInsights"
+      <SwitchButton
+        icon="mdi-eye-outline"
+        v-model="withInsights"
+        tooltip="Get insights on high potential photos"
         >Insights</SwitchButton
       >
 

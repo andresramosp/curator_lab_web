@@ -1,13 +1,19 @@
 <template>
-  <v-btn
-    @click="toggle"
-    class="mx-2 toolbar-control switch"
-    variant="outlined"
-    :class="{ on: value, off: !value }"
-  >
-    <v-icon v-if="icon" left class="mr-1">{{ icon }}</v-icon>
-    <slot>Button</slot>
-  </v-btn>
+  <v-tooltip location="bottom">
+    <template #activator="{ props }">
+      <v-btn
+        v-bind="props"
+        @click="toggle"
+        class="mx-2 toolbar-control switch"
+        variant="outlined"
+        :class="{ on: value, off: !value }"
+      >
+        <v-icon v-if="icon" left class="mr-1">{{ icon }}</v-icon>
+        <slot>Button</slot>
+      </v-btn>
+    </template>
+    <span>{{ tooltip }}</span>
+  </v-tooltip>
 </template>
 
 <script>
@@ -21,6 +27,10 @@ export default {
     icon: {
       type: String,
       default: "",
+    },
+    tooltip: {
+      type: String,
+      default: "asdasd",
     },
   },
   computed: {
@@ -40,3 +50,8 @@ export default {
   },
 };
 </script>
+<style scoped>
+.toolbar-control {
+  font-size: 11px !important;
+}
+</style>
