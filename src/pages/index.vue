@@ -10,7 +10,7 @@
         <v-icon>mdi-account-circle</v-icon>
       </v-btn>
     </v-app-bar>
-    <v-navigation-drawer app permanent width="100">
+    <v-navigation-drawer app permanent width="80">
       <v-list>
         <v-list-item
           v-for="section in sections"
@@ -25,7 +25,7 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-    <v-navigation-drawer app right v-if="selectedSection" width="200">
+    <v-navigation-drawer app right v-if="selectedSection" width="150">
       <v-list>
         <v-list-item
           v-for="option in selectedSection.options"

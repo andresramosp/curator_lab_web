@@ -1,13 +1,13 @@
 .main-container {
   position: relative;
-  height: 90vh;
+  height: 93vh;
   display: flex;
   flex-direction: column;
 
-  padding: 16px;
+  padding: 8px;
   row-gap: 15px;
-  padding-left: 60px;
-  padding-right: 60px;
+  padding-left: 10px;
+  padding-right: 10px;
 
   overflow-y: auto;
 }
@@ -45,7 +45,7 @@
   /* Ajusta el cálculo según la altura real de tu toolbar y otros elementos */
   height: calc(100vh - 70px);
   overflow-y: auto;
-  display: contents;
+  // display: contents;
 }
 
 /* Para Chrome, Edge y Safari */

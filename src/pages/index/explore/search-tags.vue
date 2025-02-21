@@ -6,7 +6,7 @@
         v-model="includedTags"
         v-model:search="searchInputIncluded"
         :items="includedTagSuggestions"
-        label="Tags incluidos"
+        label="Included Tags"
         multiple
         chips
         clearable
@@ -20,7 +20,7 @@
         v-model="excludedTags"
         v-model:search="searchInputExcluded"
         :items="excludedTagSuggestions"
-        label="Tags excluidos"
+        label="Excluded Tags"
         multiple
         chips
         clearable
@@ -33,9 +33,9 @@
 
       <SwitchButton
         icon="mdi-magnify-scan"
-        v-model="isQuickSearch"
-        tooltip="Performs a quick surface search. Ideal for searching for dogs and cats."
-        >Quick Search</SwitchButton
+        v-model="deepSearch"
+        tooltip="Performs a deeper search, while consuming more time."
+        >Deep Search</SwitchButton
       >
 
       <v-btn
@@ -75,20 +75,32 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
 const iteration = ref(1);
-const isQuickSearch = ref(false);
+const deepSearch = ref(false);
 const currentMatchPercent = ref(0);
 const maxPageAttempts = ref(false);
 const iterationsRecord = ref({});
 const loading = ref(false);
 const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
+
+// Variables para tags incluidos y excluidos
+const includedTags = ref([]);
+const excludedTags = ref([]);
+const includedTagSuggestions = ref([]);
+const excludedTagSuggestions = ref([]);
+const searchInputIncluded = ref("");
+const searchInputExcluded = ref("");
+
+// Debounce timers
+let debounceTimeoutIncluded = null;
+let debounceTimeoutExcluded = null;
 
 const photos = computed(() => {
   const iterationKeys = Object.keys(iterationsRecord.value)
@@ -104,17 +116,19 @@ const photos = computed(() => {
   return accumulatedPhotos;
 });
 
-// Variables para tags incluidos y excluidos
-const includedTags = ref([]);
-const excludedTags = ref([]);
-const includedTagSuggestions = ref([]);
-const excludedTagSuggestions = ref([]);
-const searchInputIncluded = ref("");
-const searchInputExcluded = ref("");
-
-// Debounce timers
-let debounceTimeoutIncluded = null;
-let debounceTimeoutExcluded = null;
+// watch(
+//   includedTags,
+//   (newVal, oldVal) => {
+//     if (
+//       photos.value.length &&
+//       newVal.length > 0 &&
+//       newVal.length < oldVal.length
+//     ) {
+//       handleSearch();
+//     }
+//   },
+//   { deep: true }
+// );
 
 // Función que llama al endpoint real /api/tags/search
 async function fetchTagSuggestions(query) {
@@ -174,7 +188,7 @@ async function searchPhotos() {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/searchByTags`, {
       included: includedTags.value,
       excluded: excludedTags.value,
-      isQuickSearch: isQuickSearch.value,
+      deepSearch: deepSearch.value,
       iteration: iteration.value,
     });
   } catch (error) {

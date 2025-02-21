@@ -107,7 +107,9 @@ const highlightedDescription = computed(() => {
     description = description.replace(
       regex,
       item.proximity >= 0
-        ? `<span class="highlight-chunk-positive">${item.chunk}</span>`
+        ? item.isFullQuery
+          ? `<span class="highlight-chunk-positive-fullQuery">${item.chunk}</span>`
+          : `<span class="highlight-chunk-positive">${item.chunk}</span>`
         : `<span class="highlight-chunk-negative">${item.chunk}</span>`
     );
   });
@@ -128,10 +130,17 @@ const highlightedDescription = computed(() => {
 <style>
 .highlight-chunk-positive {
   background-color: rgb(var(--v-theme-secondary));
+  opacity: 0.6;
   color: darkslategray;
+}
+.highlight-chunk-positive-fullQuery {
+  background-color: blue;
+  opacity: 0.6;
+  color: white;
 }
 .highlight-chunk-negative {
   background-color: red;
+  opacity: 0.6;
 }
 .highlight-tag-positive {
   background-color: rgb(var(--v-theme-secondary)) !important;

@@ -14,9 +14,9 @@
 
       <SwitchButton
         icon="mdi-magnify-scan"
-        v-model="isQuickSearch"
-        tooltip="Performs a quick surface search. Ideal for searching for dogs and cats."
-        >Quick Search</SwitchButton
+        v-model="deepSearch"
+        tooltip="Performs a deeper search, while consuming more time."
+        >Deep Search</SwitchButton
       >
       <SwitchButton
         icon="mdi-palette"
@@ -77,7 +77,7 @@ const socket = io(import.meta.env.VITE_API_WS_URL);
 
 const description = ref("");
 const iteration = ref(1);
-const isQuickSearch = ref(false);
+const deepSearch = ref(false);
 const isCreative = ref(false);
 const withInsights = ref(false);
 const currentMatchPercent = ref(0);
@@ -90,26 +90,20 @@ const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
 const clearQuery = ref(null);
 
-watch(isQuickSearch, () => {
-  if (isQuickSearch.value) {
-    isCreative.value = false;
-    withInsights.value = false;
-  }
-});
+// watch(deepSearch, () => {
+//   if (deepSearch.value) {
+//     isCreative.value = false;
+//     withInsights.value = false;
+//   }
+// });
 
-watch([isCreative, withInsights], ([creative, insights]) => {
-  if (creative || insights) {
-    isQuickSearch.value = false;
-  }
-});
+// watch([isCreative, withInsights], ([creative, insights]) => {
+//   if (creative || insights) {
+//     deepSearch.value = false;
+//   }
+// });
 
 const queryDescription = computed(() => {
-  if (isQuickSearch.value) {
-    return {
-      text: "Find photos quickly with specific and simple words",
-      example: "Black cats",
-    };
-  }
   if (!isCreative.value) {
     return {
       text: "Search the catalogue with natural language and logic precission",
@@ -152,7 +146,7 @@ async function searchPhotos() {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
       description: description.value,
       withInsights: withInsights.value,
-      isQuickSearch: isQuickSearch.value,
+      deepSearch: deepSearch.value,
       searchType: isCreative.value ? "creative" : "semantic",
       iteration: iteration.value,
     });
