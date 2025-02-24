@@ -117,13 +117,6 @@ function handleSwitchSelected(photo) {
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.photos-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
-}
-
 .section-title {
   font-size: 16px;
   color: var(--v-theme-primary);

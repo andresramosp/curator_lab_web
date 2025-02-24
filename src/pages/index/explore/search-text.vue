@@ -54,17 +54,15 @@
       ></v-alert>
     </div>
 
-    <div class="photo-grid-container">
-      <PhotosSearchGrid
-        :photos="photos"
-        :hasMoreIterations="hasMoreIterations"
-        @next-iteration="nextIteration"
-        :withInsights="withInsights"
-        :loadingIteration="loadingIteration"
-        :maxPageAttempts="maxPageAttempts"
-        :isCreative="isCreative"
-      />
-    </div>
+    <PhotosSearchGrid
+      :photos="photos"
+      :hasMoreIterations="hasMoreIterations"
+      @next-iteration="nextIteration"
+      :withInsights="withInsights"
+      :loadingIteration="loadingIteration"
+      :maxPageAttempts="maxPageAttempts"
+      :isCreative="isCreative"
+    />
   </div>
 </template>
 
@@ -149,6 +147,7 @@ async function searchPhotos() {
       deepSearch: deepSearch.value,
       searchType: isCreative.value ? "creative" : "semantic",
       iteration: iteration.value,
+      pageSize: iteration.value == 1 ? 18 : 12,
     });
   } catch (error) {
     console.error("Failed to fetch photos", error);
@@ -156,6 +155,8 @@ async function searchPhotos() {
     loading.value = false;
   }
 }
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function handleSearch() {
   iteration.value = 1;
@@ -165,6 +166,7 @@ function handleSearch() {
 
 async function nextIteration() {
   loadingIteration.value = true;
+  await sleep(2000);
   await searchPhotos();
   loadingIteration.value = false;
 }

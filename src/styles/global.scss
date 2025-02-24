@@ -9,7 +9,7 @@
   padding-left: 10px;
   padding-right: 10px;
 
-  overflow-y: auto;
+  overflow-y: none;
 }
 
 .photo-card {
@@ -41,28 +41,28 @@
   background-color: transparent !important;
 }
 
-.photo-grid-container {
-  /* Ajusta el cálculo según la altura real de tu toolbar y otros elementos */
-  height: calc(100vh - 70px);
-  overflow-y: auto;
-  // display: contents;
-}
-
 /* Para Chrome, Edge y Safari */
-.photo-grid-container::-webkit-scrollbar {
+.photos-container::-webkit-scrollbar {
   width: 8px;
 }
 
-.photo-grid-container::-webkit-scrollbar-track {
+.photos-container::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.photo-grid-container::-webkit-scrollbar-thumb {
+.photos-container::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
 }
 
-.photo-grid-container::-webkit-scrollbar-thumb:hover {
+.photos-container::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.photos-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
 }

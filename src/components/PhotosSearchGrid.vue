@@ -1,7 +1,6 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
-    <!-- Insights Section -->
-    <InsightsGrid
+    <SelectionGrid
       :photos="photos"
       :with-insights="withInsights"
       :loading-iteration="loadingIteration"
@@ -10,7 +9,7 @@
       @switch-selected="switchSelected"
       @next-iteration="$emit('next-iteration')"
     />
-    <!-- Matches Section -->
+
     <MatchesGrid
       :photos="photos"
       :with-insights="withInsights"
@@ -30,7 +29,7 @@
 
 <script setup>
 import { ref, watch, shallowRef } from "vue";
-import InsightsGrid from "./SelectionGrid.vue";
+import SelectionGrid from "./SelectionGrid.vue";
 import MatchesGrid from "./MatchesGrid.vue";
 import PhotoDialog from "./PhotoDialog.vue";
 

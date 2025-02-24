@@ -1,5 +1,5 @@
 <template>
-  <v-card class="photos-container">
+  <v-card ref="scrollContainer" class="photos-container">
     <v-card-title class="section-title">{{ "Potential Matches" }}</v-card-title>
     <v-card-text>
       <div class="photos-list">
@@ -15,8 +15,7 @@
           :show-match-percent="!withInsights"
         >
           <template #overlay="{ isHovering, photo }">
-            <!-- Overlays para Insights' -->
-            <div v-if="true">
+            <div>
               <div
                 class="photo-overlay"
                 v-show="isHovering && !isThinking(photo)"
@@ -25,7 +24,6 @@
                   <v-icon size="36">mdi-plus</v-icon>
                 </v-btn>
               </div>
-
               <div
                 v-if="isThinking(photo) && !maxPageAttempts"
                 class="photo-overlay"
@@ -40,49 +38,22 @@
                 </span>
               </div>
             </div>
-            <!-- Overlays para búsqueda normal' -->
-            <!-- <div v-else-if="isHovering">
-              <div class="photo-buttons">
-                <v-btn size="small" icon @click="handleViewInfo(photo)">
-                  <v-icon>mdi-information</v-icon>
-                </v-btn>
-              </div>
-            </div> -->
           </template>
         </PhotoCard>
-
-        <!-- Botón para aumentar iteración -->
-        <v-card
-          v-if="!withInsights"
-          :disabled="!hasMoreIterations || !unselectedPhotos.length"
-          :loading="loadingIteration"
-          class="photo-card add-card"
-          elevation="16"
-          hover
-          :style="{
-            animationDelay: `${
-              photoFadeInDelays[photoFadeInDelays.length - 1] || 0
-            }ms`,
-          }"
-        >
-          <v-card-text class="text-center">
-            <v-btn
-              icon
-              :loading="loadingIteration"
-              @click="$emit('next-iteration')"
-              class="centered-btn"
-            >
-              <v-icon size="36">mdi-autorenew</v-icon>
-            </v-btn>
-          </v-card-text>
-        </v-card>
       </div>
     </v-card-text>
   </v-card>
 </template>
 
 <script setup>
-import { computed, ref, watch, shallowRef } from "vue";
+import {
+  computed,
+  ref,
+  watch,
+  shallowRef,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import PhotoCard from "./PhotoCard.vue";
 
 const props = defineProps({
@@ -117,9 +88,9 @@ watch(
   { immediate: true }
 );
 
-const isThinking = (photo) => {
-  return props.withInsights && photo.isIncluded === undefined;
-};
+const isThinking = (photo) =>
+  props.withInsights && photo.isIncluded === undefined;
+
 function handleViewInfo(photo) {
   emit("view-info", photo);
 }
@@ -127,6 +98,32 @@ function handleViewInfo(photo) {
 function handleSwitchSelected(photo) {
   emit("switch-selected", photo);
 }
+
+// Infinite scrolling: usamos $el si scrollContainer es un componente Vuetify
+const scrollContainer = ref(null);
+function onScroll() {
+  const container = scrollContainer.value?.$el || scrollContainer.value;
+  if (container && !props.loadingIteration && props.hasMoreIterations) {
+    const { scrollTop, clientHeight, scrollHeight } = container;
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      emit("next-iteration");
+    }
+  }
+}
+
+onMounted(() => {
+  const container = scrollContainer.value?.$el || scrollContainer.value;
+  if (container && container.addEventListener) {
+    container.addEventListener("scroll", onScroll);
+  }
+});
+
+onBeforeUnmount(() => {
+  const container = scrollContainer.value?.$el || scrollContainer.value;
+  if (container && container.removeEventListener) {
+    container.removeEventListener("scroll", onScroll);
+  }
+});
 </script>
 
 <style scoped>
@@ -135,13 +132,8 @@ function handleSwitchSelected(photo) {
   border: 1px solid var(--v-theme-on-surface);
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.photos-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+  height: 500px;
+  overflow-y: auto;
 }
 
 .section-title {
@@ -149,31 +141,6 @@ function handleSwitchSelected(photo) {
   color: var(--v-theme-primary);
 }
 
-.add-card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-}
-
-.centered-btn {
-  margin: auto;
-  display: block;
-}
-
-.photo-buttons {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px;
-  text-align: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6); /* Se usa en fade-in-unselected */
-}
 .photo-overlay {
   position: absolute;
   top: 0;
@@ -190,11 +157,13 @@ function handleSwitchSelected(photo) {
   align-items: center;
   justify-content: center;
 }
+
 .thinking-letter {
   display: inline-block;
   opacity: 0.4;
   animation: typingEffect 1s infinite ease-in-out;
 }
+
 @keyframes typingEffect {
   0% {
     opacity: 0.4;
@@ -210,7 +179,6 @@ function handleSwitchSelected(photo) {
   }
 }
 
-/* Opcional: estilo para foto de top score */
 .top-score-photo {
   border: 3px solid rgb(var(--v-theme-secondary));
 }
