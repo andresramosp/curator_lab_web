@@ -1,21 +1,23 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
-    <SelectionGrid
-      :photos="photos"
-      :with-insights="withInsights"
-      :loading-iteration="loadingIteration"
-      :has-more-iterations="hasMoreIterations"
-      @view-info="viewPhotoInfo"
-      @switch-selected="switchSelected"
-      @next-iteration="$emit('next-iteration')"
-    />
-
     <MatchesGrid
+      :style="{ width: showSelectionPanel ? '68%' : '100%', height: '81vh' }"
       :photos="photos"
       :with-insights="withInsights"
       :loading-iteration="loadingIteration"
       :has-more-iterations="hasMoreIterations"
       :max-page-attemps="maxPageAttempts"
+      @view-info="viewPhotoInfo"
+      @switch-selected="switchSelected"
+      @next-iteration="$emit('next-iteration')"
+    />
+    <SelectionGrid
+      v-if="showSelectionPanel"
+      style="width: 32%; height: 81vh; overflow-y: auto"
+      :photos="photos"
+      :with-insights="withInsights"
+      :loading-iteration="loadingIteration"
+      :has-more-iterations="hasMoreIterations"
       @view-info="viewPhotoInfo"
       @switch-selected="switchSelected"
       @next-iteration="$emit('next-iteration')"
@@ -28,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, watch, shallowRef } from "vue";
+import { ref, watch, shallowRef, computed } from "vue";
 import SelectionGrid from "./SelectionGrid.vue";
 import MatchesGrid from "./MatchesGrid.vue";
 import PhotoDialog from "./PhotoDialog.vue";
@@ -45,6 +47,10 @@ const emit = defineEmits(["next-iteration"]);
 
 const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
+
+const showSelectionPanel = computed(
+  () => true // props.photos.filter((photo) => photo.isIncluded).length > 0
+);
 
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
@@ -83,11 +89,12 @@ function switchSelected(photo) {
   border: 1px solid var(--v-theme-on-surface);
   border-radius: 8px;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  height: 83vh;
 }
 
 .photos-grid {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 16px;
   width: 100%;
 }
@@ -99,5 +106,14 @@ function switchSelected(photo) {
   align-items: center;
   color: #666;
   font-size: 18px;
+}
+
+.photos-container {
+  padding: 4px;
+  border: 1px solid var(--v-theme-on-surface);
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  /* height: 83vh;
+  overflow-y: scroll; */
 }
 </style>

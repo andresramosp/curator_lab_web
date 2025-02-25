@@ -3,7 +3,7 @@
     <div v-if="photos && photos.length" class="photos-list">
       <v-hover v-for="photo in photos" :key="photo.id">
         <template #default="{ isHovering, props }">
-          <v-card v-bind="props" class="photo-card">
+          <v-card v-bind="props" class="photo-card-selected">
             <v-img
               :src="`${photosBaseURL}/${photo.name}`"
               class="photo-image"
@@ -30,7 +30,11 @@
       </v-hover>
     </div>
     <div v-else class="photos-list">
-      <v-card v-for="n in uploadingPhotos" v-bind="props" class="photo-card">
+      <v-card
+        v-for="n in uploadingPhotos"
+        v-bind="props"
+        class="photo-card-selected"
+      >
         <v-skeleton-loader :key="n" type="image" class="photo-skeleton"
       /></v-card>
     </div>

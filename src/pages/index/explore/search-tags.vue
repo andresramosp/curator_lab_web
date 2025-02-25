@@ -7,6 +7,7 @@
         v-model:search="searchInputIncluded"
         :items="includedTagSuggestions"
         label="Included Tags"
+        style="width: 17%"
         multiple
         chips
         clearable
@@ -23,6 +24,7 @@
         label="Excluded Tags"
         multiple
         chips
+        style="width: 17%"
         clearable
         open-on-focus
         @update:search="onSearchInputExcluded"
@@ -41,7 +43,7 @@
       <v-btn
         @click="handleSearch"
         :loading="loading && !loadingIteration"
-        :disabled="false"
+        :disabled="!excludedTags.length && !includedTags.length"
         class="mx-3 toolbar-control"
       >
         Search
@@ -60,17 +62,15 @@
       ></v-alert>
     </div>
 
-    <div class="photo-grid-container">
-      <PhotosSearchGrid
-        :photos="photos"
-        :hasMoreIterations="hasMoreIterations"
-        @next-iteration="nextIteration"
-        :withInsights="false"
-        :loadingIteration="loadingIteration"
-        :maxPageAttempts="maxPageAttempts"
-        :isCreative="isCreative"
-      />
-    </div>
+    <PhotosSearchGrid
+      :photos="photos"
+      :hasMoreIterations="hasMoreIterations"
+      @next-iteration="nextIteration"
+      :withInsights="false"
+      :loadingIteration="loadingIteration"
+      :maxPageAttempts="maxPageAttempts"
+      :isCreative="isCreative"
+    />
   </div>
 </template>
 
@@ -181,6 +181,16 @@ async function onSearchInputExcluded(val) {
   }, 300);
 }
 
+function getPageSize() {
+  let rowCount = 4;
+  let unselectedPhotos = photos.value.filter(
+    (photo) => !photo.isIncluded
+  ).length;
+  let module = unselectedPhotos % rowCount;
+  let extraPhotos = module == 0 ? 0 : rowCount - module;
+  return iteration.value == 1 ? 8 : 4 + extraPhotos;
+}
+
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
@@ -190,6 +200,7 @@ async function searchPhotos() {
       excluded: excludedTags.value,
       deepSearch: deepSearch.value,
       iteration: iteration.value,
+      pageSize: getPageSize(),
     });
   } catch (error) {
     console.error("Failed to fetch photos", error);

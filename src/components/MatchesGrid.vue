@@ -1,59 +1,77 @@
 <template>
-  <v-card ref="scrollContainer" class="photos-container">
-    <v-card-title class="section-title">{{ "Potential Matches" }}</v-card-title>
-    <v-card-text>
-      <div class="photos-list">
-        <PhotoCard
-          v-for="(photo, index) in unselectedPhotos"
-          :key="photo.id"
-          :photo="photo"
-          :with-insights="withInsights"
-          :fade-delay="photoFadeInDelays[index] || 0"
-          @view-info="handleViewInfo"
-          @switch-selected="handleSwitchSelected"
-          :numerical-match="false"
-          :show-match-percent="!withInsights"
-        >
-          <template #overlay="{ isHovering, photo }">
-            <div>
-              <div
-                class="photo-overlay"
-                v-show="isHovering && !isThinking(photo)"
-              >
-                <v-btn icon @click="handleSwitchSelected(photo)">
-                  <v-icon size="36">mdi-plus</v-icon>
-                </v-btn>
-              </div>
-              <div
-                v-if="isThinking(photo) && !maxPageAttempts"
-                class="photo-overlay"
-              >
-                <span
-                  v-for="(letter, index) in 'Reviewing'.split('')"
-                  :key="index"
-                  class="thinking-letter"
-                  :style="{ animationDelay: `${index * 0.1}s` }"
+  <div>
+    <div
+      ref="scrollContainer"
+      class="photos-container"
+      style="overflow-y: auto; height: 74vh"
+    >
+      <v-card style="min-height: 620px">
+        <v-card-title class="section-title">{{
+          "Potential Matches"
+        }}</v-card-title>
+        <v-card-text>
+          <div class="photos-list">
+            <PhotoCard
+              v-for="(photo, index) in unselectedPhotos"
+              :key="photo.id"
+              :photo="photo"
+              :with-insights="withInsights"
+              :fade-delay="photoFadeInDelays[index] || 0"
+              @view-info="handleViewInfo"
+              @switch-selected="handleSwitchSelected"
+              :numerical-match="false"
+              :show-match-percent="!withInsights"
+              :type="'match'"
+            >
+              <template #overlay="{ isHovering, photo }">
+                <div
+                  class="photo-overlay"
+                  v-show="isHovering && !isThinking(photo)"
                 >
-                  {{ letter }}
-                </span>
-              </div>
-            </div>
-          </template>
-        </PhotoCard>
-      </div>
-    </v-card-text>
-  </v-card>
+                  <div class="photo-buttons">
+                    <v-btn icon @click="handleViewInfo(photo)">
+                      <v-icon size="30">mdi-information</v-icon>
+                    </v-btn>
+                    <v-btn icon @click="handleSwitchSelected(photo)">
+                      <v-icon size="30">mdi-plus</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
+
+                <div
+                  v-if="isThinking(photo) && !maxPageAttempts"
+                  class="photo-overlay"
+                >
+                  <span
+                    v-for="(letter, index) in 'Reviewing'.split('')"
+                    :key="index"
+                    class="thinking-letter"
+                    :style="{ animationDelay: `${index * 0.1}s` }"
+                  >
+                    {{ letter }}
+                  </span>
+                </div>
+              </template>
+            </PhotoCard>
+          </div>
+        </v-card-text>
+      </v-card>
+    </div>
+    <v-card style="padding: 10px">
+      <v-btn
+        :loading="loadingIteration"
+        @click="$emit('next-iteration')"
+        class="centered-btn"
+        :disabled="!hasMoreIterations || loadingIteration"
+      >
+        <v-icon size="23">mdi-autorenew</v-icon> Load More
+      </v-btn>
+    </v-card>
+  </div>
 </template>
 
 <script setup>
-import {
-  computed,
-  ref,
-  watch,
-  shallowRef,
-  onMounted,
-  onBeforeUnmount,
-} from "vue";
+import { computed, ref, watch, shallowRef, nextTick } from "vue";
 import PhotoCard from "./PhotoCard.vue";
 
 const props = defineProps({
@@ -73,14 +91,23 @@ const unselectedPhotos = computed(() =>
 const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
 
+const scrollContainer = ref(null);
+
 watch(
   () => props.photos.length,
   (newLength, oldLength) => {
     if (newLength > oldLength) {
-      photoFadeInDelays.value = props.photos.map(
-        (_, index) => index * (!props.withInsights ? 10 : 100)
-      );
+      photoFadeInDelays.value = props.photos.map((_, index) => index * 15);
       previousPhotosLength.value = newLength;
+
+      nextTick(() => {
+        setTimeout(() => {
+          if (scrollContainer.value) {
+            scrollContainer.value.scrollTop =
+              scrollContainer.value.scrollHeight;
+          }
+        }, 200);
+      });
     } else {
       photoFadeInDelays.value = [];
     }
@@ -88,9 +115,9 @@ watch(
   { immediate: true }
 );
 
-const isThinking = (photo) =>
-  props.withInsights && photo.isIncluded === undefined;
-
+const isThinking = (photo) => {
+  return props.withInsights && photo.isIncluded === undefined;
+};
 function handleViewInfo(photo) {
   emit("view-info", photo);
 }
@@ -98,47 +125,19 @@ function handleViewInfo(photo) {
 function handleSwitchSelected(photo) {
   emit("switch-selected", photo);
 }
-
-// Infinite scrolling: usamos $el si scrollContainer es un componente Vuetify
-const scrollContainer = ref(null);
-function onScroll() {
-  const container = scrollContainer.value?.$el || scrollContainer.value;
-  if (container && !props.loadingIteration && props.hasMoreIterations) {
-    const { scrollTop, clientHeight, scrollHeight } = container;
-    if (scrollTop + clientHeight >= scrollHeight - 50) {
-      emit("next-iteration");
-    }
-  }
-}
-
-onMounted(() => {
-  const container = scrollContainer.value?.$el || scrollContainer.value;
-  if (container && container.addEventListener) {
-    container.addEventListener("scroll", onScroll);
-  }
-});
-
-onBeforeUnmount(() => {
-  const container = scrollContainer.value?.$el || scrollContainer.value;
-  if (container && container.removeEventListener) {
-    container.removeEventListener("scroll", onScroll);
-  }
-});
 </script>
 
 <style scoped>
-.photos-container {
-  padding: 4px;
-  border: 1px solid var(--v-theme-on-surface);
-  border-radius: 8px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  height: 500px;
-  overflow-y: auto;
-}
-
 .section-title {
   font-size: 16px;
   color: var(--v-theme-primary);
+}
+
+.add-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
 }
 
 .photo-overlay {
@@ -157,13 +156,11 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
 }
-
 .thinking-letter {
   display: inline-block;
   opacity: 0.4;
   animation: typingEffect 1s infinite ease-in-out;
 }
-
 @keyframes typingEffect {
   0% {
     opacity: 0.4;
@@ -179,6 +176,7 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Opcional: estilo para foto de top score */
 .top-score-photo {
   border: 3px solid rgb(var(--v-theme-secondary));
 }

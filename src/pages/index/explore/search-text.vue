@@ -126,20 +126,26 @@ const photos = computed(() => {
   for (let i = 0; i < currentIteration; i++) {
     const key = iterationKeys[i];
     if (key !== undefined && iterationsRecord.value[key]?.photos) {
-      if (!withInsights.value) {
-        accumulatedPhotos.push(...iterationsRecord.value[key].photos);
-      } else {
-        accumulatedPhotos.unshift(...iterationsRecord.value[key].photos);
-      }
+      accumulatedPhotos.push(...iterationsRecord.value[key].photos);
     }
   }
 
   return accumulatedPhotos;
 });
 
+function getPageSize() {
+  let rowCount = 4;
+  let unselectedPhotos = photos.value.filter(
+    (photo) => !photo.isIncluded
+  ).length;
+  let module = unselectedPhotos % rowCount;
+  let extraPhotos = module == 0 ? 0 : rowCount - module;
+  return iteration.value == 1 ? 8 : 4 + extraPhotos;
+}
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
+
   try {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
       description: description.value,
@@ -147,7 +153,7 @@ async function searchPhotos() {
       deepSearch: deepSearch.value,
       searchType: isCreative.value ? "creative" : "semantic",
       iteration: iteration.value,
-      pageSize: iteration.value == 1 ? 18 : 12,
+      pageSize: getPageSize(),
     });
   } catch (error) {
     console.error("Failed to fetch photos", error);
@@ -160,13 +166,13 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function handleSearch() {
   iteration.value = 1;
+  hasMoreIterations.value = false;
   iterationsRecord.value = {};
   searchPhotos();
 }
 
 async function nextIteration() {
   loadingIteration.value = true;
-  await sleep(2000);
   await searchPhotos();
   loadingIteration.value = false;
 }

@@ -26,10 +26,12 @@
             </v-col>
           </v-row>
 
-          <v-img
-            :src="photosBaseURL + '/' + selectedPhoto.name"
-            class="photo-image"
-          ></v-img>
+          <div style="padding: 20px">
+            <v-img
+              :src="photosBaseURL + '/' + selectedPhoto.name"
+              class="photo-image-big"
+            ></v-img>
+          </div>
 
           <v-row>
             <v-col cols="12">
@@ -122,7 +124,7 @@ const highlightedDescription = computed(() => {
 .photo-image {
   margin-top: 20px;
   margin-bottom: 20px;
-  height: 350px;
+  height: 550px;
   object-fit: cover;
   width: 100%;
 }

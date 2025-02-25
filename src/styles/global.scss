@@ -1,26 +1,67 @@
 .main-container {
   position: relative;
-  height: 93vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 
   padding: 8px;
-  row-gap: 15px;
+  row-gap: 5px;
   padding-left: 10px;
   padding-right: 10px;
 
   overflow-y: none;
 }
 
-.photo-card {
-  width: 220px;
-  min-height: 150px;
+.photo-card-match {
+  width: 24%;
+  height: 255px;
   position: relative;
   overflow: hidden;
+  background-color: rgb(var(--v-theme-surface-light)) !important;
+}
+
+.photo-card-selected {
+  width: 31%;
+  height: 145px;
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(var(--v-theme-surface-light)) !important;
+}
+
+.photo-card-insight {
+  width: 48%;
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(var(--v-theme-surface-light)) !important;
+}
+
+.photo-image-selected {
+  max-height: 63% !important;
+}
+
+.photo-image-insight {
+  max-height: 63% !important;
+}
+
+.photo-image-match {
+  max-height: 63% !important;
+}
+
+.centered-btn {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+}
+
+.photo-image-big {
+  // object-fit: cover;
+  max-height: 400px !important;
+  object-fit: none !important;
 }
 
 .v-img__img--contain {
-  object-fit: cover;
+  object-fit: scale-down;
 }
 
 .v-btn:not(.switch) {
@@ -63,6 +104,14 @@
 .photos-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 7px;
+  // justify-content: center;
+  margin-top: 15px;
+}
+
+.photo-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
 }

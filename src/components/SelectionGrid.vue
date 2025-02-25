@@ -1,68 +1,66 @@
 <template>
-  <v-card class="photos-container selected-photos">
-    <v-card-title class="section-title">{{
-      withInsights ? "Top Selection" : "User Selection"
-    }}</v-card-title>
-    <v-card-text>
-      <div class="photos-list">
-        <PhotoCard
-          v-for="(photo, index) in selectedPhotos"
-          :key="photo.id"
-          :photo="photo"
-          :with-insights="withInsights"
-          :fade-delay="photoFadeInDelays[index] || 0"
-          @view-info="handleViewInfo"
-          @switch-selected="handleSwitchSelected"
-          :show-match-percent="false"
-        >
-          <template #overlay="{ isHovering, photo }">
-            <div v-if="isHovering" class="reasoning-overlay">
-              <span
-                v-if="withInsights && photo.reasoning"
-                class="reasoning-text"
-              >
-                {{ photo.reasoning }}
-              </span>
-              <div class="photo-buttons">
-                <v-btn size="small" icon @click="handleViewInfo(photo)">
-                  <v-icon>mdi-information</v-icon>
-                </v-btn>
-                <v-btn size="small" icon @click="handleSwitchSelected(photo)">
-                  <v-icon>mdi-minus</v-icon>
-                </v-btn>
-              </div>
-            </div>
-          </template>
-        </PhotoCard>
-
-        <!-- Botón para aumentar iteración -->
-        <v-card
-          v-show="withInsights"
-          :disabled="!hasMoreIterations || !selectedPhotos.length"
-          :loading="loadingIteration"
-          class="photo-card add-card"
-          elevation="16"
-          hover
-          :style="{
-            animationDelay: `${
-              photoFadeInDelays[selectedPhotos.length - 1] || 0
-            }ms`,
-          }"
-        >
-          <v-card-text class="text-center">
-            <v-btn
-              icon
-              :loading="loadingIteration"
-              @click="$emit('next-iteration')"
-              class="centered-btn"
+  <div>
+    <div
+      ref="scrollContainer"
+      class="photos-container"
+      style="overflow-y: auto; height: 74vh"
+    >
+      <v-card style="min-height: 620px">
+        <v-card-title class="section-title">{{
+          withInsights ? "Top Selection" : "User Selection"
+        }}</v-card-title>
+        <v-card-text>
+          <div class="photos-list" style="gap: 10px">
+            <PhotoCard
+              v-for="(photo, index) in selectedPhotos"
+              :key="photo.id"
+              :photo="photo"
+              :with-insights="withInsights"
+              :fade-delay="photoFadeInDelays[index] || 0"
+              @view-info="handleViewInfo"
+              @switch-selected="handleSwitchSelected"
+              :numerical-match="false"
+              :show-match-percent="!withInsights"
+              :type="withInsights ? 'insight' : 'selected'"
             >
-              <v-icon size="36">mdi-autorenew</v-icon>
-            </v-btn>
-          </v-card-text>
-        </v-card>
-      </div>
-    </v-card-text>
-  </v-card>
+              <template #overlay="{ isHovering, photo }">
+                <div v-if="isHovering" class="reasoning-overlay">
+                  <span
+                    v-if="withInsights && photo.reasoning"
+                    class="reasoning-text"
+                  >
+                    {{ photo.reasoning }}
+                  </span>
+                  <div class="photo-buttons">
+                    <v-btn size="small" icon @click="handleViewInfo(photo)">
+                      <v-icon>mdi-information</v-icon>
+                    </v-btn>
+                    <v-btn
+                      size="small"
+                      icon
+                      @click="handleSwitchSelected(photo)"
+                    >
+                      <v-icon>mdi-minus</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
+              </template>
+            </PhotoCard>
+          </div>
+        </v-card-text>
+      </v-card>
+    </div>
+    <v-card style="padding: 10px">
+      <v-btn
+        @click="() => {}"
+        variant="outlined"
+        class="switch centered-btn"
+        :disabled="!selectedPhotos.length"
+      >
+        <v-icon size="23">mdi-palette</v-icon> Move to Canvas
+      </v-btn>
+    </v-card>
+  </div>
 </template>
 
 <script setup>
@@ -78,9 +76,13 @@ const props = defineProps({
 
 const emit = defineEmits(["view-info", "switch-selected", "next-iteration"]);
 
-const selectedPhotos = computed(() =>
-  props.photos.filter((photo) => photo.isIncluded)
-);
+const selectedPhotos = computed(() => {
+  if (props.withInsights) {
+    return props.photos.filter((photo) => photo.isIncluded).reverse();
+  } else {
+    return props.photos.filter((photo) => photo.isIncluded);
+  }
+});
 
 const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
@@ -110,13 +112,6 @@ function handleSwitchSelected(photo) {
 </script>
 
 <style scoped>
-.photos-container {
-  padding: 4px;
-  border: 1px solid var(--v-theme-on-surface);
-  border-radius: 8px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 .section-title {
   font-size: 16px;
   color: var(--v-theme-primary);
@@ -127,11 +122,6 @@ function handleSwitchSelected(photo) {
   justify-content: center;
   align-items: center;
   cursor: pointer;
-}
-
-.centered-btn {
-  margin: auto;
-  display: block;
 }
 
 /* Se mantienen estilos específicos para el overlay de Insights */
@@ -149,20 +139,7 @@ function handleSwitchSelected(photo) {
   text-align: center;
 }
 
-.photo-buttons {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 8px;
-}
-
 .reasoning-text {
   font-size: 11px;
-}
-
-.selected-photos {
-  /* position: sticky;
-  top: 0px;
-  z-index: 1; */
 }
 </style>

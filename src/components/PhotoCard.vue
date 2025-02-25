@@ -3,29 +3,34 @@
     <template #default="{ isHovering, props }">
       <v-card
         v-bind="props"
-        :class="['photo-card', fadeClass]"
+        :class="[`photo-card-${type}`, fadeClass]"
         :style="cardStyle"
       >
-        <v-img
-          :src="photoSrc"
-          @error="fallbackImage"
-          class="photo-image"
-        ></v-img>
+        <div class="image-container">
+          <v-img
+            :src="photoSrc"
+            @error="fallbackImage"
+            :class="[`photo-image-${type}`]"
+          ></v-img>
+        </div>
 
         <!-- Slot para overlay, se espera que el componente padre lo provea -->
         <slot name="overlay" :isHovering="isHovering" :photo="photo"></slot>
 
         <!-- Iconos informativos seleccion/deselección -->
         <div class="photo-icons">
-          <v-icon v-if="photo.isIncludedByUser === true" color="secondary">
-            mdi-account-check
-          </v-icon>
-          <v-icon
-            v-else-if="photo.isIncludedByUser === false"
-            color="secondary"
-          >
-            mdi-delete
-          </v-icon>
+          <div v-if="withInsights">
+            <v-icon v-if="photo.isIncludedByUser === true" color="secondary">
+              mdi-account-check
+            </v-icon>
+            <v-icon
+              v-else-if="photo.isIncludedByUser === false"
+              color="secondary"
+            >
+              mdi-delete
+            </v-icon>
+          </div>
+
           <div v-show="showMatchPercent" :class="[matchPercentClass]">
             <template v-if="numericalMatch">
               <span>{{ photo.matchPercent.toFixed(0) }}%</span>
@@ -62,6 +67,7 @@ const props = defineProps({
   },
   showMatchPercent: { type: Boolean, default: true },
   maxPageAttempts: Boolean,
+  type: "match" | "selected" | "insight",
 });
 
 const emit = defineEmits(["view-info", "switch-selected"]);
@@ -77,6 +83,14 @@ const cardStyle = computed(() => ({
 const fadeClass = computed(() =>
   props.withInsights ? "fade-in-selected" : "fade-in-unselected"
 );
+
+// const cardClass = computed(() =>
+//   props.type == "small" ? "photo-card-match" : "photo-card-selected"
+// );
+
+// const photoClass = computed(() =>
+//   props.type == "match" ? "photo-image-match" : "photo-image-selected"
+// );
 
 function fallbackImage() {
   if (props.photo.url) {
@@ -101,12 +115,6 @@ const starCount = computed(() => {
 </script>
 
 <style scoped>
-.photo-image {
-  height: 150px;
-  width: 100%;
-  object-fit: cover;
-}
-
 .photo-icons {
   position: absolute;
   top: 4px;
@@ -119,13 +127,13 @@ const starCount = computed(() => {
   opacity: 0;
   transform: translateY(50px);
   filter: grayscale(100%) blur(3px);
-  animation: fadeInSelectedAnimation 0.7s ease-in-out forwards;
+  animation: fadeInSelectedAnimation 0.5s ease-in-out forwards;
 }
 
 .fade-in-unselected {
   opacity: 0;
   transform: translateY(50px);
-  animation: fadeInUnselectedAnimation 0.3s ease-in-out forwards;
+  animation: fadeInUnselectedAnimation 0.5s ease-in-out forwards;
 }
 
 @keyframes fadeInSelectedAnimation {
@@ -160,5 +168,12 @@ const starCount = computed(() => {
 }
 .low-match {
   color: darkgray;
+}
+
+.image-container {
+  display: flex;
+  align-items: center; /* Centrado vertical */
+  justify-content: center; /* Opcional, para centrar horizontalmente */
+  height: 100%;
 }
 </style>
