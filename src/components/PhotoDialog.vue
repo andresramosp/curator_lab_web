@@ -57,12 +57,27 @@
                     </v-sheet>
                   </v-expansion-panel-text>
                 </v-expansion-panel>
-                <v-expansion-panel title="Description">
+                <v-expansion-panel title="Descriptions">
                   <v-expansion-panel-text>
-                    <p>
-                      <strong>Description:</strong>
-                      <span v-html="highlightedDescription"></span>
-                    </p>
+                    <v-container fluid>
+                      <v-row
+                        v-for="(desc, key) in highlightedDescriptions"
+                        :key="key"
+                        class="mb-2"
+                      >
+                        <v-col cols="12">
+                          <v-card outlined>
+                            <v-card-title class="headline">{{
+                              key.toUpperCase()
+                            }}</v-card-title>
+                            <v-card-text
+                              style="text-align: justify"
+                              v-html="desc"
+                            ></v-card-text>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+                    </v-container>
                   </v-expansion-panel-text>
                 </v-expansion-panel>
               </v-expansion-panels>
@@ -103,25 +118,29 @@ const isMatchingNegativeTag = (tagName) => {
   return matchingTag && matchingTag.proximity < 0;
 };
 
-const highlightedDescription = computed(() => {
-  if (!props.selectedPhoto.description) return "No description available";
-
-  let description = props.selectedPhoto.description;
-
-  props.selectedPhoto.matchingChunks?.forEach((item) => {
-    debugger;
-    const regex = new RegExp(item.chunk, "gi");
-    description = description.replace(
-      regex,
-      item.proximity >= 0
-        ? item.isFullQuery
-          ? `<span class="highlight-chunk-positive-fullQuery">${item.chunk}</span>`
-          : `<span class="highlight-chunk-positive">${item.chunk}</span>`
-        : `<span class="highlight-chunk-negative">${item.chunk}</span>`
-    );
+const highlightedDescriptions = computed(() => {
+  const descriptionsObj = props.selectedPhoto.descriptions || {};
+  const result = {};
+  Object.keys(descriptionsObj).forEach((key) => {
+    let text = descriptionsObj[key];
+    if (!text) {
+      result[key] = "No description available";
+    } else {
+      props.selectedPhoto.matchingChunks?.forEach((item) => {
+        const regex = new RegExp(item.chunk, "gi");
+        text = text.replace(
+          regex,
+          item.proximity >= 0
+            ? item.isFullQuery
+              ? `<span class="highlight-chunk-positive-fullQuery">${item.chunk}</span>`
+              : `<span class="highlight-chunk-positive">${item.chunk}</span>`
+            : `<span class="highlight-chunk-negative">${item.chunk}</span>`
+        );
+      });
+      result[key] = text;
+    }
   });
-
-  return description;
+  return result;
 });
 </script>
 
