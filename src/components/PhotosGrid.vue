@@ -78,7 +78,7 @@ function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     ...photo,
     description: photo.description || "No description available",
-    tags: photo.tags.map((t) => t.name),
+    tags: photo.tags, //.map((t) => t.name),
   };
   showDialog.value = true;
 }

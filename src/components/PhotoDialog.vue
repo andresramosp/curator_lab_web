@@ -44,11 +44,15 @@
                         :key="tag"
                         class="ma-1"
                         :class="{
-                          'highlight-tag-positive': isMatchingPositiveTag(tag),
-                          'highlight-tag-negative': isMatchingNegativeTag(tag),
+                          'highlight-tag-positive': isMatchingPositiveTag(
+                            tag.name
+                          ),
+                          'highlight-tag-negative': isMatchingNegativeTag(
+                            tag.name
+                          ),
                         }"
                       >
-                        {{ tag }}
+                        {{ `${tag.name} | ${tag.group}` }}
                       </v-chip>
                     </v-sheet>
                   </v-expansion-panel-text>
@@ -105,6 +109,7 @@ const highlightedDescription = computed(() => {
   let description = props.selectedPhoto.description;
 
   props.selectedPhoto.matchingChunks?.forEach((item) => {
+    debugger;
     const regex = new RegExp(item.chunk, "gi");
     description = description.replace(
       regex,

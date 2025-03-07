@@ -169,7 +169,7 @@ async function fetchFiles() {
 
     const photos = response.data.photos.map((photo) => ({
       ...photo,
-      analyzing: !photo.metadata,
+      analyzing: !photo.processed,
     }));
 
     photosStore.setPhotos(photos);
@@ -303,7 +303,7 @@ onMounted(() => {
     console.log("✅ Foto procesada:", data);
     photosStore.updatePhotoStatus(data.id, {
       analyzing: false,
-      metadata: data.metadata,
+      processed: data.processed,
     });
   });
 });

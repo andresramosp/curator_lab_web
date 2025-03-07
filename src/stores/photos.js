@@ -14,7 +14,7 @@ export const usePhotosStore = defineStore("photos", {
     setPhotos(photos) {
       this.photos = photos.map((photo) => ({
         ...photo,
-        analyzing: !photo.metadata, // Si no tiene metadata, está en análisis
+        analyzing: !photo.processed,
       }));
 
       this.isAnalyzing = this.photos.some((photo) => photo.analyzing);
@@ -27,7 +27,7 @@ export const usePhotosStore = defineStore("photos", {
         ...this.photos.filter((p) => !newPhotoIds.includes(p.id)),
         ...newPhotos.map((photo) => ({
           ...photo,
-          analyzing: !photo.metadata,
+          analyzing: !photo.processed,
         })),
       ];
     },
