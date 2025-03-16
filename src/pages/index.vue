@@ -83,7 +83,7 @@ const sections = [
       {
         title: "By text",
         icon: "mdi-file-plus",
-        route: "/explore/search-text",
+        route: "/explore/search",
       },
       {
         title: "By tags",
