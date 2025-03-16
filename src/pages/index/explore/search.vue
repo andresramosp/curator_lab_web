@@ -1,15 +1,47 @@
 <template>
   <div class="main-container">
     <v-toolbar :elevation="8" class="sticky-toolbar d-flex">
-      <v-text-field
-        v-model="description"
-        :label="queryDescription.text"
-        :placeholder="queryDescription.example"
-        outlined
-        persistent-placeholder
-        style="width: 20%"
-        class="mx-3"
-      ></v-text-field>
+      <!-- Área de input (condicional) -->
+      <div style="width: 55%">
+        <template v-if="searchType !== 'tags'">
+          <v-text-field
+            v-model="description"
+            :label="queryDescription.text"
+            :placeholder="queryDescription.example"
+            outlined
+            persistent-placeholder
+            class="mx-3"
+          ></v-text-field>
+        </template>
+        <template v-else>
+          <div class="d-flex" style="width: 100%">
+            <v-combobox
+              v-model="includedTags"
+              v-model:search="searchInputIncluded"
+              :items="includedTagSuggestions"
+              label="Included Tags"
+              multiple
+              chips
+              clearable
+              open-on-focus
+              @update:search="onSearchInputIncluded"
+              class="mx-2"
+            />
+            <v-combobox
+              v-model="excludedTags"
+              v-model:search="searchInputExcluded"
+              :items="excludedTagSuggestions"
+              label="Penalized Tags"
+              multiple
+              chips
+              clearable
+              open-on-focus
+              @update:search="onSearchInputExcluded"
+              class="mx-2"
+            />
+          </div>
+        </template>
+      </div>
 
       <ToggleButtons v-model="searchType" style="width: 16%">
         <ToggleOption
@@ -19,7 +51,6 @@
           <v-icon left class="mr-1">mdi-brain</v-icon>
           Semantic
         </ToggleOption>
-
         <ToggleOption value="tags" tooltip="Enter the query by tags">
           <v-icon left class="mr-1">mdi-brain</v-icon>
           Tags
@@ -41,7 +72,6 @@
           <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
           Logical
         </ToggleOption>
-
         <ToggleOption
           value="creative"
           tooltip="Allows the engine to find indirect and figurative associations"
@@ -51,24 +81,26 @@
         </ToggleOption>
       </ToggleButtons>
 
-      <div style="width: 15%">
-        <SwitchButton
-          icon="mdi-eye-outline"
-          v-model="withInsights"
-          tooltip="Get insights on high potential photos"
-        >
-          Insights
-        </SwitchButton>
+      <SwitchButton
+        icon="mdi-eye-outline"
+        v-model="withInsights"
+        tooltip="Get insights on high potential photos"
+      >
+        Insights
+      </SwitchButton>
 
-        <v-btn
-          @click="handleSearch"
-          :loading="loading && !loadingIteration"
-          :disabled="!description.length"
-          class="mx-3 toolbar-control"
-        >
-          Search
-        </v-btn>
-      </div>
+      <v-btn
+        @click="handleSearch"
+        :loading="loading && !loadingIteration"
+        :disabled="
+          searchType !== 'tags'
+            ? !description.length
+            : !includedTags.length && !excludedTags.length
+        "
+        class="mx-3 toolbar-control"
+      >
+        Search
+      </v-btn>
     </v-toolbar>
 
     <div class="alert-message">
@@ -87,7 +119,7 @@
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
-      :withInsights="withInsights"
+      :withInsights="searchType !== 'tags' ? withInsights : false"
       :loadingIteration="loadingIteration"
       :maxPageAttempts="maxPageAttempts"
     />
@@ -95,73 +127,82 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
 import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
 import ToggleOption from "@/components/wrappers/ToggleOption.vue";
+import SwitchButton from "@/components/wrappers/SwitchButton.vue";
+import PhotosSearchGrid from "@/components/PhotosSearchGrid.vue";
+import { useSearchTags } from "@/composables/useSearchTags";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
-const description = ref("");
-const iteration = ref(1);
+
 const searchType = ref("semantic");
 const searchMode = ref("logical");
 const withInsights = ref(false);
-const currentMatchPercent = ref(0);
+const description = ref("");
 
-const maxPageAttempts = ref(false);
+// Variables comunes
+const iteration = ref(1);
 const iterationsRecord = ref({});
 const loading = ref(false);
 const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
+const maxPageAttempts = ref(false);
 const clearQuery = ref(null);
+const currentMatchPercent = ref(0);
 
 const queryDescription = computed(() => {
-  if (searchMode.value === "creative") {
-    return {
-      text: "Explore your catalogue in a more flexible and figurative way",
-      example: "Images that resonate with StarWars universe",
-    };
-  } else if (searchMode.value === "logical") {
-    return {
-      text: "Search the catalogue with natural language and logic precision",
-      example: "People eating on a boat, during a sunny day",
-    };
-  }
+  return searchMode.value === "creative"
+    ? {
+        text: "Explore your catalogue in a more flexible and figurative way",
+        example: "Images that resonate with StarWars universe",
+      }
+    : {
+        text: "Search the catalogue with natural language and logic precision",
+        example: "People eating on a boat, during a sunny day",
+      };
 });
 
 const photos = computed(() => {
-  const iterationKeys = Object.keys(iterationsRecord.value)
+  const keys = Object.keys(iterationsRecord.value)
     .map(Number)
     .sort((a, b) => a - b);
-  const accumulatedPhotos = [];
+  let result = [];
   for (let i = 0; i < iteration.value; i++) {
-    const key = iterationKeys[i];
+    const key = keys[i];
     if (key !== undefined && iterationsRecord.value[key]?.photos) {
-      accumulatedPhotos.push(...iterationsRecord.value[key].photos);
+      result.push(...iterationsRecord.value[key].photos);
     }
   }
-  return accumulatedPhotos;
+  return result;
 });
 
 function getPageSize() {
   if (!withInsights.value) return 8;
   const rowCount = 4;
-  const unselectedPhotos = photos.value.filter(
-    (photo) => !photo.isIncluded
-  ).length;
-  const module = unselectedPhotos % rowCount;
-  const extraPhotos = module === 0 ? 0 : rowCount - module;
-  return iteration.value === 1 ? 8 : 4 + extraPhotos;
+  const unselected = photos.value.filter((photo) => !photo.isIncluded).length;
+  const remainder = unselected % rowCount;
+  const extra = remainder === 0 ? 0 : rowCount - remainder;
+  return iteration.value === 1 ? 8 : 4 + extra;
 }
 
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
   try {
-    await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/search/${searchType.value}`,
-      {
+    let payload;
+    if (searchType.value === "tags") {
+      payload = {
+        included: includedTags.value,
+        excluded: excludedTags.value,
+        iteration: iteration.value,
+        pageSize: 8,
+        searchMode: searchMode.value,
+      };
+    } else {
+      payload = {
         description: description.value,
         options: {
           withInsights: withInsights.value,
@@ -169,7 +210,11 @@ async function searchPhotos() {
           iteration: iteration.value,
           pageSize: getPageSize(),
         },
-      }
+      };
+    }
+    await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search/${searchType.value}`,
+      payload
     );
   } catch (error) {
     console.error("Failed to fetch photos", error);
@@ -191,14 +236,19 @@ async function nextIteration() {
   loadingIteration.value = false;
 }
 
-watch(
-  () => withInsights.value,
-  () => {
-    iterationsRecord.value = {};
-  }
-);
+// Lógica específica para tags (composable)
+const {
+  includedTags,
+  excludedTags,
+  includedTagSuggestions,
+  excludedTagSuggestions,
+  searchInputIncluded,
+  searchInputExcluded,
+  onSearchInputIncluded,
+  onSearchInputExcluded,
+} = useSearchTags();
 
-// WebSocket handlers...
+// WebSocket handlers
 onMounted(() => {
   socket.on("matches", (data) => {
     Object.entries(data.results).forEach(([iter, richPhotos]) => {
@@ -213,34 +263,37 @@ onMounted(() => {
         100
       );
     });
-    if (!withInsights.value) {
-      hasMoreIterations.value = data.hasMore;
-      iteration.value = data.iteration + 1;
+    hasMoreIterations.value = data.hasMore;
+    iteration.value = data.iteration + 1;
+    if (searchType.value === "tags" && data.structuredResult) {
+      clearQuery.value = data.structuredResult.original;
     }
     console.log(data);
   });
+
   socket.on("insights", (data) => {
     Object.entries(data.results).forEach(([iter, richPhotos]) => {
       if (!iterationsRecord.value[iter]) return;
       iterationsRecord.value[iter].photos = iterationsRecord.value[
         iter
-      ].photos.map((existingPhoto) => {
-        const updatedPhoto = richPhotos.find(
-          (item) => item.photo.id === existingPhoto.id
+      ].photos.map((existing) => {
+        const updated = richPhotos.find(
+          (item) => item.photo.id === existing.id
         );
-        return updatedPhoto
+        return updated
           ? {
-              ...existingPhoto,
-              isIncluded: updatedPhoto.isIncluded,
-              reasoning: updatedPhoto.reasoning,
+              ...existing,
+              isIncluded: updated.isIncluded,
+              reasoning: updated.reasoning,
             }
-          : existingPhoto;
+          : existing;
       });
     });
     hasMoreIterations.value = data.hasMore;
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
   });
+
   socket.on("maxPageAttempts", () => {
     maxPageAttempts.value = true;
   });
