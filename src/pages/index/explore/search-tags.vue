@@ -33,13 +33,6 @@
 
       <v-spacer></v-spacer>
 
-      <SwitchButton
-        icon="mdi-magnify-scan"
-        v-model="deepSearch"
-        tooltip="Performs a deeper search, while consuming more time."
-        >Deep Search</SwitchButton
-      >
-
       <v-btn
         @click="handleSearch"
         :loading="loading && !loadingIteration"
@@ -69,7 +62,6 @@
       :withInsights="false"
       :loadingIteration="loadingIteration"
       :maxPageAttempts="maxPageAttempts"
-      :isCreative="isCreative"
     />
   </div>
 </template>
@@ -82,7 +74,6 @@ import { io } from "socket.io-client";
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
 const iteration = ref(1);
-const deepSearch = ref(false);
 const currentMatchPercent = ref(0);
 const maxPageAttempts = ref(false);
 const iterationsRecord = ref({});
@@ -181,16 +172,6 @@ async function onSearchInputExcluded(val) {
   }, 300);
 }
 
-function getPageSize() {
-  let rowCount = 4;
-  let unselectedPhotos = photos.value.filter(
-    (photo) => !photo.isIncluded
-  ).length;
-  let module = unselectedPhotos % rowCount;
-  let extraPhotos = module == 0 ? 0 : rowCount - module;
-  return iteration.value == 1 ? 8 : 4 + extraPhotos;
-}
-
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
@@ -198,9 +179,8 @@ async function searchPhotos() {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/searchByTags`, {
       included: includedTags.value,
       excluded: excludedTags.value,
-      deepSearch: deepSearch.value,
       iteration: iteration.value,
-      pageSize: getPageSize(),
+      pageSize: 8,
     });
   } catch (error) {
     console.error("Failed to fetch photos", error);

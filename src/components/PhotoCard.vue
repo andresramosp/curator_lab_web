@@ -107,9 +107,11 @@ const matchPercentClass = computed(() => {
 
 const starCount = computed(() => {
   const percent = props.photo.matchPercent;
-  if (percent >= 85) return 3;
+  if (percent >= 95) return 5;
+  if (percent >= 85) return 4;
+  if (percent >= 75) return 3;
   if (percent >= 55) return 2;
-  if (percent >= 10) return 1;
+  if (percent >= 25) return 1;
   else return 0;
 });
 </script>

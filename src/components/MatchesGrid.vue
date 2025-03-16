@@ -6,9 +6,9 @@
       style="overflow-y: auto; height: 74vh"
     >
       <v-card style="min-height: 620px">
-        <v-card-title class="section-title">{{
+        <!-- <v-card-title class="section-title">{{
           "Potential Matches"
-        }}</v-card-title>
+        }}</v-card-title> -->
         <v-card-text>
           <div class="photos-list">
             <PhotoCard

@@ -3,15 +3,18 @@
     <div v-if="photos && photos.length" class="photos-list">
       <v-hover v-for="photo in photos" :key="photo.id">
         <template #default="{ isHovering, props }">
-          <v-card v-bind="props" class="photo-card-selected">
+          <v-card v-bind="props" class="photo-card-upload">
             <v-img
               :src="`${photosBaseURL}/${photo.name}`"
               class="photo-image"
-              :class="{ 'blurred-photo': photo.analyzing }"
+              :class="{ 'blurred-photo': needProcess(photo) }"
               @error="fallbackImage(photo)"
             ></v-img>
             <!-- Botonera flotante -->
-            <div v-show="isHovering && !photo.analyzing" class="action-buttons">
+            <div
+              v-show="isHovering && !needProcess(photo).isAnalyzing"
+              class="action-buttons"
+            >
               <v-btn size="small" icon @click="deletePhoto(photo.id)">
                 <v-icon>mdi-delete</v-icon>
               </v-btn>
@@ -33,7 +36,7 @@
       <v-card
         v-for="n in uploadingPhotos"
         v-bind="props"
-        class="photo-card-selected"
+        class="photo-card-upload"
       >
         <v-skeleton-loader :key="n" type="image" class="photo-skeleton"
       /></v-card>
@@ -60,6 +63,12 @@ const photosStore = usePhotosStore();
 
 const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "" });
+
+function needProcess(photo) {
+  return (
+    !photo.analyzerProcess || photo.analyzerProcess.currentStage !== "finished"
+  );
+}
 
 async function deletePhoto(photoId) {
   await photosStore.deletePhoto(photoId);
@@ -95,7 +104,6 @@ function fallbackImage(photo) {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  justify-content: center;
   align-items: flex-start;
   overflow-y: scroll;
   height: 90vh;

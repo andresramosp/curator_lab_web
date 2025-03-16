@@ -14,10 +14,7 @@ export const usePhotosStore = defineStore("photos", {
     setPhotos(photos) {
       this.photos = photos.map((photo) => ({
         ...photo,
-        analyzing: !photo.processed,
       }));
-
-      this.isAnalyzing = this.photos.some((photo) => photo.analyzing);
     },
 
     /** 🔹 Agrega nuevas fotos al store evitando duplicados */
@@ -27,7 +24,6 @@ export const usePhotosStore = defineStore("photos", {
         ...this.photos.filter((p) => !newPhotoIds.includes(p.id)),
         ...newPhotos.map((photo) => ({
           ...photo,
-          analyzing: !photo.processed,
         })),
       ];
     },
@@ -37,7 +33,6 @@ export const usePhotosStore = defineStore("photos", {
       const photo = this.photos.find((p) => p.id === photoId);
       if (photo) {
         Object.assign(photo, newStatus);
-        this.isAnalyzing = this.photos.some((p) => p.analyzing);
       }
     },
 

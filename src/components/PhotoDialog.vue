@@ -33,15 +33,20 @@
             ></v-img>
           </div>
 
+          <!-- Sección de Tags agrupados por categoría -->
           <v-row>
             <v-col cols="12">
               <v-expansion-panels>
-                <v-expansion-panel expand title="Tags">
+                <v-expansion-panel
+                  v-for="(tags, category) in groupedTags"
+                  :key="category"
+                  :title="category.replace('_', ' ').toUpperCase()"
+                >
                   <v-expansion-panel-text>
                     <v-sheet class="pa-2" elevation="1">
                       <v-chip
-                        v-for="tag in selectedPhoto.tags"
-                        :key="tag"
+                        v-for="tag in tags"
+                        :key="tag.name"
                         class="ma-1"
                         :class="{
                           'highlight-tag-positive': isMatchingPositiveTag(
@@ -57,6 +62,14 @@
                     </v-sheet>
                   </v-expansion-panel-text>
                 </v-expansion-panel>
+              </v-expansion-panels>
+            </v-col>
+          </v-row>
+
+          <!-- Sección de Descripciones -->
+          <v-row>
+            <v-col cols="12">
+              <v-expansion-panels>
                 <v-expansion-panel title="Descriptions">
                   <v-expansion-panel-text>
                     <v-container fluid>
@@ -141,6 +154,17 @@ const highlightedDescriptions = computed(() => {
     }
   });
   return result;
+});
+
+// Agrupar los tags por categoría
+const groupedTags = computed(() => {
+  const groups = {};
+  (props.selectedPhoto.tags || []).forEach((tag) => {
+    const category = tag.category || "Sin categoría";
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(tag);
+  });
+  return groups;
 });
 </script>
 

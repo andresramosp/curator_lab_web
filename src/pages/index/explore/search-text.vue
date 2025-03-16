@@ -1,45 +1,74 @@
 <template>
   <div class="main-container">
-    <v-toolbar :elevation="8" class="sticky-toolbar">
+    <v-toolbar :elevation="8" class="sticky-toolbar d-flex">
       <v-text-field
         v-model="description"
         :label="queryDescription.text"
         :placeholder="queryDescription.example"
         outlined
         persistent-placeholder
-        style="width: 60%"
+        style="width: 20%"
         class="mx-3"
       ></v-text-field>
-      <v-spacer></v-spacer>
 
-      <SwitchButton
-        icon="mdi-magnify-scan"
-        v-model="deepSearch"
-        tooltip="Performs a deeper search, while consuming more time."
-        >Deep Search</SwitchButton
-      >
-      <SwitchButton
-        icon="mdi-palette"
-        v-model="isCreative"
-        tooltip="Allows the engine to find indirect and figurative associations"
-        >Creative</SwitchButton
-      >
+      <ToggleButtons v-model="searchType" style="width: 16%">
+        <ToggleOption
+          value="semantic"
+          tooltip="Enter the query in natural language"
+        >
+          <v-icon left class="mr-1">mdi-brain</v-icon>
+          Semantic
+        </ToggleOption>
 
-      <SwitchButton
-        icon="mdi-eye-outline"
-        v-model="withInsights"
-        tooltip="Get insights on high potential photos"
-        >Insights</SwitchButton
-      >
+        <ToggleOption value="tags" tooltip="Enter the query by tags">
+          <v-icon left class="mr-1">mdi-brain</v-icon>
+          Tags
+        </ToggleOption>
+        <ToggleOption
+          value="topological"
+          tooltip="Search for specific elements by spatial distribution"
+        >
+          <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
+          Spatial
+        </ToggleOption>
+      </ToggleButtons>
 
-      <v-btn
-        @click="handleSearch"
-        :loading="loading && !loadingIteration"
-        :disabled="!description.length"
-        class="mx-3 toolbar-control"
-      >
-        Search
-      </v-btn>
+      <ToggleButtons v-model="searchMode" style="width: 12%">
+        <ToggleOption
+          value="logical"
+          tooltip="Performs a search with logical criteria and conceptual precision"
+        >
+          <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
+          Logical
+        </ToggleOption>
+
+        <ToggleOption
+          value="creative"
+          tooltip="Allows the engine to find indirect and figurative associations"
+        >
+          <v-icon left class="mr-1">mdi-brain</v-icon>
+          Creative
+        </ToggleOption>
+      </ToggleButtons>
+
+      <div style="width: 15%">
+        <SwitchButton
+          icon="mdi-eye-outline"
+          v-model="withInsights"
+          tooltip="Get insights on high potential photos"
+        >
+          Insights
+        </SwitchButton>
+
+        <v-btn
+          @click="handleSearch"
+          :loading="loading && !loadingIteration"
+          :disabled="!description.length"
+          class="mx-3 toolbar-control"
+        >
+          Search
+        </v-btn>
+      </div>
     </v-toolbar>
 
     <div class="alert-message">
@@ -61,7 +90,6 @@
       :withInsights="withInsights"
       :loadingIteration="loadingIteration"
       :maxPageAttempts="maxPageAttempts"
-      :isCreative="isCreative"
     />
   </div>
 </template>
@@ -70,47 +98,34 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
+import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
+import ToggleOption from "@/components/wrappers/ToggleOption.vue";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
-
 const description = ref("");
 const iteration = ref(1);
-const deepSearch = ref(false);
-const isCreative = ref(false);
+const searchType = ref("semantic");
+const searchMode = ref("logical");
 const withInsights = ref(false);
 const currentMatchPercent = ref(0);
 
 const maxPageAttempts = ref(false);
-
 const iterationsRecord = ref({});
 const loading = ref(false);
 const loadingIteration = ref(false);
 const hasMoreIterations = ref(false);
 const clearQuery = ref(null);
 
-// watch(deepSearch, () => {
-//   if (deepSearch.value) {
-//     isCreative.value = false;
-//     withInsights.value = false;
-//   }
-// });
-
-// watch([isCreative, withInsights], ([creative, insights]) => {
-//   if (creative || insights) {
-//     deepSearch.value = false;
-//   }
-// });
-
 const queryDescription = computed(() => {
-  if (!isCreative.value) {
+  if (searchMode.value === "creative") {
     return {
-      text: "Search the catalogue with natural language and logic precission",
-      example: "People eating on a boat, during a sunny day",
-    };
-  } else {
-    return {
-      text: "Explore your catalogue in a more fexible and conceptual way",
+      text: "Explore your catalogue in a more flexible and figurative way",
       example: "Images that resonate with StarWars universe",
+    };
+  } else if (searchMode.value === "logical") {
+    return {
+      text: "Search the catalogue with natural language and logic precision",
+      example: "People eating on a boat, during a sunny day",
     };
   }
 });
@@ -119,50 +134,49 @@ const photos = computed(() => {
   const iterationKeys = Object.keys(iterationsRecord.value)
     .map(Number)
     .sort((a, b) => a - b);
-
-  const currentIteration = iteration.value;
   const accumulatedPhotos = [];
-
-  for (let i = 0; i < currentIteration; i++) {
+  for (let i = 0; i < iteration.value; i++) {
     const key = iterationKeys[i];
     if (key !== undefined && iterationsRecord.value[key]?.photos) {
       accumulatedPhotos.push(...iterationsRecord.value[key].photos);
     }
   }
-
   return accumulatedPhotos;
 });
 
 function getPageSize() {
-  let rowCount = 4;
-  let unselectedPhotos = photos.value.filter(
+  if (!withInsights.value) return 8;
+  const rowCount = 4;
+  const unselectedPhotos = photos.value.filter(
     (photo) => !photo.isIncluded
   ).length;
-  let module = unselectedPhotos % rowCount;
-  let extraPhotos = module == 0 ? 0 : rowCount - module;
-  return iteration.value == 1 ? 8 : 4 + extraPhotos;
+  const module = unselectedPhotos % rowCount;
+  const extraPhotos = module === 0 ? 0 : rowCount - module;
+  return iteration.value === 1 ? 8 : 4 + extraPhotos;
 }
+
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
-
   try {
-    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/search`, {
-      description: description.value,
-      withInsights: withInsights.value,
-      deepSearch: deepSearch.value,
-      searchType: isCreative.value ? "creative" : "semantic",
-      iteration: iteration.value,
-      pageSize: getPageSize(),
-    });
+    await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search/${searchType.value}`,
+      {
+        description: description.value,
+        options: {
+          withInsights: withInsights.value,
+          searchMode: searchMode.value,
+          iteration: iteration.value,
+          pageSize: getPageSize(),
+        },
+      }
+    );
   } catch (error) {
     console.error("Failed to fetch photos", error);
   } finally {
     loading.value = false;
   }
 }
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function handleSearch() {
   iteration.value = 1;
@@ -184,11 +198,11 @@ watch(
   }
 );
 
-// WebSocket handlers
+// WebSocket handlers...
 onMounted(() => {
   socket.on("matches", (data) => {
-    Object.entries(data.results).forEach(([iteration, richPhotos]) => {
-      iterationsRecord.value[iteration] = {
+    Object.entries(data.results).forEach(([iter, richPhotos]) => {
+      iterationsRecord.value[iter] = {
         photos: richPhotos.map((item) => ({
           ...item.photo,
           matchPercent: item.matchPercent,
@@ -205,18 +219,15 @@ onMounted(() => {
     }
     console.log(data);
   });
-
   socket.on("insights", (data) => {
-    Object.entries(data.results).forEach(([iteration, richPhotos]) => {
-      if (!iterationsRecord.value[iteration]) return;
-
-      iterationsRecord.value[iteration].photos = iterationsRecord.value[
-        iteration
+    Object.entries(data.results).forEach(([iter, richPhotos]) => {
+      if (!iterationsRecord.value[iter]) return;
+      iterationsRecord.value[iter].photos = iterationsRecord.value[
+        iter
       ].photos.map((existingPhoto) => {
         const updatedPhoto = richPhotos.find(
           (item) => item.photo.id === existingPhoto.id
         );
-        console.log(updatedPhoto);
         return updatedPhoto
           ? {
               ...existingPhoto,
@@ -226,15 +237,11 @@ onMounted(() => {
           : existingPhoto;
       });
     });
-
-    console.log(data);
-
     hasMoreIterations.value = data.hasMore;
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
   });
-
-  socket.on("maxPageAttempts", (data) => {
+  socket.on("maxPageAttempts", () => {
     maxPageAttempts.value = true;
   });
 });
@@ -253,11 +260,9 @@ onUnmounted(() => {
   z-index: 10;
   width: 100%;
 }
-
 .toolbar-control {
   font-size: 11px !important;
 }
-
 .alert-message {
   z-index: 1;
   display: flex;

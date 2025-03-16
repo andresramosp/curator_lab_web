@@ -12,13 +12,14 @@
       </v-btn>
     </div>
     <div
-      v-else-if="!isAnalyzing && uploadingPhotos == 0"
+      v-else-if="!photosStore.isAnalyzing && uploadingPhotos == 0"
       class="add-photos-button"
     >
       <v-btn class="sync-button" @click="fetchGoogleAlbums()">
         📁 Add Photos
       </v-btn>
       <v-btn class="sync-button" @click="openFileDialog"> 📁 Local </v-btn>
+      <v-btn class="sync-button" @click="analyze()"> Curate </v-btn>
     </div>
 
     <input
@@ -53,13 +54,13 @@
 
     <div class="alert-message">
       <v-alert
-        v-if="isAnalyzing || uploadingPhotos > 0"
+        v-if="photosStore.isAnalyzing || uploadingPhotos > 0"
         dense
         class="alert-progress"
       >
         <div class="processing-content">
           <v-icon class="processing-icon" size="40">{{
-            isAnalyzing ? "mdi-progress-clock" : "mdi-file"
+            photosStore.isAnalyzing ? "mdi-progress-clock" : "mdi-file"
           }}</v-icon>
           <div class="processing-text">
             <v-progress-linear
@@ -68,7 +69,7 @@
               class="progress-bar"
             ></v-progress-linear>
             {{
-              isAnalyzing
+              photosStore.isAnalyzing
                 ? "We are now processing your photos. This process may take several minutes. You can close the application in the meantime."
                 : "Your photos are being uploaded. Please wait and don't close this window."
             }}
@@ -92,7 +93,6 @@ const googleAccessToken = ref(localStorage.getItem("access_token") || null);
 const googleAlbums = ref([]);
 const showAlbumsDialog = ref(false);
 // Estados de carga
-const isAnalyzing = ref(false);
 const uploadingPhotos = ref(0);
 
 /** 🔹 Abre el selector de archivos */
@@ -169,14 +169,10 @@ async function fetchFiles() {
 
     const photos = response.data.photos.map((photo) => ({
       ...photo,
-      analyzing: !photo.processed,
+      analyzing: photo.needProcess,
     }));
 
     photosStore.setPhotos(photos);
-
-    if (photos.some((photo) => photo.analyzing)) {
-      analyze();
-    }
   } catch (error) {
     console.error("❌ Error fetching photos:", error);
   } finally {
@@ -186,9 +182,10 @@ async function fetchFiles() {
 /** 🔹 Inicia el análisis de fotos */
 async function analyze() {
   try {
-    isAnalyzing.value = true;
+    photosStore.isAnalyzing = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
+      packageId: "topological_upgrade_gpt",
     });
   } catch (error) {
     console.error("❌ Error iniciando análisis:", error);
@@ -296,14 +293,15 @@ onMounted(() => {
 
   socket.on("analysisComplete", (data) => {
     console.log("✔️ Análisis completado. Costo total:", data.cost);
-    isAnalyzing.value = false;
+    photosStore.isAnalyzing = false;
+    fetchFiles();
   });
 
   socket.on("photoProcessed", (data) => {
     console.log("✅ Foto procesada:", data);
     photosStore.updatePhotoStatus(data.id, {
       analyzing: false,
-      processed: data.processed,
+      processed: !data.needProcess,
     });
   });
 });
@@ -341,7 +339,7 @@ onMounted(() => {
   left: 50%;
   transform: translateX(-50%);
   position: absolute;
-  bottom: 10px;
+  bottom: 90px;
   flex-direction: row;
 }
 

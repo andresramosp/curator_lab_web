@@ -51,7 +51,7 @@ export default {
 };
 </script>
 <style scoped>
-.toolbar-control {
+/* .toolbar-control {
   font-size: 11px !important;
-}
+} */
 </style>
