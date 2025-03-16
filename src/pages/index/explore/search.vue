@@ -3,7 +3,7 @@
     <v-toolbar :elevation="8" class="sticky-toolbar d-flex">
       <!-- Área de input (condicional) -->
       <div style="width: 55%">
-        <template v-if="searchType !== 'tags'">
+        <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
             :label="queryDescription.text"
@@ -13,7 +13,7 @@
             class="mx-3"
           ></v-text-field>
         </template>
-        <template v-else>
+        <template v-else-if="searchType == 'tags'">
           <div class="d-flex" style="width: 100%">
             <v-combobox
               v-model="includedTags"
@@ -39,6 +39,50 @@
               @update:search="onSearchInputExcluded"
               class="mx-2"
             />
+          </div>
+        </template>
+        <template v-else>
+          <div class="d-flex">
+            <v-text-field
+              v-model="topologicalAreas.left"
+              :label="'Left half'"
+              :placeholder="'A red dragon'"
+              outlined
+              class="mx-1"
+              persistent-placeholder
+            ></v-text-field>
+            <v-text-field
+              v-model="topologicalAreas.right"
+              :label="'Right half'"
+              :placeholder="'A little mouse'"
+              outlined
+              class="mx-1"
+              persistent-placeholder
+            ></v-text-field>
+            <v-text-field
+              v-model="topologicalAreas.middle"
+              :label="'Middle area'"
+              :placeholder="'Something funny'"
+              outlined
+              class="mx-1"
+              persistent-placeholder
+            ></v-text-field>
+            <v-text-field
+              v-model="topologicalAreas.upper"
+              :label="'Upper half'"
+              :placeholder="'Fantasy clouds'"
+              outlined
+              class="mx-1"
+              persistent-placeholder
+            ></v-text-field>
+            <v-text-field
+              v-model="topologicalAreas.bottom"
+              :label="'Bottom half'"
+              :placeholder="'A persian carpet'"
+              outlined
+              class="mx-1"
+              persistent-placeholder
+            ></v-text-field>
           </div>
         </template>
       </div>
@@ -92,11 +136,7 @@
       <v-btn
         @click="handleSearch"
         :loading="loading && !loadingIteration"
-        :disabled="
-          searchType !== 'tags'
-            ? !description.length
-            : !includedTags.length && !excludedTags.length
-        "
+        :disabled="searchDisabled"
         class="mx-3 toolbar-control"
       >
         Search
@@ -127,7 +167,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, reactive } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
 import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
@@ -141,9 +181,6 @@ const socket = io(import.meta.env.VITE_API_WS_URL);
 const searchType = ref("semantic");
 const searchMode = ref("logical");
 const withInsights = ref(false);
-const description = ref("");
-
-// Variables comunes
 const iteration = ref(1);
 const iterationsRecord = ref({});
 const loading = ref(false);
@@ -152,6 +189,30 @@ const hasMoreIterations = ref(false);
 const maxPageAttempts = ref(false);
 const clearQuery = ref(null);
 const currentMatchPercent = ref(0);
+
+// Semantic
+const description = ref("");
+
+// Topological
+const topologicalAreas = reactive({
+  left: "",
+  right: "",
+  upper: "",
+  bottom: "",
+  middle: "",
+});
+
+// Lógica específica para tags (composable)
+const {
+  includedTags,
+  excludedTags,
+  includedTagSuggestions,
+  excludedTagSuggestions,
+  searchInputIncluded,
+  searchInputExcluded,
+  onSearchInputIncluded,
+  onSearchInputExcluded,
+} = useSearchTags();
 
 const queryDescription = computed(() => {
   return searchMode.value === "creative"
@@ -179,6 +240,24 @@ const photos = computed(() => {
   return result;
 });
 
+const searchDisabled = computed(() => {
+  if (searchType.value == "tags") {
+    return !includedTags.value.length && !excludedTags.value.length;
+  }
+  if (searchType.value == "semantic") {
+    return !description.value.length;
+  }
+  if (searchType.value == "topological") {
+    return (
+      !topologicalAreas.left.length &&
+      !topologicalAreas.right.length &&
+      !topologicalAreas.upper.length &&
+      !topologicalAreas.bottom.length &&
+      !topologicalAreas.middle.length
+    );
+  }
+});
+
 function getPageSize() {
   if (!withInsights.value) return 8;
   const rowCount = 4;
@@ -193,23 +272,27 @@ async function searchPhotos() {
   maxPageAttempts.value = false;
   try {
     let payload;
+    let options = {
+      withInsights: withInsights.value,
+      searchMode: searchMode.value,
+      iteration: iteration.value,
+      pageSize: getPageSize(),
+    };
     if (searchType.value === "tags") {
       payload = {
         included: includedTags.value,
         excluded: excludedTags.value,
-        iteration: iteration.value,
-        pageSize: 8,
-        searchMode: searchMode.value,
+        options,
+      };
+    } else if (searchType.value == "topological") {
+      payload = {
+        ...topologicalAreas,
+        options,
       };
     } else {
       payload = {
         description: description.value,
-        options: {
-          withInsights: withInsights.value,
-          searchMode: searchMode.value,
-          iteration: iteration.value,
-          pageSize: getPageSize(),
-        },
+        options,
       };
     }
     await axios.post(
@@ -235,18 +318,6 @@ async function nextIteration() {
   await searchPhotos();
   loadingIteration.value = false;
 }
-
-// Lógica específica para tags (composable)
-const {
-  includedTags,
-  excludedTags,
-  includedTagSuggestions,
-  excludedTagSuggestions,
-  searchInputIncluded,
-  searchInputExcluded,
-  onSearchInputIncluded,
-  onSearchInputExcluded,
-} = useSearchTags();
 
 // WebSocket handlers
 onMounted(() => {
