@@ -57,7 +57,7 @@
                           ),
                         }"
                       >
-                        {{ `${tag.name} | ${tag.group}` }}
+                        {{ `${tag.name} ${tag.area ? "| " + tag.area : ""}` }}
                       </v-chip>
                     </v-sheet>
                   </v-expansion-panel-text>
@@ -134,11 +134,21 @@ const isMatchingNegativeTag = (tagName) => {
 const highlightedDescriptions = computed(() => {
   const descriptionsObj = props.selectedPhoto.descriptions || {};
   const result = {};
+
   Object.keys(descriptionsObj).forEach((key) => {
     let text = descriptionsObj[key];
+
+    if (typeof text === "object" && text !== null) {
+      text = Object.entries(text)
+        .filter(([_, value]) => value)
+        .map(([area, value]) => `${area.toUpperCase()}: ${value}`)
+        .join("\n\n");
+    }
+
     if (!text) {
       result[key] = "No description available";
     } else {
+      // Aplicamos el resaltado en cada línea
       props.selectedPhoto.matchingChunks?.forEach((item) => {
         const regex = new RegExp(item.chunk, "gi");
         text = text.replace(
@@ -150,9 +160,11 @@ const highlightedDescriptions = computed(() => {
             : `<span class="highlight-chunk-negative">${item.chunk}</span>`
         );
       });
+
       result[key] = text;
     }
   });
+
   return result;
 });
 

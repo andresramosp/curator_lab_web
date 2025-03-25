@@ -11,7 +11,7 @@
       @switch-selected="switchSelected"
       @next-iteration="$emit('next-iteration')"
     />
-    <SelectionGrid
+    <!-- <SelectionGrid
       v-if="showSelectionPanel"
       style="width: 32%; height: 81vh; overflow-y: auto"
       :photos="photos"
@@ -21,7 +21,7 @@
       @view-info="viewPhotoInfo"
       @switch-selected="switchSelected"
       @next-iteration="$emit('next-iteration')"
-    />
+    /> -->
   </div>
   <div v-else class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
@@ -49,7 +49,7 @@ const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
 
 const showSelectionPanel = computed(
-  () => true // props.photos.filter((photo) => photo.isIncluded).length > 0
+  () => false // props.photos.filter((photo) => photo.isIncluded).length > 0
 );
 
 function viewPhotoInfo(photo) {

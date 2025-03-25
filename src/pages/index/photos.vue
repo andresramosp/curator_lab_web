@@ -185,7 +185,9 @@ async function analyze() {
     photosStore.isAnalyzing = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
-      packageId: "topological_upgrade_gpt",
+      packageId: "topological_upgrade",
+      mode: "adding",
+      // processId: 93,
     });
   } catch (error) {
     console.error("❌ Error iniciando análisis:", error);

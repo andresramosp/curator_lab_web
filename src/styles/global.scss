@@ -13,20 +13,20 @@
 }
 
 .photo-card-match {
-  width: 24%;
-  height: 255px;
+  width: 16%;
+  height: 290px;
   position: relative;
   overflow: hidden;
   background-color: rgb(var(--v-theme-surface-light)) !important;
 }
 
-.photo-card-selected {
-  width: 31%;
-  height: 145px;
-  position: relative;
-  overflow: hidden;
-  background-color: rgb(var(--v-theme-surface-light)) !important;
-}
+// .photo-card-selected {
+//   width: 31%;
+//   height: 145px;
+//   position: relative;
+//   overflow: hidden;
+//   background-color: rgb(var(--v-theme-surface-light)) !important;
+// }
 
 .photo-card-upload {
   width: 15%;
@@ -112,9 +112,7 @@
 .photos-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  // justify-content: center;
-  margin-top: 15px;
+  gap: 12px;
 }
 
 .photo-buttons {

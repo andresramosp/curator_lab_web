@@ -7,6 +7,7 @@
 // Plugins
 import { registerPlugins } from "@/plugins";
 import { createPinia } from "pinia";
+import VueKonva from "vue-konva";
 import "@/styles/global.scss";
 
 // Components
@@ -21,5 +22,5 @@ registerPlugins(app);
 
 const pinia = createPinia();
 app.use(pinia);
-
+app.use(VueKonva);
 app.mount("#app");

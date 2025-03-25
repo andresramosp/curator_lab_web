@@ -50,15 +50,17 @@
               outlined
               class="mx-1"
               persistent-placeholder
-            ></v-text-field>
-            <v-text-field
-              v-model="topologicalAreas.right"
-              :label="'Right half'"
-              :placeholder="'A little mouse'"
-              outlined
-              class="mx-1"
-              persistent-placeholder
-            ></v-text-field>
+            >
+              <template #append-inner v-if="topologicalAreas.left">
+                <v-icon
+                  size="18"
+                  @click="topologicalAreas.left = ''"
+                  style="cursor: pointer"
+                >
+                  mdi-close
+                </v-icon>
+              </template>
+            </v-text-field>
             <v-text-field
               v-model="topologicalAreas.middle"
               :label="'Middle area'"
@@ -66,23 +68,35 @@
               outlined
               class="mx-1"
               persistent-placeholder
-            ></v-text-field>
+            >
+              <template #append-inner v-if="topologicalAreas.middle">
+                <v-icon
+                  size="18"
+                  @click="topologicalAreas.middle = ''"
+                  style="cursor: pointer"
+                >
+                  mdi-close
+                </v-icon>
+              </template></v-text-field
+            >
             <v-text-field
-              v-model="topologicalAreas.upper"
-              :label="'Upper half'"
-              :placeholder="'Fantasy clouds'"
+              v-model="topologicalAreas.right"
+              :label="'Right half'"
+              :placeholder="'A little mouse'"
               outlined
               class="mx-1"
               persistent-placeholder
-            ></v-text-field>
-            <v-text-field
-              v-model="topologicalAreas.bottom"
-              :label="'Bottom half'"
-              :placeholder="'A persian carpet'"
-              outlined
-              class="mx-1"
-              persistent-placeholder
-            ></v-text-field>
+            >
+              <template #append-inner v-if="topologicalAreas.right">
+                <v-icon
+                  size="18"
+                  @click="topologicalAreas.right = ''"
+                  style="cursor: pointer"
+                >
+                  mdi-close
+                </v-icon>
+              </template></v-text-field
+            >
           </div>
         </template>
       </div>
@@ -114,14 +128,14 @@
           tooltip="Performs a search with logical criteria and conceptual precision"
         >
           <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
-          Logical
+          Strict
         </ToggleOption>
         <ToggleOption
           value="creative"
           tooltip="Allows the engine to find indirect and figurative associations"
         >
           <v-icon left class="mr-1">mdi-brain</v-icon>
-          Creative
+          Flexible
         </ToggleOption>
       </ToggleButtons>
 
@@ -197,8 +211,6 @@ const description = ref("");
 const topologicalAreas = reactive({
   left: "",
   right: "",
-  upper: "",
-  bottom: "",
   middle: "",
 });
 
@@ -251,15 +263,13 @@ const searchDisabled = computed(() => {
     return (
       !topologicalAreas.left.length &&
       !topologicalAreas.right.length &&
-      !topologicalAreas.upper.length &&
-      !topologicalAreas.bottom.length &&
       !topologicalAreas.middle.length
     );
   }
 });
 
 function getPageSize() {
-  if (!withInsights.value) return 8;
+  if (!withInsights.value) return 12;
   const rowCount = 4;
   const unselected = photos.value.filter((photo) => !photo.isIncluded).length;
   const remainder = unselected % rowCount;

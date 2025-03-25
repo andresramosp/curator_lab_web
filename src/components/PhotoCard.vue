@@ -177,5 +177,6 @@ const starCount = computed(() => {
   align-items: center; /* Centrado vertical */
   justify-content: center; /* Opcional, para centrar horizontalmente */
   height: 100%;
+  padding: 5px;
 }
 </style>
