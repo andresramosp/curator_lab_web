@@ -27,8 +27,9 @@
           v-for="photo in photos"
           :key="photo.id"
           :config="{ x: photo.config.x, y: photo.config.y, draggable: true }"
-          @dragstart="handleDragStart"
+          @dragstart="handleDragStart(photo, $event)"
           @dragend="handleDragEnd(photo, $event)"
+          @dragmove="handleDragMove(photo, $event)"
           @click="handleSelectPhoto(photo, $event)"
           @mouseover="handleMouseOver(photo)"
           @mouseout="handleMouseOut(photo)"
@@ -216,14 +217,42 @@ const handleAddPhoto = (photo, event) => {
   photos.value.push(newPhoto);
 };
 
-const handleDragStart = (e) => {
+let dragGroupStart = {};
+
+const handleDragStart = (photo, e) => {
   e.cancelBubble = true;
+  if (photo.selected) {
+    dragGroupStart = {};
+    photos.value.forEach((p) => {
+      if (p.selected) {
+        dragGroupStart[p.id] = { x: p.config.x, y: p.config.y };
+      }
+    });
+  } else {
+    dragGroupStart = { [photo.id]: { x: photo.config.x, y: photo.config.y } };
+  }
 };
 
-const handleDragEnd = (photo, e) => {
-  photo.config.x = e.target.x();
-  photo.config.y = e.target.y();
+const handleDragMove = (photo, e) => {
+  const newX = e.target.x();
+  const newY = e.target.y();
+  const origin = dragGroupStart[photo.id];
+  const deltaX = newX - origin.x;
+  const deltaY = newY - origin.y;
+  if (photo.selected) {
+    photos.value.forEach((p) => {
+      if (p.selected && dragGroupStart[p.id]) {
+        p.config.x = dragGroupStart[p.id].x + deltaX;
+        p.config.y = dragGroupStart[p.id].y + deltaY;
+      }
+    });
+  } else {
+    photo.config.x = newX;
+    photo.config.y = newY;
+  }
 };
+
+const handleDragEnd = (photo, e) => {};
 
 const handleMouseOver = (photo) => {
   photo.showButton = true;
