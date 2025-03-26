@@ -26,7 +26,12 @@
         <v-group
           v-for="photo in photos"
           :key="photo.id"
-          :config="{ x: photo.config.x, y: photo.config.y, draggable: true }"
+          :config="{
+            x: photo.config.x,
+            y: photo.config.y,
+            draggable: true,
+            zIndex: photo.config.zIndex,
+          }"
           @dragstart="handleDragStart(photo, $event)"
           @dragend="handleDragEnd(photo, $event)"
           @dragmove="handleDragMove(photo, $event)"
@@ -86,13 +91,23 @@ const stageConfig = reactive({
   draggable: true,
 });
 
+// Variable para llevar el control del z-index actual
+let currentZIndex = 1;
+
 const photos = ref([
   {
     id: 103,
     src: `${
       import.meta.env.VITE_API_BASE_URL
     }/uploads/photos/1742647923741-1740648473927-DSC09839.jpg`,
-    config: { x: 150, y: 150, width: 150, height: 100, opacity: 1 },
+    config: {
+      x: 150,
+      y: 150,
+      width: 150,
+      height: 100,
+      opacity: 1,
+      zIndex: currentZIndex,
+    },
     image: null,
     selected: false,
     showButton: false,
@@ -106,13 +121,6 @@ const setPhotoRef = (id) => (el) => {
     photoRefs.value[id] = el;
   }
 };
-
-const imageNames = [
-  "1742648875207-DSC02238.jpg",
-  "1742648875384-DSC02277.jpg",
-  "1742648877582-DSC08287-2.jpg",
-  "1742648879121-DSC09856.jpg",
-];
 
 const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
@@ -139,7 +147,6 @@ const handleSelectPhoto = (photo, event) => {
   }
 };
 
-// Actualización: se usa axios para obtener fotos del backend
 const handleAddPhoto = async (photo, event) => {
   event.cancelBubble = true;
   const offsetX = 75;
@@ -156,10 +163,11 @@ const handleAddPhoto = async (photo, event) => {
       `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
       {
         photoIds: selectedPhotoIds,
+        currentPhotosIds: photos.value.map((p) => p.id),
         criteria: "semantic",
         opposite: false,
         tagsIds: null,
-        descriptionCategory: "context",
+        descriptionCategory: "story",
         iteration: 1,
         pageSize: 1,
         withInsights: false,
@@ -175,6 +183,7 @@ const handleAddPhoto = async (photo, event) => {
       const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
         backendPhoto.name
       }`;
+      currentZIndex++; // Incrementa el z-index para la nueva foto
       const newPhoto = reactive({
         id: backendPhoto.id,
         src,
