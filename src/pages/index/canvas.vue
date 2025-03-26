@@ -72,6 +72,7 @@ import { ref, reactive, onMounted } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
+import axios from "axios";
 import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
 
 const stageRef = ref(null);
@@ -84,21 +85,11 @@ const stageConfig = reactive({
 
 const photos = ref([
   {
-    id: 1,
+    id: 103,
     src: `${
       import.meta.env.VITE_API_BASE_URL
     }/uploads/photos/1742647923741-1740648473927-DSC09839.jpg`,
-    config: { x: 50, y: 50, width: 150, height: 100 },
-    image: null,
-    selected: false,
-    showButton: false,
-  },
-  {
-    id: 2,
-    src: `${
-      import.meta.env.VITE_API_BASE_URL
-    }/uploads/photos/1742647923492-1740648472828-DSC07285.jpg`,
-    config: { x: 250, y: 100, width: 150, height: 100 },
+    config: { x: 150, y: 150, width: 150, height: 100 },
     image: null,
     selected: false,
     showButton: false,
@@ -137,30 +128,61 @@ const handleSelectPhoto = (photo, event) => {
   }
 };
 
-const handleAddPhoto = (photo, event) => {
+// Actualización: se usa axios para obtener fotos del backend
+const handleAddPhoto = async (photo, event) => {
   event.cancelBubble = true;
   const offsetX = 75;
   const offsetY = 50;
-  const randomName = imageNames[Math.floor(Math.random() * imageNames.length)];
-  const src = `${
-    import.meta.env.VITE_API_BASE_URL
-  }/uploads/photos/${randomName}`;
-  const newPhoto = reactive({
-    id: Date.now(),
-    src,
-    config: {
-      x: photo.config.x + offsetX,
-      y: photo.config.y + offsetY,
-      width: 150,
-      height: 100,
-    },
-    image: null,
-    selected: false,
-    showButton: false,
-  });
-  const [image] = useImage(newPhoto.src);
-  newPhoto.image = image;
-  photos.value.push(newPhoto);
+
+  // Se obtienen los IDs de las fotos seleccionadas en ese momento
+  const selectedPhotoIds = photos.value
+    .filter((p) => p.selected)
+    .map((p) => p.id);
+  if (!selectedPhotoIds.length) selectedPhotoIds.push(photo.id);
+
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
+      {
+        photoIds: selectedPhotoIds,
+        criteria: "semantic",
+        opposite: false,
+        tagsIds: null,
+        descriptionCategory: "context",
+        iteration: 1,
+        pageSize: 1,
+        withInsights: false,
+      }
+    );
+
+    // Se asume que response.data devuelve un objeto o un array de objetos Photo
+    const backendPhotos = Array.isArray(response.data)
+      ? response.data
+      : [response.data];
+    backendPhotos.forEach((backendPhoto, index) => {
+      const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
+        backendPhoto.name
+      }`;
+      const newPhoto = reactive({
+        id: backendPhoto.id,
+        src,
+        config: {
+          x: photo.config.x + offsetX,
+          y: photo.config.y + offsetY,
+          width: 150,
+          height: 100,
+        },
+        image: null,
+        selected: false,
+        showButton: false,
+      });
+      const [image] = useImage(newPhoto.src);
+      newPhoto.image = image;
+      photos.value.push(newPhoto);
+    });
+  } catch (error) {
+    console.error("Error al añadir foto:", error);
+  }
 };
 
 const handleDeletePhoto = (photo, event) => {
@@ -282,6 +304,7 @@ const handleWheel = (e) => {
   stage.batchDraw();
 };
 </script>
+
 <style scoped>
 .canvas-container {
   position: fixed;
