@@ -1,5 +1,16 @@
 <template>
   <div class="canvas-container">
+    <!-- Toolbar vertical a la derecha -->
+    <div right permanent width="80" class="toolbar">
+      <v-list dense>
+        <v-list-item>
+          <v-btn icon @click="mode = mode == 'move' ? 'select' : 'move'">
+            <v-icon v-if="mode == 'move'" size="30">mdi-dots-square</v-icon>
+            <v-icon v-else size="30">mdi-pan</v-icon>
+          </v-btn>
+        </v-list-item>
+      </v-list>
+    </div>
     <v-stage
       :config="stageConfig"
       ref="stageRef"
@@ -7,7 +18,6 @@
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
       @mouseup="handleMouseUp"
-      style="border: 1px solid #ccc"
     >
       <v-layer>
         <!-- Rectángulo de selección -->
@@ -76,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from "vue";
+import { ref, reactive, onMounted, nextTick, watch } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
@@ -85,10 +95,10 @@ import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
 
 const stageRef = ref(null);
 const stageConfig = reactive({
-  width: window.innerWidth,
+  width: window.innerWidth, // descontando el ancho de la toolbar
   height: window.innerHeight,
-  scale: { x: 1, y: 1 },
-  draggable: true,
+  scale: { x: 1.5, y: 1.5 },
+  draggable: false, // por defecto, en modo "select" no se permite mover el canvas
 });
 
 // Variable para llevar el control del z-index actual
@@ -102,7 +112,7 @@ const photos = ref([
     }/uploads/photos/1742647923741-1740648473927-DSC09839.jpg`,
     config: {
       x: 150,
-      y: 150,
+      y: 100,
       width: 150,
       height: 100,
       opacity: 1,
@@ -125,6 +135,12 @@ const setPhotoRef = (id) => (el) => {
 const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
 
+// Modo de interacción: "select" o "move"
+const mode = ref("select");
+watch(mode, (newVal) => {
+  stageConfig.draggable = newVal === "move";
+});
+
 onMounted(() => {
   photos.value.forEach((photo) => {
     const [image] = useImage(photo.src);
@@ -142,7 +158,7 @@ const selectionRect = reactive({
 });
 
 const handleSelectPhoto = (photo, event) => {
-  if (!selectionRect.visible) {
+  if (mode.value === "select" && !selectionRect.visible) {
     photo.selected = !photo.selected;
   }
 };
@@ -174,7 +190,6 @@ const handleAddPhoto = async (photo, event) => {
       }
     );
 
-    // Se asume que response.data devuelve un objeto o un array de objetos Photo
     const backendPhotos = Array.isArray(response.data)
       ? response.data
       : [response.data];
@@ -183,7 +198,7 @@ const handleAddPhoto = async (photo, event) => {
       const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
         backendPhoto.name
       }`;
-      currentZIndex++; // Incrementa el z-index para la nueva foto
+      currentZIndex++;
       const newPhoto = reactive({
         id: backendPhoto.id,
         src,
@@ -220,7 +235,12 @@ const handleAddPhoto = async (photo, event) => {
 
 const handleDeletePhoto = (photo, event) => {
   event.cancelBubble = true;
-  photos.value = photos.value.filter((p) => p.id !== photo.id);
+  // Si la foto está seleccionada (en grupo) se eliminan todas las seleccionadas
+  if (photo.selected) {
+    photos.value = photos.value.filter((p) => !p.selected);
+  } else {
+    photos.value = photos.value.filter((p) => p.id !== photo.id);
+  }
 };
 
 let dragGroupStart = {};
@@ -259,6 +279,7 @@ const handleDragMove = (photo, e) => {
 };
 
 const handleMouseDown = (e) => {
+  if (mode.value !== "select") return;
   const stage = stageRef.value.getStage();
   if (e.target === stage) {
     const pointer = stage.getPointerPosition();
@@ -275,7 +296,7 @@ const handleMouseDown = (e) => {
 };
 
 const handleMouseMove = (e) => {
-  if (!selectionRect.visible) return;
+  if (mode.value !== "select" || !selectionRect.visible) return;
   const stage = stageRef.value.getStage();
   const pointer = stage.getPointerPosition();
   const transform = stage.getAbsoluteTransform().copy();
@@ -286,7 +307,7 @@ const handleMouseMove = (e) => {
 };
 
 const handleMouseUp = () => {
-  if (!selectionRect.visible) return;
+  if (mode.value !== "select" || !selectionRect.visible) return;
   const rect = {
     x: Math.min(selectionStart.x, selectionStart.x + selectionRect.width),
     y: Math.min(selectionStart.y, selectionStart.y + selectionRect.height),
@@ -304,7 +325,7 @@ const handleMouseUp = () => {
     photo.selected = Konva.Util.haveIntersection(photoRect, rect);
   });
   selectionRect.visible = false;
-  stageConfig.draggable = true;
+  stageConfig.draggable = mode.value === "move";
 };
 
 const handleDragEnd = (photo, e) => {};
@@ -353,5 +374,11 @@ const handleWheel = (e) => {
   display: block;
   outline: none;
   border: none !important;
+}
+.toolbar {
+  position: absolute;
+  top: 75px;
+  right: 10px;
+  z-index: 100;
 }
 </style>
