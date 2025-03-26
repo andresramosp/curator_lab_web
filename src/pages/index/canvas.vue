@@ -4,8 +4,8 @@
     <div right permanent width="80" class="toolbar">
       <v-list dense>
         <v-list-item>
-          <v-btn icon @click="mode = mode == 'move' ? 'select' : 'move'">
-            <v-icon v-if="mode == 'move'" size="30">mdi-dots-square</v-icon>
+          <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
+            <v-icon v-if="mode === 'move'" size="30">mdi-dots-square</v-icon>
             <v-icon v-else size="30">mdi-pan</v-icon>
           </v-btn>
         </v-list-item>
@@ -36,11 +36,14 @@
         <v-group
           v-for="photo in photos"
           :key="photo.id"
+          :ref="setPhotoRef(photo.id)"
           :config="{
             x: photo.config.x,
             y: photo.config.y,
             draggable: true,
             zIndex: photo.config.zIndex,
+            opacity:
+              photo.config.opacity !== undefined ? photo.config.opacity : 1,
           }"
           @dragstart="handleDragStart(photo, $event)"
           @dragend="handleDragEnd(photo, $event)"
@@ -50,15 +53,12 @@
           @mouseout="handleMouseOut(photo)"
         >
           <v-image
-            :ref="setPhotoRef(photo.id)"
             :config="{
               x: 0,
               y: 0,
               width: photo.config.width,
               height: photo.config.height,
               image: photo.image,
-              opacity:
-                photo.config.opacity !== undefined ? photo.config.opacity : 1,
               stroke: photo.selected ? secondaryColor : undefined,
               strokeWidth: photo.selected ? 4 : 0,
             }"
@@ -95,13 +95,12 @@ import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
 
 const stageRef = ref(null);
 const stageConfig = reactive({
-  width: window.innerWidth, // descontando el ancho de la toolbar
+  width: window.innerWidth,
   height: window.innerHeight,
   scale: { x: 1.5, y: 1.5 },
-  draggable: false, // por defecto, en modo "select" no se permite mover el canvas
+  draggable: false,
 });
 
-// Variable para llevar el control del z-index actual
 let currentZIndex = 1;
 
 const photos = ref([
@@ -124,7 +123,7 @@ const photos = ref([
   },
 ]);
 
-// Referencias dinámicas para cada v-image
+// Referencias para cada v-group
 const photoRefs = ref({});
 const setPhotoRef = (id) => (el) => {
   if (el) {
@@ -135,7 +134,6 @@ const setPhotoRef = (id) => (el) => {
 const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
 
-// Modo de interacción: "select" o "move"
 const mode = ref("select");
 watch(mode, (newVal) => {
   stageConfig.draggable = newVal === "move";
@@ -168,7 +166,7 @@ const handleAddPhoto = async (photo, event) => {
   const offsetX = 75;
   const offsetY = 50;
 
-  // Se obtienen los IDs de las fotos seleccionadas en ese momento
+  // IDs de las fotos seleccionadas o la foto actual
   const selectedPhotoIds = photos.value
     .filter((p) => p.selected)
     .map((p) => p.id);
@@ -193,7 +191,8 @@ const handleAddPhoto = async (photo, event) => {
     const backendPhotos = Array.isArray(response.data)
       ? response.data
       : [response.data];
-    const newPhotoIds = [];
+
+    const newPhotosInfo = [];
     backendPhotos.forEach((backendPhoto, index) => {
       const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
         backendPhoto.name
@@ -203,11 +202,13 @@ const handleAddPhoto = async (photo, event) => {
         id: backendPhoto.id,
         src,
         config: {
-          x: photo.config.x + offsetX * (index + 1),
-          y: photo.config.y + offsetY * (index + 1),
+          // Inicia en la posición de la carta principal con opacidad 0
+          x: photo.config.x,
+          y: photo.config.y,
           width: 150,
           height: 100,
           opacity: 0,
+          zIndex: currentZIndex,
         },
         image: null,
         selected: false,
@@ -216,14 +217,19 @@ const handleAddPhoto = async (photo, event) => {
       const [image] = useImage(newPhoto.src);
       newPhoto.image = image;
       photos.value.push(newPhoto);
-      newPhotoIds.push(newPhoto.id);
+      newPhotosInfo.push({ id: newPhoto.id, index });
     });
+
     nextTick(() => {
-      newPhotoIds.forEach((id) => {
-        const imageNode = photoRefs.value[id].getNode();
+      newPhotosInfo.forEach(({ id, index }) => {
+        const groupNode = photoRefs.value[id].getNode();
+        const targetX = photo.config.x + offsetX * (index + 1);
+        const targetY = photo.config.y + offsetY * (index + 1);
         new Konva.Tween({
-          node: imageNode,
+          node: groupNode,
           duration: 0.5,
+          x: targetX,
+          y: targetY,
           opacity: 1,
         }).play();
       });
@@ -235,7 +241,6 @@ const handleAddPhoto = async (photo, event) => {
 
 const handleDeletePhoto = (photo, event) => {
   event.cancelBubble = true;
-  // Si la foto está seleccionada (en grupo) se eliminan todas las seleccionadas
   if (photo.selected) {
     photos.value = photos.value.filter((p) => !p.selected);
   } else {
