@@ -4,9 +4,25 @@
       :config="stageConfig"
       ref="stageRef"
       @wheel="handleWheel"
+      @mousedown="handleMouseDown"
+      @mousemove="handleMouseMove"
+      @mouseup="handleMouseUp"
       style="border: 1px solid #ccc"
     >
       <v-layer>
+        <!-- Rectángulo de selección -->
+        <v-rect
+          v-if="selectionRect.visible"
+          :config="{
+            x: selectionRect.x,
+            y: selectionRect.y,
+            width: selectionRect.width,
+            height: selectionRect.height,
+            stroke: secondaryColor,
+            dash: [4, 4],
+          }"
+        />
+        <!-- Fotos -->
         <v-group
           v-for="photo in photos"
           :key="photo.id"
@@ -24,8 +40,8 @@
               width: photo.config.width,
               height: photo.config.height,
               image: photo.image,
-              stroke: photo.selected ? '#02FFA1' : undefined,
-              strokeWidth: photo.selected ? 3 : 0,
+              stroke: photo.selected ? secondaryColor : undefined,
+              strokeWidth: photo.selected ? 4 : 0,
             }"
           />
           <template v-if="photo.showButton">
@@ -63,6 +79,8 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useImage } from "vue-konva";
+import Konva from "konva";
+import { useTheme } from "vuetify";
 
 const stageRef = ref(null);
 const stageConfig = reactive({
@@ -102,6 +120,9 @@ const imageNames = [
   "1742648879121-DSC09856.jpg",
 ];
 
+const theme = useTheme();
+const secondaryColor = theme.current.value.colors.secondary;
+
 onMounted(() => {
   photos.value.forEach((photo) => {
     const [image] = useImage(photo.src);
@@ -109,13 +130,67 @@ onMounted(() => {
   });
 });
 
+let selectionStart = null;
+const selectionRect = reactive({
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+  visible: false,
+});
+
+const handleMouseDown = (e) => {
+  // Si se hace clic en el fondo (stage), iniciamos la selección
+  if (e.target === stageRef.value.getStage()) {
+    selectionStart = stageRef.value.getStage().getPointerPosition();
+    selectionRect.x = selectionStart.x;
+    selectionRect.y = selectionStart.y;
+    selectionRect.width = 0;
+    selectionRect.height = 0;
+    selectionRect.visible = true;
+    stageConfig.draggable = false;
+  }
+};
+
+const handleMouseMove = (e) => {
+  if (!selectionRect.visible) return;
+  const pos = stageRef.value.getStage().getPointerPosition();
+  selectionRect.width = pos.x - selectionStart.x;
+  selectionRect.height = pos.y - selectionStart.y;
+};
+
+const handleMouseUp = () => {
+  if (!selectionRect.visible) return;
+  // Normalizamos el rectángulo
+  const rect = {
+    x: Math.min(selectionStart.x, selectionStart.x + selectionRect.width),
+    y: Math.min(selectionStart.y, selectionStart.y + selectionRect.height),
+    width: Math.abs(selectionRect.width),
+    height: Math.abs(selectionRect.height),
+  };
+
+  // Selecciona las fotos que intersectan con el rectángulo
+  photos.value.forEach((photo) => {
+    const photoRect = {
+      x: photo.config.x,
+      y: photo.config.y,
+      width: photo.config.width,
+      height: photo.config.height,
+    };
+    photo.selected = Konva.Util.haveIntersection(photoRect, rect);
+  });
+  selectionRect.visible = false;
+  stageConfig.draggable = true;
+};
+
 const handleSelectPhoto = (photo, event) => {
-  // Selecciona o deselecciona la foto al hacer clic fuera del botón
-  photo.selected = !photo.selected;
+  // Si no se está dibujando el rectángulo, se alterna la selección con clic
+  if (!selectionRect.visible) {
+    photo.selected = !photo.selected;
+  }
 };
 
 const handleAddPhoto = (photo, event) => {
-  // Evita que el clic se propague al grupo y active la selección
   event.cancelBubble = true;
   const offsetX = 75;
   const offsetY = 50;
@@ -190,7 +265,6 @@ const handleWheel = (e) => {
   padding: 0;
   overflow: hidden;
 }
-
 .v-stage {
   display: block;
   outline: none;
