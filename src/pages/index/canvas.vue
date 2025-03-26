@@ -46,29 +46,19 @@
             }"
           />
           <template v-if="photo.showButton">
-            <v-rect
-              :config="{
-                x: photo.config.width - 35,
-                y: 5,
-                width: 30,
-                height: 20,
-                fill: 'lightgrey',
-                cornerRadius: 5,
-              }"
-              @click="handleAddPhoto(photo, $event)"
+            <PhotoCanvasButton
+              :photo="photo"
+              type="delete"
+              fill="red"
+              icon="X"
+              :onClick="handleDeletePhoto"
             />
-            <v-text
-              :config="{
-                x: photo.config.width - 35,
-                y: 5,
-                width: 30,
-                height: 20,
-                text: '+',
-                fontSize: 16,
-                align: 'center',
-                verticalAlign: 'middle',
-              }"
-              @click="handleAddPhoto(photo, $event)"
+            <PhotoCanvasButton
+              :photo="photo"
+              type="add"
+              :fill="secondaryColor"
+              icon="+"
+              :onClick="handleAddPhoto"
             />
           </template>
         </v-group>
@@ -82,6 +72,7 @@ import { ref, reactive, onMounted } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
+import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
 
 const stageRef = ref(null);
 const stageConfig = reactive({
@@ -141,7 +132,6 @@ const selectionRect = reactive({
 });
 
 const handleMouseDown = (e) => {
-  // Si se hace clic en el fondo (stage), iniciamos la selección
   if (e.target === stageRef.value.getStage()) {
     selectionStart = stageRef.value.getStage().getPointerPosition();
     selectionRect.x = selectionStart.x;
@@ -162,7 +152,6 @@ const handleMouseMove = (e) => {
 
 const handleMouseUp = () => {
   if (!selectionRect.visible) return;
-  // Normalizamos el rectángulo
   const rect = {
     x: Math.min(selectionStart.x, selectionStart.x + selectionRect.width),
     y: Math.min(selectionStart.y, selectionStart.y + selectionRect.height),
@@ -170,7 +159,6 @@ const handleMouseUp = () => {
     height: Math.abs(selectionRect.height),
   };
 
-  // Selecciona las fotos que intersectan con el rectángulo
   photos.value.forEach((photo) => {
     const photoRect = {
       x: photo.config.x,
@@ -185,7 +173,6 @@ const handleMouseUp = () => {
 };
 
 const handleSelectPhoto = (photo, event) => {
-  // Si no se está dibujando el rectángulo, se alterna la selección con clic
   if (!selectionRect.visible) {
     photo.selected = !photo.selected;
   }
@@ -215,6 +202,11 @@ const handleAddPhoto = (photo, event) => {
   const [image] = useImage(newPhoto.src);
   newPhoto.image = image;
   photos.value.push(newPhoto);
+};
+
+const handleDeletePhoto = (photo, event) => {
+  event.cancelBubble = true;
+  photos.value = photos.value.filter((p) => p.id !== photo.id);
 };
 
 let dragGroupStart = {};
@@ -282,7 +274,6 @@ const handleWheel = (e) => {
   stage.batchDraw();
 };
 </script>
-
 <style scoped>
 .canvas-container {
   position: fixed;
