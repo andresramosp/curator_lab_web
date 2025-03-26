@@ -35,12 +35,15 @@
           @mouseout="handleMouseOut(photo)"
         >
           <v-image
+            :ref="setPhotoRef(photo.id)"
             :config="{
               x: 0,
               y: 0,
               width: photo.config.width,
               height: photo.config.height,
               image: photo.image,
+              opacity:
+                photo.config.opacity !== undefined ? photo.config.opacity : 1,
               stroke: photo.selected ? secondaryColor : undefined,
               strokeWidth: photo.selected ? 4 : 0,
             }"
@@ -68,7 +71,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, nextTick } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
@@ -89,12 +92,20 @@ const photos = ref([
     src: `${
       import.meta.env.VITE_API_BASE_URL
     }/uploads/photos/1742647923741-1740648473927-DSC09839.jpg`,
-    config: { x: 150, y: 150, width: 150, height: 100 },
+    config: { x: 150, y: 150, width: 150, height: 100, opacity: 1 },
     image: null,
     selected: false,
     showButton: false,
   },
 ]);
+
+// Referencias dinámicas para cada v-image
+const photoRefs = ref({});
+const setPhotoRef = (id) => (el) => {
+  if (el) {
+    photoRefs.value[id] = el;
+  }
+};
 
 const imageNames = [
   "1742648875207-DSC02238.jpg",
@@ -159,6 +170,7 @@ const handleAddPhoto = async (photo, event) => {
     const backendPhotos = Array.isArray(response.data)
       ? response.data
       : [response.data];
+    const newPhotoIds = [];
     backendPhotos.forEach((backendPhoto, index) => {
       const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
         backendPhoto.name
@@ -167,10 +179,11 @@ const handleAddPhoto = async (photo, event) => {
         id: backendPhoto.id,
         src,
         config: {
-          x: photo.config.x + offsetX,
-          y: photo.config.y + offsetY,
+          x: photo.config.x + offsetX * (index + 1),
+          y: photo.config.y + offsetY * (index + 1),
           width: 150,
           height: 100,
+          opacity: 0,
         },
         image: null,
         selected: false,
@@ -179,6 +192,17 @@ const handleAddPhoto = async (photo, event) => {
       const [image] = useImage(newPhoto.src);
       newPhoto.image = image;
       photos.value.push(newPhoto);
+      newPhotoIds.push(newPhoto.id);
+    });
+    nextTick(() => {
+      newPhotoIds.forEach((id) => {
+        const imageNode = photoRefs.value[id].getNode();
+        new Konva.Tween({
+          node: imageNode,
+          duration: 0.5,
+          opacity: 1,
+        }).play();
+      });
     });
   } catch (error) {
     console.error("Error al añadir foto:", error);
