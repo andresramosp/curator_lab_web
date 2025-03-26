@@ -44,7 +44,7 @@ const sections = [
   // { title: "Collections", icon: "mdi-folder", route: "/catalog/collections" },
   { title: "Search", icon: "mdi-magnify", route: "/search" },
 
-  { title: "Canvas", icon: "mdi-artboard", route: "/canvas-fabric" },
+  { title: "Canvas", icon: "mdi-artboard", route: "/canvas" },
   { title: "Series", icon: "mdi-palette-swatch", route: "/series" },
   { title: "Settings", icon: "mdi-tune", route: "/settings" },
 ];

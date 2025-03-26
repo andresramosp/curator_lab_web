@@ -131,47 +131,6 @@ const selectionRect = reactive({
   visible: false,
 });
 
-const handleMouseDown = (e) => {
-  if (e.target === stageRef.value.getStage()) {
-    selectionStart = stageRef.value.getStage().getPointerPosition();
-    selectionRect.x = selectionStart.x;
-    selectionRect.y = selectionStart.y;
-    selectionRect.width = 0;
-    selectionRect.height = 0;
-    selectionRect.visible = true;
-    stageConfig.draggable = false;
-  }
-};
-
-const handleMouseMove = (e) => {
-  if (!selectionRect.visible) return;
-  const pos = stageRef.value.getStage().getPointerPosition();
-  selectionRect.width = pos.x - selectionStart.x;
-  selectionRect.height = pos.y - selectionStart.y;
-};
-
-const handleMouseUp = () => {
-  if (!selectionRect.visible) return;
-  const rect = {
-    x: Math.min(selectionStart.x, selectionStart.x + selectionRect.width),
-    y: Math.min(selectionStart.y, selectionStart.y + selectionRect.height),
-    width: Math.abs(selectionRect.width),
-    height: Math.abs(selectionRect.height),
-  };
-
-  photos.value.forEach((photo) => {
-    const photoRect = {
-      x: photo.config.x,
-      y: photo.config.y,
-      width: photo.config.width,
-      height: photo.config.height,
-    };
-    photo.selected = Konva.Util.haveIntersection(photoRect, rect);
-  });
-  selectionRect.visible = false;
-  stageConfig.draggable = true;
-};
-
 const handleSelectPhoto = (photo, event) => {
   if (!selectionRect.visible) {
     photo.selected = !photo.selected;
@@ -242,6 +201,55 @@ const handleDragMove = (photo, e) => {
     photo.config.x = newX;
     photo.config.y = newY;
   }
+};
+
+const handleMouseDown = (e) => {
+  const stage = stageRef.value.getStage();
+  if (e.target === stage) {
+    const pointer = stage.getPointerPosition();
+    const transform = stage.getAbsoluteTransform().copy();
+    transform.invert();
+    selectionStart = transform.point(pointer);
+    selectionRect.x = selectionStart.x;
+    selectionRect.y = selectionStart.y;
+    selectionRect.width = 0;
+    selectionRect.height = 0;
+    selectionRect.visible = true;
+    stageConfig.draggable = false;
+  }
+};
+
+const handleMouseMove = (e) => {
+  if (!selectionRect.visible) return;
+  const stage = stageRef.value.getStage();
+  const pointer = stage.getPointerPosition();
+  const transform = stage.getAbsoluteTransform().copy();
+  transform.invert();
+  const pos = transform.point(pointer);
+  selectionRect.width = pos.x - selectionStart.x;
+  selectionRect.height = pos.y - selectionStart.y;
+};
+
+const handleMouseUp = () => {
+  if (!selectionRect.visible) return;
+  const rect = {
+    x: Math.min(selectionStart.x, selectionStart.x + selectionRect.width),
+    y: Math.min(selectionStart.y, selectionStart.y + selectionRect.height),
+    width: Math.abs(selectionRect.width),
+    height: Math.abs(selectionRect.height),
+  };
+
+  photos.value.forEach((photo) => {
+    const photoRect = {
+      x: photo.config.x,
+      y: photo.config.y,
+      width: photo.config.width,
+      height: photo.config.height,
+    };
+    photo.selected = Konva.Util.haveIntersection(photoRect, rect);
+  });
+  selectionRect.visible = false;
+  stageConfig.draggable = true;
 };
 
 const handleDragEnd = (photo, e) => {};
