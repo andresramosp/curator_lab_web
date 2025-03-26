@@ -7,18 +7,54 @@
       style="border: 1px solid #ccc"
     >
       <v-layer>
-        <v-image
+        <v-group
           v-for="photo in photos"
           :key="photo.id"
-          :config="{
-            ...photo.config,
-            image: photo.image,
-            draggable: true,
-          }"
-          @click="handlePhotoClick(photo)"
+          :config="{ x: photo.config.x, y: photo.config.y, draggable: true }"
           @dragstart="handleDragStart"
           @dragend="handleDragEnd(photo, $event)"
-        />
+          @click="handleSelectPhoto(photo, $event)"
+          @mouseover="handleMouseOver(photo)"
+          @mouseout="handleMouseOut(photo)"
+        >
+          <v-image
+            :config="{
+              x: 0,
+              y: 0,
+              width: photo.config.width,
+              height: photo.config.height,
+              image: photo.image,
+              stroke: photo.selected ? '#02FFA1' : undefined,
+              strokeWidth: photo.selected ? 3 : 0,
+            }"
+          />
+          <template v-if="photo.showButton">
+            <v-rect
+              :config="{
+                x: photo.config.width - 35,
+                y: 5,
+                width: 30,
+                height: 20,
+                fill: 'lightgrey',
+                cornerRadius: 5,
+              }"
+              @click="handleAddPhoto(photo, $event)"
+            />
+            <v-text
+              :config="{
+                x: photo.config.width - 35,
+                y: 5,
+                width: 30,
+                height: 20,
+                text: '+',
+                fontSize: 16,
+                align: 'center',
+                verticalAlign: 'middle',
+              }"
+              @click="handleAddPhoto(photo, $event)"
+            />
+          </template>
+        </v-group>
       </v-layer>
     </v-stage>
   </div>
@@ -44,6 +80,8 @@ const photos = ref([
     }/uploads/photos/1742647923741-1740648473927-DSC09839.jpg`,
     config: { x: 50, y: 50, width: 150, height: 100 },
     image: null,
+    selected: false,
+    showButton: false,
   },
   {
     id: 2,
@@ -52,6 +90,8 @@ const photos = ref([
     }/uploads/photos/1742647923492-1740648472828-DSC07285.jpg`,
     config: { x: 250, y: 100, width: 150, height: 100 },
     image: null,
+    selected: false,
+    showButton: false,
   },
 ]);
 
@@ -62,15 +102,27 @@ const imageNames = [
   "1742648879121-DSC09856.jpg",
 ];
 
-const handlePhotoClick = (photo) => {
+onMounted(() => {
+  photos.value.forEach((photo) => {
+    const [image] = useImage(photo.src);
+    photo.image = image;
+  });
+});
+
+const handleSelectPhoto = (photo, event) => {
+  // Selecciona o deselecciona la foto al hacer clic fuera del botón
+  photo.selected = !photo.selected;
+};
+
+const handleAddPhoto = (photo, event) => {
+  // Evita que el clic se propague al grupo y active la selección
+  event.cancelBubble = true;
   const offsetX = 75;
   const offsetY = 50;
-
   const randomName = imageNames[Math.floor(Math.random() * imageNames.length)];
   const src = `${
     import.meta.env.VITE_API_BASE_URL
   }/uploads/photos/${randomName}`;
-
   const newPhoto = reactive({
     id: Date.now(),
     src,
@@ -81,20 +133,13 @@ const handlePhotoClick = (photo) => {
       height: 100,
     },
     image: null,
+    selected: false,
+    showButton: false,
   });
-
   const [image] = useImage(newPhoto.src);
   newPhoto.image = image;
-
   photos.value.push(newPhoto);
 };
-
-onMounted(() => {
-  photos.value.forEach((photo) => {
-    const [image] = useImage(photo.src);
-    photo.image = image;
-  });
-});
 
 const handleDragStart = (e) => {
   e.cancelBubble = true;
@@ -105,27 +150,30 @@ const handleDragEnd = (photo, e) => {
   photo.config.y = e.target.y();
 };
 
+const handleMouseOver = (photo) => {
+  photo.showButton = true;
+};
+
+const handleMouseOut = (photo) => {
+  photo.showButton = false;
+};
+
 const handleWheel = (e) => {
   e.evt.preventDefault();
   const stage = stageRef.value.getStage();
   const oldScale = stage.scaleX();
   const pointer = stage.getPointerPosition();
-
   const scaleBy = 1.25;
   const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
-
   const mousePointTo = {
     x: (pointer.x - stage.x()) / oldScale,
     y: (pointer.y - stage.y()) / oldScale,
   };
-
   stage.scale({ x: newScale, y: newScale });
-
   const newPos = {
     x: pointer.x - mousePointTo.x * newScale,
     y: pointer.y - mousePointTo.y * newScale,
   };
-
   stage.position(newPos);
   stage.batchDraw();
 };
