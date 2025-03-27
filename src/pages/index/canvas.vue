@@ -105,10 +105,10 @@ let currentZIndex = 1;
 
 const photos = ref([
   {
-    id: 103,
+    id: 125,
     src: `${
       import.meta.env.VITE_API_BASE_URL
-    }/uploads/photos/1742647923741-1740648473927-DSC09839.jpg`,
+    }/uploads/photos/1743057291726-DSC01069.jpg`,
     config: {
       x: 150,
       y: 100,
@@ -181,7 +181,7 @@ const handleAddPhoto = async (photo, event) => {
         criteria: "semantic",
         opposite: false,
         tagsIds: null,
-        descriptionCategory: "story",
+        descriptionCategory: "context",
         iteration: 1,
         pageSize: 1,
         withInsights: false,
@@ -220,17 +220,39 @@ const handleAddPhoto = async (photo, event) => {
       newPhotosInfo.push({ id: newPhoto.id, index });
     });
 
+    // nextTick(() => {
+    //   newPhotosInfo.forEach(({ id, index }) => {
+    //     const groupNode = photoRefs.value[id].getNode();
+    //     const targetX = photo.config.x + offsetX * (index + 1);
+    //     const targetY = photo.config.y + offsetY * (index + 1);
+    //     new Konva.Tween({
+    //       node: groupNode,
+    //       duration: 0.5,
+    //       x: targetX,
+    //       y: targetY,
+    //       opacity: 1,
+    //       easing: Konva.Easings.StrongEaseInOut,
+    //     }).play();
+    //   });
+    // });
     nextTick(() => {
+      const baseAngle = Math.PI / 4; // 45° hacia abajo-derecha
+      const spread = Math.PI / 5; // separación angular entre fotos
       newPhotosInfo.forEach(({ id, index }) => {
         const groupNode = photoRefs.value[id].getNode();
-        const targetX = photo.config.x + offsetX * (index + 1);
-        const targetY = photo.config.y + offsetY * (index + 1);
+        const totalPhotos = newPhotosInfo.length;
+        // Centramos el abanico restando la mitad de las fotos
+        const angle = baseAngle + (index - (totalPhotos - 1) / 2) * spread;
+        const distance = 200; // distancia a la que se despliegan
+        const targetX = photo.config.x + Math.cos(angle) * distance;
+        const targetY = photo.config.y + Math.sin(angle) * distance;
         new Konva.Tween({
           node: groupNode,
-          duration: 0.5,
+          duration: 0.7,
           x: targetX,
           y: targetY,
           opacity: 1,
+          easing: Konva.Easings.StrongEaseInOut,
         }).play();
       });
     });

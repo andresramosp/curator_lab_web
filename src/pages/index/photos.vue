@@ -5,16 +5,17 @@
       :uploadingPhotos="uploadingPhotos"
     />
 
-    <div v-if="!googleAccessToken" class="sync-buttons-init">
+    <!-- <div v-if="!googleAccessToken" class="sync-buttons-init">
       <v-btn class="sync-button" @click="openFileDialog"> 📁 Local </v-btn>
       <v-btn class="sync-button" @click="syncGooglePhotos">
         Sync Google Photos
       </v-btn>
-    </div>
-    <div
+    </div> -->
+    <!-- <div
       v-else-if="!photosStore.isAnalyzing && uploadingPhotos == 0"
       class="add-photos-button"
-    >
+    > -->
+    <div class="add-photos-button">
       <v-btn class="sync-button" @click="fetchGoogleAlbums()">
         📁 Add Photos
       </v-btn>
@@ -185,8 +186,8 @@ async function analyze() {
     photosStore.isAnalyzing = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
-      packageId: "topological_upgrade",
-      mode: "adding",
+      packageId: "topological_upgrade", //"topological_upgrade",
+      mode: "first",
       // processId: 93,
     });
   } catch (error) {
