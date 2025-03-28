@@ -18,29 +18,16 @@
         <slot name="overlay" :isHovering="isHovering" :photo="photo"></slot>
 
         <!-- Iconos informativos seleccion/deselección -->
-        <div class="photo-icons">
-          <div v-if="withInsights">
-            <v-icon v-if="photo.isIncludedByUser === true" color="secondary">
-              mdi-account-check
-            </v-icon>
-            <v-icon
-              v-else-if="photo.isIncludedByUser === false"
-              color="secondary"
-            >
-              mdi-delete
-            </v-icon>
+        <div v-if="!isThinking" class="photo-icons">
+          <div v-if="photo.isIncluded" class="high-match">
+            <v-icon color="secondary">mdi-crown</v-icon>
           </div>
-
-          <div v-show="showMatchPercent" :class="[matchPercentClass]">
+          <div v-else :class="[matchPercentClass]">
             <template v-if="numericalMatch">
               <span>{{ photo.matchPercent.toFixed(0) }}%</span>
             </template>
             <template v-else>
-              <v-icon
-                style="font-size: 15px"
-                color="secondary"
-                v-for="n in starCount"
-                :key="n"
+              <v-icon style="font-size: 15px" v-for="n in starCount" :key="n"
                 >mdi-star</v-icon
               >
             </template>
@@ -57,6 +44,7 @@ import { computed } from "vue";
 const props = defineProps({
   photo: Object,
   withInsights: Boolean,
+  isThinking: Boolean,
   fadeDelay: {
     type: Number,
     default: 0,
@@ -80,17 +68,10 @@ const cardStyle = computed(() => ({
   animationDelay: `${props.fadeDelay}ms`,
 }));
 
-const fadeClass = computed(() =>
-  props.withInsights ? "fade-in-selected" : "fade-in-unselected"
+const fadeClass = computed(
+  () => ""
+  // props.withInsights ? "fade-in-selected" : "fade-in-unselected"
 );
-
-// const cardClass = computed(() =>
-//   props.type == "small" ? "photo-card-match" : "photo-card-selected"
-// );
-
-// const photoClass = computed(() =>
-//   props.type == "match" ? "photo-image-match" : "photo-image-selected"
-// );
 
 function fallbackImage() {
   if (props.photo.url) {
@@ -163,7 +144,8 @@ const starCount = computed(() => {
 }
 
 .high-match {
-  color: rgb(var(--v-theme-secondary));
+  /* color: rgb(var(--v-theme-secondary)); */
+  color: white;
 }
 .medium-match {
   color: white;

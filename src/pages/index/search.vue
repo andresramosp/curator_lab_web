@@ -101,7 +101,7 @@
         </template>
       </div>
 
-      <ToggleButtons v-model="searchType" style="width: 16%">
+      <ToggleButtons v-model="searchType" style="width: 17%">
         <ToggleOption
           value="semantic"
           tooltip="Enter the query in natural language"
@@ -122,7 +122,7 @@
         </ToggleOption>
       </ToggleButtons>
 
-      <ToggleButtons v-model="searchMode" style="width: 12%">
+      <ToggleButtons v-model="searchMode" style="width: 11%">
         <ToggleOption
           value="logical"
           tooltip="Performs a search with logical criteria and conceptual precision"
@@ -168,13 +168,26 @@
         theme="dark"
       ></v-alert>
     </div>
-
+    <div
+      v-if="photos.length"
+      class="toolbar-control photos-options d-flex align-center"
+    >
+      <div v-if="withInsights" class="d-flex align-center">
+        <span class="me-2">Insights</span>
+        <v-switch
+          v-model="onlyInsights"
+          color="secondary"
+          hide-details
+        ></v-switch>
+      </div>
+    </div>
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
       :withInsights="searchType !== 'tags' ? withInsights : false"
       :loadingIteration="loadingIteration"
+      :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
     />
   </div>
@@ -199,6 +212,7 @@ const iteration = ref(1);
 const iterationsRecord = ref({});
 const loading = ref(false);
 const loadingIteration = ref(false);
+const loadingInsights = ref(false);
 const hasMoreIterations = ref(false);
 const maxPageAttempts = ref(false);
 const clearQuery = ref(null);
@@ -213,6 +227,8 @@ const topologicalAreas = reactive({
   right: "",
   middle: "",
 });
+
+const onlyInsights = ref(false);
 
 // Lógica específica para tags (composable)
 const {
@@ -249,7 +265,9 @@ const photos = computed(() => {
       result.push(...iterationsRecord.value[key].photos);
     }
   }
-  return result;
+  return result.filter(
+    (photo) => loadingIteration.value || !onlyInsights.value || photo.isIncluded
+  );
 });
 
 const searchDisabled = computed(() => {
@@ -269,16 +287,18 @@ const searchDisabled = computed(() => {
 });
 
 function getPageSize() {
-  if (!withInsights.value) return 12;
-  const rowCount = 4;
-  const unselected = photos.value.filter((photo) => !photo.isIncluded).length;
-  const remainder = unselected % rowCount;
-  const extra = remainder === 0 ? 0 : rowCount - remainder;
-  return iteration.value === 1 ? 8 : 4 + extra;
+  return 12;
+  // if (!withInsights.value) return 12;
+  // const rowCount = 2;
+  // const unselected = photos.value.filter((photo) => !photo.isIncluded).length;
+  // const remainder = unselected % rowCount;
+  // const extra = remainder === 0 ? 0 : rowCount - remainder;
+  // return iteration.value === 1 ? 12 : 4 + extra;
 }
 
 async function searchPhotos() {
   loading.value = true;
+  loadingInsights.value = withInsights.value;
   maxPageAttempts.value = false;
   try {
     let payload;
@@ -317,6 +337,7 @@ async function searchPhotos() {
 }
 
 function handleSearch() {
+  onlyInsights.value = false;
   iteration.value = 1;
   hasMoreIterations.value = false;
   iterationsRecord.value = {};
@@ -325,6 +346,7 @@ function handleSearch() {
 
 async function nextIteration() {
   loadingIteration.value = true;
+  loadingInsights.value = withInsights.value;
   await searchPhotos();
   loadingIteration.value = false;
 }
@@ -373,6 +395,9 @@ onMounted(() => {
     hasMoreIterations.value = data.hasMore;
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
+    loadingInsights.value = false;
+
+    console.log(data);
   });
 
   socket.on("maxPageAttempts", () => {
@@ -402,5 +427,16 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.photos-options {
+  top: -4px;
+  right: 5px;
+  margin-top: 3px;
+  height: 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 </style>

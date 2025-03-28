@@ -1,27 +1,16 @@
 <template>
   <div v-if="photos && photos.length" class="photos-grid">
     <MatchesGrid
-      :style="{ width: showSelectionPanel ? '68%' : '100%', height: '81vh' }"
+      :style="{ width: '100%', height: '81vh' }"
       :photos="photos"
       :with-insights="withInsights"
       :loading-iteration="loadingIteration"
+      :loading-insights="loadingInsights"
       :has-more-iterations="hasMoreIterations"
       :max-page-attemps="maxPageAttempts"
       @view-info="viewPhotoInfo"
-      @switch-selected="switchSelected"
       @next-iteration="$emit('next-iteration')"
     />
-    <!-- <SelectionGrid
-      v-if="showSelectionPanel"
-      style="width: 32%; height: 81vh; overflow-y: auto"
-      :photos="photos"
-      :with-insights="withInsights"
-      :loading-iteration="loadingIteration"
-      :has-more-iterations="hasMoreIterations"
-      @view-info="viewPhotoInfo"
-      @switch-selected="switchSelected"
-      @next-iteration="$emit('next-iteration')"
-    /> -->
   </div>
   <div v-else class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
@@ -31,7 +20,6 @@
 
 <script setup>
 import { ref, watch, shallowRef, computed } from "vue";
-import SelectionGrid from "./SelectionGrid.vue";
 import MatchesGrid from "./MatchesGrid.vue";
 import PhotoDialog from "./PhotoDialog.vue";
 
@@ -39,6 +27,7 @@ const props = defineProps({
   photos: Array,
   loadingIteration: Boolean,
   hasMoreIterations: Boolean,
+  loadingInsights: Boolean,
   withInsights: Boolean,
   maxPageAttempts: Boolean,
 });
@@ -47,10 +36,6 @@ const emit = defineEmits(["next-iteration"]);
 
 const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
-
-const showSelectionPanel = computed(
-  () => false // props.photos.filter((photo) => photo.isIncluded).length > 0
-);
 
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
@@ -61,20 +46,6 @@ function viewPhotoInfo(photo) {
     matchingChunks: photo.matchingChunks,
   };
   showDialog.value = true;
-}
-
-function switchSelected(photo) {
-  photo.isIncluded = !photo.isIncluded;
-  if (photo.isIncluded) {
-    photo._reasoning = photo.reasoning;
-    photo.reasoning = "Selected by user";
-    photo.isIncludedByUser =
-      photo.isIncludedByUser === undefined ? true : undefined;
-  } else {
-    photo.reasoning = photo._reasoning;
-    photo.isIncludedByUser =
-      photo.isIncludedByUser === undefined ? false : undefined;
-  }
 }
 </script>
 

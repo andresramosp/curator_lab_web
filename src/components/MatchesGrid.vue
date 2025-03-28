@@ -6,38 +6,32 @@
       style="overflow-y: auto; height: 74vh"
     >
       <v-card style="min-height: 620px">
-        <!-- <v-card-title class="section-title">{{
-          "Potential Matches"
-        }}</v-card-title> -->
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
-              v-for="(photo, index) in unselectedPhotos"
+              v-for="(photo, index) in photos"
               :key="photo.id"
               :photo="photo"
               :with-insights="withInsights"
+              :is-thinking="isThinking(photo)"
               :fade-delay="photoFadeInDelays[index] || 0"
               @view-info="handleViewInfo"
               @switch-selected="handleSwitchSelected"
               :numerical-match="false"
-              :show-match-percent="!withInsights"
-              :type="'match'"
+              :type="photo.isIncluded ? 'insight' : 'match'"
             >
               <template #overlay="{ isHovering, photo }">
                 <div
-                  class="photo-overlay"
-                  v-show="isHovering && !isThinking(photo)"
+                  v-if="isHovering && photo.isIncluded"
+                  class="reasoning-overlay"
                 >
-                  <div class="photo-buttons">
-                    <v-btn icon @click="handleViewInfo(photo)">
-                      <v-icon size="30">mdi-information</v-icon>
-                    </v-btn>
-                    <v-btn icon @click="handleSwitchSelected(photo)">
-                      <v-icon size="30">mdi-plus</v-icon>
-                    </v-btn>
-                  </div>
+                  <span
+                    v-if="photo.isIncluded && photo.reasoning"
+                    class="reasoning-text"
+                  >
+                    {{ photo.reasoning }}
+                  </span>
                 </div>
-
                 <div
                   v-if="isThinking(photo) && !maxPageAttempts"
                   class="photo-overlay"
@@ -62,7 +56,7 @@
         :loading="loadingIteration"
         @click="$emit('next-iteration')"
         class="centered-btn"
-        :disabled="!hasMoreIterations || loadingIteration"
+        :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
       >
         <v-icon size="23">mdi-autorenew</v-icon> Load More
       </v-btn>
@@ -78,15 +72,12 @@ const props = defineProps({
   photos: Array,
   withInsights: Boolean,
   loadingIteration: Boolean,
+  loadingInsights: Boolean,
   hasMoreIterations: Boolean,
   maxPageAttempts: Boolean,
 });
 
 const emit = defineEmits(["view-info", "switch-selected", "next-iteration"]);
-
-const unselectedPhotos = computed(() =>
-  props.photos.filter((photo) => !photo.isIncluded)
-);
 
 const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
@@ -116,7 +107,11 @@ watch(
 );
 
 const isThinking = (photo) => {
-  return props.withInsights && photo.isIncluded === undefined;
+  return (
+    props.loadingInsights &&
+    props.withInsights &&
+    photo.isIncluded === undefined
+  );
 };
 function handleViewInfo(photo) {
   emit("view-info", photo);
@@ -141,7 +136,7 @@ function handleSwitchSelected(photo) {
 }
 
 .photo-overlay {
-  position: absolute;
+  /* position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -154,6 +149,20 @@ function handleSwitchSelected(photo) {
   letter-spacing: 2px;
   display: flex;
   align-items: center;
+  justify-content: center; */
+
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: flex-end;
   justify-content: center;
 }
 .thinking-letter {
@@ -179,5 +188,22 @@ function handleSwitchSelected(photo) {
 /* Opcional: estilo para foto de top score */
 .top-score-photo {
   border: 3px solid rgb(var(--v-theme-secondary));
+}
+.reasoning-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.reasoning-text {
+  font-size: 12px;
 }
 </style>

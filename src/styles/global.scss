@@ -20,14 +20,6 @@
   background-color: rgb(var(--v-theme-surface-light)) !important;
 }
 
-// .photo-card-selected {
-//   width: 31%;
-//   height: 145px;
-//   position: relative;
-//   overflow: hidden;
-//   background-color: rgb(var(--v-theme-surface-light)) !important;
-// }
-
 .photo-card-upload {
   width: 15%;
   height: 151px;
@@ -37,11 +29,12 @@
 }
 
 .photo-card-insight {
-  width: 48%;
-  height: 200px;
+  width: 16%;
+  height: 290px;
   position: relative;
   overflow: hidden;
   background-color: rgb(var(--v-theme-surface-light)) !important;
+  border: 1px solid rgb(var(--v-theme-secondary)) !important;
 }
 
 .photo-image-selected {
@@ -119,9 +112,12 @@
   display: flex;
   gap: 8px;
   justify-content: center;
-  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .toolbar-control {
   font-size: 9px !important;
+  .v-label {
+    font-size: 11px !important;
+  }
 }

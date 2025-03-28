@@ -1,5 +1,5 @@
 <template>
-  <div class="canvas-container">
+  <div class="main-container" ref="containerRef">
     <!-- Toolbar vertical a la derecha -->
     <div right permanent width="80" class="toolbar">
       <v-list dense>
@@ -7,6 +7,12 @@
           <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
             <v-icon v-if="mode === 'move'" size="30">mdi-dots-square</v-icon>
             <v-icon v-else size="30">mdi-pan</v-icon>
+          </v-btn>
+        </v-list-item>
+        <!-- Botón ordenar -->
+        <v-list-item>
+          <v-btn icon @click="orderPhotos">
+            <v-icon size="30">mdi-grid</v-icon>
           </v-btn>
         </v-list-item>
       </v-list>
@@ -93,12 +99,20 @@ import { useTheme } from "vuetify";
 import axios from "axios";
 import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
 
+const PHOTO_WIDTH = 150 * 1.5;
+const PHOTO_HEIGHT = 100 * 1.5;
+
 const stageRef = ref(null);
+const containerRef = ref(null);
 const stageConfig = reactive({
   width: window.innerWidth,
   height: window.innerHeight,
-  scale: { x: 1.5, y: 1.5 },
+  scale: { x: 1, y: 1 },
   draggable: false,
+});
+onMounted(() => {
+  stageConfig.width = containerRef.value.clientWidth;
+  stageConfig.height = containerRef.value.clientHeight;
 });
 
 let currentZIndex = 1;
@@ -112,8 +126,8 @@ const photos = ref([
     config: {
       x: 150,
       y: 100,
-      width: 150,
-      height: 100,
+      width: PHOTO_WIDTH,
+      height: PHOTO_HEIGHT,
       opacity: 1,
       zIndex: currentZIndex,
     },
@@ -166,7 +180,6 @@ const handleAddPhoto = async (photo, event) => {
   const offsetX = 75;
   const offsetY = 50;
 
-  // IDs de las fotos seleccionadas o la foto actual
   const selectedPhotoIds = photos.value
     .filter((p) => p.selected)
     .map((p) => p.id);
@@ -191,7 +204,6 @@ const handleAddPhoto = async (photo, event) => {
     const backendPhotos = Array.isArray(response.data)
       ? response.data
       : [response.data];
-
     const newPhotosInfo = [];
     backendPhotos.forEach((backendPhoto, index) => {
       const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
@@ -202,11 +214,10 @@ const handleAddPhoto = async (photo, event) => {
         id: backendPhoto.id,
         src,
         config: {
-          // Inicia en la posición de la carta principal con opacidad 0
           x: photo.config.x,
           y: photo.config.y,
-          width: 150,
-          height: 100,
+          width: PHOTO_WIDTH,
+          height: PHOTO_HEIGHT,
           opacity: 0,
           zIndex: currentZIndex,
         },
@@ -220,30 +231,14 @@ const handleAddPhoto = async (photo, event) => {
       newPhotosInfo.push({ id: newPhoto.id, index });
     });
 
-    // nextTick(() => {
-    //   newPhotosInfo.forEach(({ id, index }) => {
-    //     const groupNode = photoRefs.value[id].getNode();
-    //     const targetX = photo.config.x + offsetX * (index + 1);
-    //     const targetY = photo.config.y + offsetY * (index + 1);
-    //     new Konva.Tween({
-    //       node: groupNode,
-    //       duration: 0.5,
-    //       x: targetX,
-    //       y: targetY,
-    //       opacity: 1,
-    //       easing: Konva.Easings.StrongEaseInOut,
-    //     }).play();
-    //   });
-    // });
     nextTick(() => {
-      const baseAngle = Math.PI / 4; // 45° hacia abajo-derecha
-      const spread = Math.PI / 5; // separación angular entre fotos
+      const baseAngle = Math.PI / 4;
+      const spread = Math.PI / 3;
       newPhotosInfo.forEach(({ id, index }) => {
         const groupNode = photoRefs.value[id].getNode();
         const totalPhotos = newPhotosInfo.length;
-        // Centramos el abanico restando la mitad de las fotos
         const angle = baseAngle + (index - (totalPhotos - 1) / 2) * spread;
-        const distance = 200; // distancia a la que se despliegan
+        const distance = Math.floor(Math.random() * (190 - 140 + 1)) + 140;
         const targetX = photo.config.x + Math.cos(angle) * distance;
         const targetY = photo.config.y + Math.sin(angle) * distance;
         new Konva.Tween({
@@ -384,19 +379,35 @@ const handleWheel = (e) => {
   stage.position(newPos);
   stage.batchDraw();
 };
+
+const orderPhotos = () => {
+  const margin = 35;
+  if (photos.value.length === 0) return;
+  const photoWidth = photos.value[0].config.width;
+  const photoHeight = photos.value[0].config.height;
+  const columns = Math.floor(stageConfig.width / (photoWidth + margin)) || 1;
+  photos.value.forEach((photo, index) => {
+    const col = index % columns;
+    const row = Math.floor(index / columns);
+    const targetX = margin + col * (photoWidth + margin);
+    const targetY = margin + row * (photoHeight + margin);
+    if (photoRefs.value[photo.id]) {
+      const groupNode = photoRefs.value[photo.id].getNode();
+      new Konva.Tween({
+        node: groupNode,
+        duration: 0.7,
+        x: targetX,
+        y: targetY,
+        easing: Konva.Easings.StrongEaseInOut,
+      }).play();
+    }
+    photo.config.x = targetX;
+    photo.config.y = targetY;
+  });
+};
 </script>
 
 <style scoped>
-.canvas-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
 .v-stage {
   display: block;
   outline: none;
@@ -404,8 +415,7 @@ const handleWheel = (e) => {
 }
 .toolbar {
   position: absolute;
-  top: 75px;
-  right: 10px;
+  right: 8px;
   z-index: 100;
 }
 </style>
