@@ -8,7 +8,6 @@ export const usePhotosStore = defineStore("photos", {
     isLoading: false,
     isAnalyzing: false,
     selectedPhotosRecord: {},
-    canvasPhotosIds: [],
   }),
 
   getters: {
@@ -49,7 +48,6 @@ export const usePhotosStore = defineStore("photos", {
       }
     },
 
-    // Acción para alternar la selección de una foto
     togglePhotoSelection(photoId) {
       this.selectedPhotosRecord[photoId] = !this.selectedPhotosRecord[photoId];
       console.log(this.selectedPhotosRecord);

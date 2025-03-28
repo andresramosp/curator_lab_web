@@ -194,7 +194,7 @@
       <v-btn
         v-if="photosStore.selectedPhotoIds.length"
         class="sync-button"
-        @click="analyze()"
+        @click="moveToCanvas()"
       >
         Move to Canvas
       </v-btn>
@@ -212,10 +212,14 @@ import SwitchButton from "@/components/wrappers/SwitchButton.vue";
 import PhotosSearchGrid from "@/components/PhotosSearchGrid.vue";
 import { useSearchTags } from "@/composables/useSearchTags";
 import { usePhotosStore } from "@/stores/photos";
+import { useCanvasStore } from "@/stores/canvas";
+import { useRouter } from "vue-router";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
 const photosStore = usePhotosStore();
+const canvasStore = useCanvasStore();
+const router = useRouter();
 
 const searchType = ref("semantic");
 const searchMode = ref("logical");
@@ -300,12 +304,6 @@ const searchDisabled = computed(() => {
 
 function getPageSize() {
   return 12;
-  // if (!withInsights.value) return 12;
-  // const rowCount = 2;
-  // const unselected = photos.value.filter((photo) => !photo.isInsight).length;
-  // const remainder = unselected % rowCount;
-  // const extra = remainder === 0 ? 0 : rowCount - remainder;
-  // return iteration.value === 1 ? 12 : 4 + extra;
 }
 
 async function searchPhotos() {
@@ -349,6 +347,7 @@ async function searchPhotos() {
 }
 
 function handleSearch() {
+  photosStore.selectedPhotosRecord = {};
   onlyInsights.value = false;
   iteration.value = 1;
   hasMoreIterations.value = false;
@@ -361,6 +360,11 @@ async function nextIteration() {
   loadingInsights.value = withInsights.value;
   await searchPhotos();
   loadingIteration.value = false;
+}
+
+async function moveToCanvas() {
+  await canvasStore.addPhotos(photosStore.selectedPhotoIds);
+  router.push("/canvas");
 }
 
 // WebSocket handlers

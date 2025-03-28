@@ -82,7 +82,7 @@
               type="add"
               :fill="secondaryColor"
               icon="+"
-              :onClick="handleAddPhoto"
+              :onClick="handleAddPhotoFromPhoto"
             />
           </template>
         </v-group>
@@ -96,11 +96,15 @@ import { ref, reactive, onMounted, nextTick, watch } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
-import axios from "axios";
 import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
+import { storeToRefs } from "pinia";
+import { useCanvasStore } from "@/stores/canvas";
+import { usePhotosStore } from "@/stores/photos";
 
-const PHOTO_WIDTH = 150 * 1.5;
-const PHOTO_HEIGHT = 100 * 1.5;
+const canvasStore = useCanvasStore();
+const photosStore = usePhotosStore();
+
+const { photos } = storeToRefs(canvasStore);
 
 const stageRef = ref(null);
 const containerRef = ref(null);
@@ -113,36 +117,26 @@ const stageConfig = reactive({
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
   stageConfig.height = containerRef.value.clientHeight;
+  orderPhotos();
 });
 
-let currentZIndex = 1;
-
-const photos = ref([
-  {
-    id: 125,
-    src: `${
-      import.meta.env.VITE_API_BASE_URL
-    }/uploads/photos/1743057291726-DSC01069.jpg`,
-    config: {
-      x: 150,
-      y: 100,
-      width: PHOTO_WIDTH,
-      height: PHOTO_HEIGHT,
-      opacity: 1,
-      zIndex: currentZIndex,
-    },
-    image: null,
-    selected: false,
-    showButton: false,
+watch(
+  () => photos.value.map((p) => p.src),
+  (newSources, oldSources) => {
+    debugger;
+    photos.value.forEach((photo) => {
+      if (!photo.image) {
+        const [image] = useImage(photo.src);
+        photo.image = image;
+      }
+    });
   },
-]);
+  { immediate: true }
+);
 
-// Referencias para cada v-group
 const photoRefs = ref({});
 const setPhotoRef = (id) => (el) => {
-  if (el) {
-    photoRefs.value[id] = el;
-  }
+  if (el) photoRefs.value[id] = el;
 };
 
 const theme = useTheme();
@@ -151,13 +145,6 @@ const secondaryColor = theme.current.value.colors.secondary;
 const mode = ref("select");
 watch(mode, (newVal) => {
   stageConfig.draggable = newVal === "move";
-});
-
-onMounted(() => {
-  photos.value.forEach((photo) => {
-    const [image] = useImage(photo.src);
-    photo.image = image;
-  });
 });
 
 let selectionStart = null;
@@ -175,109 +162,58 @@ const handleSelectPhoto = (photo, event) => {
   }
 };
 
-const handleAddPhoto = async (photo, event) => {
+const handleAddPhotoFromPhoto = async (photo, event) => {
   event.cancelBubble = true;
-  const offsetX = 75;
-  const offsetY = 50;
-
+  const basePosition = { x: photo.config.x, y: photo.config.y };
   const selectedPhotoIds = photos.value
     .filter((p) => p.selected)
     .map((p) => p.id);
   if (!selectedPhotoIds.length) selectedPhotoIds.push(photo.id);
-
-  try {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
-      {
-        photoIds: selectedPhotoIds,
-        currentPhotosIds: photos.value.map((p) => p.id),
-        criteria: "semantic",
-        opposite: false,
-        tagsIds: null,
-        descriptionCategory: "context",
-        iteration: 1,
-        pageSize: 1,
-        withInsights: false,
-      }
-    );
-
-    const backendPhotos = Array.isArray(response.data)
-      ? response.data
-      : [response.data];
-    const newPhotosInfo = [];
-    backendPhotos.forEach((backendPhoto, index) => {
-      const src = `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
-        backendPhoto.name
-      }`;
-      currentZIndex++;
-      const newPhoto = reactive({
-        id: backendPhoto.id,
-        src,
-        config: {
-          x: photo.config.x,
-          y: photo.config.y,
-          width: PHOTO_WIDTH,
-          height: PHOTO_HEIGHT,
-          opacity: 0,
-          zIndex: currentZIndex,
-        },
-        image: null,
-        selected: false,
-        showButton: false,
-      });
-      const [image] = useImage(newPhoto.src);
-      newPhoto.image = image;
-      photos.value.push(newPhoto);
-      newPhotosInfo.push({ id: newPhoto.id, index });
+  await canvasStore.addPhotosFromPhoto(selectedPhotoIds, basePosition);
+  nextTick(() => {
+    const baseAngle = Math.PI / 4;
+    const spread = Math.PI / 3;
+    const newPhotos = photos.value.filter((p) => p.config.opacity === 0);
+    newPhotos.forEach((newPhoto, index) => {
+      const groupNode = photoRefs.value[newPhoto.id]?.getNode();
+      if (!groupNode) return;
+      const total = newPhotos.length;
+      const angle = baseAngle + (index - (total - 1) / 2) * spread;
+      const distance = Math.floor(Math.random() * (250 - 200 + 1)) + 200;
+      const targetX = basePosition.x + Math.cos(angle) * distance;
+      const targetY = basePosition.y + Math.sin(angle) * distance;
+      new Konva.Tween({
+        node: groupNode,
+        duration: 0.7,
+        x: targetX,
+        y: targetY,
+        opacity: 1,
+        easing: Konva.Easings.StrongEaseInOut,
+      }).play();
+      newPhoto.config.x = targetX;
+      newPhoto.config.y = targetY;
+      newPhoto.config.opacity = 1;
     });
-
-    nextTick(() => {
-      const baseAngle = Math.PI / 4;
-      const spread = Math.PI / 3;
-      newPhotosInfo.forEach(({ id, index }) => {
-        const groupNode = photoRefs.value[id].getNode();
-        const totalPhotos = newPhotosInfo.length;
-        const angle = baseAngle + (index - (totalPhotos - 1) / 2) * spread;
-        const distance = Math.floor(Math.random() * (190 - 140 + 1)) + 140;
-        const targetX = photo.config.x + Math.cos(angle) * distance;
-        const targetY = photo.config.y + Math.sin(angle) * distance;
-        new Konva.Tween({
-          node: groupNode,
-          duration: 0.7,
-          x: targetX,
-          y: targetY,
-          opacity: 1,
-          easing: Konva.Easings.StrongEaseInOut,
-        }).play();
-      });
-    });
-  } catch (error) {
-    console.error("Error al añadir foto:", error);
-  }
+  });
 };
 
 const handleDeletePhoto = (photo, event) => {
   event.cancelBubble = true;
-  if (photo.selected) {
-    photos.value = photos.value.filter((p) => !p.selected);
-  } else {
-    photos.value = photos.value.filter((p) => p.id !== photo.id);
-  }
+  canvasStore.photos = photos.value.filter((p) => !p.selected);
 };
 
 let dragGroupStart = {};
-
 const handleDragStart = (photo, e) => {
   e.cancelBubble = true;
+  dragGroupStart = {};
   if (photo.selected) {
-    dragGroupStart = {};
     photos.value.forEach((p) => {
       if (p.selected) {
         dragGroupStart[p.id] = { x: p.config.x, y: p.config.y };
       }
     });
   } else {
-    dragGroupStart = { [photo.id]: { x: photo.config.x, y: photo.config.y } };
+    dragGroupStart[photo.id] = { x: photo.config.x, y: photo.config.y };
   }
 };
 
@@ -336,7 +272,6 @@ const handleMouseUp = () => {
     width: Math.abs(selectionRect.width),
     height: Math.abs(selectionRect.height),
   };
-
   photos.value.forEach((photo) => {
     const photoRect = {
       x: photo.config.x,
@@ -386,23 +321,34 @@ const orderPhotos = () => {
   const photoWidth = photos.value[0].config.width;
   const photoHeight = photos.value[0].config.height;
   const columns = Math.floor(stageConfig.width / (photoWidth + margin)) || 1;
+
+  // Usamos el orden del array (inserción) como criterio estable
   photos.value.forEach((photo, index) => {
     const col = index % columns;
     const row = Math.floor(index / columns);
     const targetX = margin + col * (photoWidth + margin);
     const targetY = margin + row * (photoHeight + margin);
-    if (photoRefs.value[photo.id]) {
-      const groupNode = photoRefs.value[photo.id].getNode();
-      new Konva.Tween({
-        node: groupNode,
-        duration: 0.7,
-        x: targetX,
-        y: targetY,
-        easing: Konva.Easings.StrongEaseInOut,
-      }).play();
+
+    // Calculamos la diferencia con la posición actual
+    const dx = photo.config.x - targetX;
+    const dy = photo.config.y - targetY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Si el movimiento es mayor a un umbral (por ejemplo 5px), se anima
+    if (distance > 5) {
+      if (photoRefs.value[photo.id]) {
+        const groupNode = photoRefs.value[photo.id].getNode();
+        new Konva.Tween({
+          node: groupNode,
+          duration: 0.7,
+          x: targetX,
+          y: targetY,
+          easing: Konva.Easings.StrongEaseInOut,
+        }).play();
+      }
+      photo.config.x = targetX;
+      photo.config.y = targetY;
     }
-    photo.config.x = targetX;
-    photo.config.y = targetY;
   });
 };
 </script>
