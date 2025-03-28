@@ -16,17 +16,16 @@
               :is-thinking="isThinking(photo)"
               :fade-delay="photoFadeInDelays[index] || 0"
               @view-info="handleViewInfo"
-              @switch-selected="handleSwitchSelected"
               :numerical-match="false"
-              :type="photo.isIncluded ? 'insight' : 'match'"
+              :type="photo.isInsight ? 'insight' : 'match'"
             >
               <template #overlay="{ isHovering, photo }">
                 <div
-                  v-if="isHovering && photo.isIncluded"
+                  v-if="isHovering && photo.isInsight"
                   class="reasoning-overlay"
                 >
                   <span
-                    v-if="photo.isIncluded && photo.reasoning"
+                    v-if="photo.isInsight && photo.reasoning"
                     class="reasoning-text"
                   >
                     {{ photo.reasoning }}
@@ -44,6 +43,24 @@
                   >
                     {{ letter }}
                   </span>
+                </div>
+                <div v-show="isHovering" class="action-buttons">
+                  <v-btn size="small" icon @click="deletePhoto(photo.id)">
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="editPhoto(photo.id)">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="analyzePhoto(photo.id)">
+                    <v-icon>mdi-magnify</v-icon>
+                  </v-btn>
+                  <v-btn
+                    size="small"
+                    icon
+                    @click.stop="$emit('view-info', photo)"
+                  >
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
                 </div>
               </template>
             </PhotoCard>
@@ -77,7 +94,7 @@ const props = defineProps({
   maxPageAttempts: Boolean,
 });
 
-const emit = defineEmits(["view-info", "switch-selected", "next-iteration"]);
+const emit = defineEmits(["view-info", "next-iteration"]);
 
 const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
@@ -108,17 +125,11 @@ watch(
 
 const isThinking = (photo) => {
   return (
-    props.loadingInsights &&
-    props.withInsights &&
-    photo.isIncluded === undefined
+    props.loadingInsights && props.withInsights && photo.isInsight === undefined
   );
 };
 function handleViewInfo(photo) {
   emit("view-info", photo);
-}
-
-function handleSwitchSelected(photo) {
-  emit("switch-selected", photo);
 }
 </script>
 

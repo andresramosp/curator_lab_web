@@ -15,7 +15,7 @@
       v-else-if="!photosStore.isAnalyzing && uploadingPhotos == 0"
       class="add-photos-button"
     > -->
-    <div class="add-photos-button">
+    <div class="grid-floating-buttons">
       <v-btn class="sync-button" @click="fetchGoogleAlbums()">
         📁 Add Photos
       </v-btn>
@@ -322,16 +322,6 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-}
-
-.add-photos-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: sticky;
-
-  bottom: 10px;
 }
 
 .alert-message {

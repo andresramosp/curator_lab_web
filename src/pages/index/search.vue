@@ -190,6 +190,15 @@
       :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
     />
+    <div class="grid-floating-buttons">
+      <v-btn
+        v-if="photosStore.selectedPhotoIds.length"
+        class="sync-button"
+        @click="analyze()"
+      >
+        Move to Canvas
+      </v-btn>
+    </div>
   </div>
 </template>
 
@@ -202,8 +211,11 @@ import ToggleOption from "@/components/wrappers/ToggleOption.vue";
 import SwitchButton from "@/components/wrappers/SwitchButton.vue";
 import PhotosSearchGrid from "@/components/PhotosSearchGrid.vue";
 import { useSearchTags } from "@/composables/useSearchTags";
+import { usePhotosStore } from "@/stores/photos";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
+
+const photosStore = usePhotosStore();
 
 const searchType = ref("semantic");
 const searchMode = ref("logical");
@@ -266,7 +278,7 @@ const photos = computed(() => {
     }
   }
   return result.filter(
-    (photo) => loadingIteration.value || !onlyInsights.value || photo.isIncluded
+    (photo) => loadingIteration.value || !onlyInsights.value || photo.isInsight
   );
 });
 
@@ -290,7 +302,7 @@ function getPageSize() {
   return 12;
   // if (!withInsights.value) return 12;
   // const rowCount = 2;
-  // const unselected = photos.value.filter((photo) => !photo.isIncluded).length;
+  // const unselected = photos.value.filter((photo) => !photo.isInsight).length;
   // const remainder = unselected % rowCount;
   // const extra = remainder === 0 ? 0 : rowCount - remainder;
   // return iteration.value === 1 ? 12 : 4 + extra;
@@ -386,7 +398,7 @@ onMounted(() => {
         return updated
           ? {
               ...existing,
-              isIncluded: updated.isIncluded,
+              isInsight: updated.isInsight,
               reasoning: updated.reasoning,
             }
           : existing;

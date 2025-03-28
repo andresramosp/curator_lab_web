@@ -5,30 +5,32 @@ import axios from "axios";
 export const usePhotosStore = defineStore("photos", {
   state: () => ({
     photos: [],
-    isLoading: false, // Manejo del estado global de carga
-    isAnalyzing: false, // Indica si hay fotos en análisis
+    isLoading: false,
+    isAnalyzing: false,
+    selectedPhotosRecord: {},
+    canvasPhotosIds: [],
   }),
 
+  getters: {
+    selectedPhotoIds: (state) =>
+      Object.keys(state.selectedPhotosRecord).filter(
+        (photoId) => !!state.selectedPhotosRecord[photoId]
+      ),
+  },
+
   actions: {
-    /** 🔹 Setea las fotos en el estado y marca las que están en análisis */
     setPhotos(photos) {
-      this.photos = photos.map((photo) => ({
-        ...photo,
-      }));
+      this.photos = photos.map((photo) => ({ ...photo }));
     },
 
-    /** 🔹 Agrega nuevas fotos al store evitando duplicados */
     addPhotos(newPhotos) {
       const newPhotoIds = newPhotos.map((p) => p.id);
       this.photos = [
         ...this.photos.filter((p) => !newPhotoIds.includes(p.id)),
-        ...newPhotos.map((photo) => ({
-          ...photo,
-        })),
+        ...newPhotos.map((photo) => ({ ...photo })),
       ];
     },
 
-    /** 🔹 Actualiza el estado de una foto específica */
     updatePhotoStatus(photoId, newStatus) {
       const photo = this.photos.find((p) => p.id === photoId);
       if (photo) {
@@ -36,7 +38,6 @@ export const usePhotosStore = defineStore("photos", {
       }
     },
 
-    /** 🔹 Elimina una foto y hace la llamada API */
     async deletePhoto(photoId) {
       try {
         await axios.delete(
@@ -46,6 +47,12 @@ export const usePhotosStore = defineStore("photos", {
       } catch (error) {
         console.error("Error deleting photo:", error);
       }
+    },
+
+    // Acción para alternar la selección de una foto
+    togglePhotoSelection(photoId) {
+      this.selectedPhotosRecord[photoId] = !this.selectedPhotosRecord[photoId];
+      console.log(this.selectedPhotosRecord);
     },
   },
 });

@@ -120,19 +120,6 @@ function fallbackImage(photo) {
   width: 100%;
 }
 
-.action-buttons {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 8px;
-  border-radius: 8px;
-  transition: opacity 0.3s;
-}
-
 .catalog-message {
   flex: 1;
   display: flex;

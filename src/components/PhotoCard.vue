@@ -3,8 +3,9 @@
     <template #default="{ isHovering, props }">
       <v-card
         v-bind="props"
-        :class="[`photo-card-${type}`, fadeClass]"
+        :class="[`photo-card-${type}`]"
         :style="cardStyle"
+        @click="photosStore.togglePhotoSelection(photo.id)"
       >
         <div class="image-container">
           <v-img
@@ -19,7 +20,7 @@
 
         <!-- Iconos informativos seleccion/deselección -->
         <div v-if="!isThinking" class="photo-icons">
-          <div v-if="photo.isIncluded" class="high-match">
+          <div v-if="photo.isInsight" class="high-match">
             <v-icon color="secondary">mdi-crown</v-icon>
           </div>
           <div v-else :class="[matchPercentClass]">
@@ -40,6 +41,7 @@
 
 <script setup>
 import { computed } from "vue";
+import { usePhotosStore } from "@/stores/photos";
 
 const props = defineProps({
   photo: Object,
@@ -58,7 +60,9 @@ const props = defineProps({
   type: "match" | "selected" | "insight",
 });
 
-const emit = defineEmits(["view-info", "switch-selected"]);
+const emit = defineEmits(["view-info"]);
+
+const photosStore = usePhotosStore();
 
 const photoSrc = computed(
   () => `${import.meta.env.VITE_PHOTOS_BASE_URL}/${props.photo.name}`
@@ -66,12 +70,10 @@ const photoSrc = computed(
 
 const cardStyle = computed(() => ({
   animationDelay: `${props.fadeDelay}ms`,
+  border: photosStore.selectedPhotoIds.includes(props.photo.id.toString())
+    ? "1px solid rgb(var(--v-theme-secondary)) !important"
+    : "none",
 }));
-
-const fadeClass = computed(
-  () => ""
-  // props.withInsights ? "fade-in-selected" : "fade-in-unselected"
-);
 
 function fallbackImage() {
   if (props.photo.url) {

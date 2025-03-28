@@ -34,7 +34,7 @@
   position: relative;
   overflow: hidden;
   background-color: rgb(var(--v-theme-surface-light)) !important;
-  border: 1px solid rgb(var(--v-theme-secondary)) !important;
+  // border: 1px solid rgb(var(--v-theme-secondary)) !important;
 }
 
 .photo-image-selected {
@@ -120,4 +120,26 @@
   .v-label {
     font-size: 11px !important;
   }
+}
+
+.action-buttons {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  /* background: rgba(0, 0, 0, 0.6); */
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.grid-floating-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+
+  bottom: 62px;
 }
