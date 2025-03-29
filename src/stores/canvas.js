@@ -33,6 +33,7 @@ function createPhoto(
 export const useCanvasStore = defineStore("canvas", {
   state: () => ({
     photos: [],
+    discardedPhotos: [],
   }),
   actions: {
     // Trae la info básica de la foto si no se tiene, usando el endpoint /catalog/photosByIds
@@ -59,17 +60,21 @@ export const useCanvasStore = defineStore("canvas", {
       }
     },
     // Trae fotos similares usando el endpoint /byPhotos
-    async addPhotosFromPhoto(photoIds, basePosition) {
+    async addPhotosFromPhoto(photoIds, similarityType, basePosition) {
       try {
+        const currentOrDiscardedPhotos = [
+          ...this.photos.map((p) => p.id),
+          ...this.discardedPhotos.map((p) => p.id),
+        ];
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
           {
             photoIds,
-            currentPhotosIds: this.photos.map((p) => p.id),
-            criteria: "semantic",
+            currentPhotosIds: currentOrDiscardedPhotos,
+            criteria: similarityType.criteria,
             opposite: false,
             tagsIds: null,
-            descriptionCategory: "story",
+            descriptionCategories: [similarityType.field],
             iteration: 1,
             pageSize: 1,
             withInsights: false,
@@ -86,6 +91,15 @@ export const useCanvasStore = defineStore("canvas", {
       } catch (error) {
         console.error("Error al añadir fotos similares:", error);
       }
+    },
+    deletePhotos(photoBase) {
+      const photosToRemove = this.photos.filter(
+        (p) => p.selected || p.id == photoBase.id
+      );
+      this.photos = this.photos.filter(
+        (p) => !photosToRemove.map((p) => p.id).includes(p.id)
+      );
+      this.discardedPhotos = this.discardedPhotos.concat(photosToRemove);
     },
   },
 });

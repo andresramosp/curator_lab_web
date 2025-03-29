@@ -157,7 +157,7 @@
       </v-btn>
     </v-toolbar>
 
-    <div class="alert-message">
+    <!-- <div class="alert-message">
       <v-alert
         v-if="maxPageAttempts"
         class="bottom-0 mb-5"
@@ -167,7 +167,7 @@
         :text="`It seems unlikely that we will find more pictures related to ${clearQuery}. We suggest you adjust the search or try a different mode.`"
         theme="dark"
       ></v-alert>
-    </div>
+    </div> -->
     <div
       v-if="photos.length"
       class="toolbar-control photos-options d-flex align-center"

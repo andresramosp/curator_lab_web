@@ -12,10 +12,10 @@
       @next-iteration="$emit('next-iteration')"
     />
   </div>
-  <div v-else class="catalog-message">
+  <!-- <div v-else class="catalog-message">
     <p class="text-h5 text-center">No photos yet</p>
   </div>
-
+ -->
   <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
 </template>
 

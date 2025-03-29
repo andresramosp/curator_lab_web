@@ -2,6 +2,29 @@
   <div class="main-container" ref="containerRef">
     <!-- Toolbar vertical a la derecha -->
     <div right permanent width="80" class="toolbar">
+      <v-select
+        v-model="similarityType"
+        :items="[
+          {
+            label: 'General',
+            data: { criteria: 'aesthetic' },
+          },
+          {
+            label: 'Context',
+            data: { criteria: 'semantic', field: 'context' },
+          },
+          {
+            label: 'Story',
+            data: { criteria: 'semantic', field: 'story' },
+          },
+          {
+            label: 'Accents',
+            data: { criteria: 'semantic', field: 'visual_accents' },
+          },
+        ]"
+        item-title="label"
+        item-value="data"
+      ></v-select>
       <v-list dense>
         <v-list-item>
           <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
@@ -102,8 +125,6 @@ import { useCanvasStore } from "@/stores/canvas";
 import { usePhotosStore } from "@/stores/photos";
 
 const canvasStore = useCanvasStore();
-const photosStore = usePhotosStore();
-
 const { photos } = storeToRefs(canvasStore);
 
 const stageRef = ref(null);
@@ -114,6 +135,8 @@ const stageConfig = reactive({
   scale: { x: 1, y: 1 },
   draggable: false,
 });
+const similarityType = ref({ criteria: "aesthetic" });
+
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
   stageConfig.height = containerRef.value.clientHeight;
@@ -123,7 +146,6 @@ onMounted(() => {
 watch(
   () => photos.value.map((p) => p.src),
   (newSources, oldSources) => {
-    debugger;
     photos.value.forEach((photo) => {
       if (!photo.image) {
         const [image] = useImage(photo.src);
@@ -169,7 +191,11 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
     .filter((p) => p.selected)
     .map((p) => p.id);
   if (!selectedPhotoIds.length) selectedPhotoIds.push(photo.id);
-  await canvasStore.addPhotosFromPhoto(selectedPhotoIds, basePosition);
+  await canvasStore.addPhotosFromPhoto(
+    selectedPhotoIds,
+    similarityType.value,
+    basePosition
+  );
   nextTick(() => {
     const baseAngle = Math.PI / 4;
     const spread = Math.PI / 3;
@@ -179,9 +205,10 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
       if (!groupNode) return;
       const total = newPhotos.length;
       const angle = baseAngle + (index - (total - 1) / 2) * spread;
-      const distance = Math.floor(Math.random() * (250 - 200 + 1)) + 200;
-      const targetX = basePosition.x + Math.cos(angle) * distance;
-      const targetY = basePosition.y + Math.sin(angle) * distance;
+      const distance1 = Math.floor(Math.random() * (300 - 230 + 1)) + 230;
+      const distance2 = Math.floor(Math.random() * (300 - 230 + 1)) + 230;
+      const targetX = basePosition.x + Math.cos(angle) * distance1;
+      const targetY = basePosition.y + Math.sin(angle) * distance2;
       new Konva.Tween({
         node: groupNode,
         duration: 0.7,
@@ -197,9 +224,9 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
   });
 };
 
-const handleDeletePhoto = (photo, event) => {
+const handleDeletePhoto = (photoBase, event) => {
   event.cancelBubble = true;
-  canvasStore.photos = photos.value.filter((p) => !p.selected);
+  canvasStore.deletePhotos(photoBase);
 };
 
 let dragGroupStart = {};
