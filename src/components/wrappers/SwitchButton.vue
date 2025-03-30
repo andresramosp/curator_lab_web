@@ -4,6 +4,7 @@
       <v-btn
         v-bind="props"
         @click="toggle"
+        :disabled="isDisabled"
         class="mx-2 toolbar-control switch"
         variant="outlined"
         :class="{ on: value, off: !value }"
@@ -31,6 +32,10 @@ export default {
     tooltip: {
       type: String,
       default: "asdasd",
+    },
+    isDisabled: {
+      type: Boolean,
+      default: false,
     },
   },
   computed: {

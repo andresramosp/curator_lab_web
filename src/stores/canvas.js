@@ -64,7 +64,7 @@ export const useCanvasStore = defineStore("canvas", {
       try {
         const currentOrDiscardedPhotos = [
           ...this.photos.map((p) => p.id),
-          ...this.discardedPhotos.map((p) => p.id),
+          // ...this.discardedPhotos.map((p) => p.id),
         ];
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
@@ -74,10 +74,11 @@ export const useCanvasStore = defineStore("canvas", {
             criteria: similarityType.criteria,
             opposite: false,
             tagsIds: null,
-            descriptionCategories: [similarityType.field],
+            descriptionCategories: similarityType.fields,
             iteration: 1,
             pageSize: 1,
             withInsights: false,
+            opposite: false,
           }
         );
         const backendPhotos = Array.isArray(response.data)

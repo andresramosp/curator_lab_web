@@ -135,11 +135,12 @@
           tooltip="Allows the engine to find indirect and figurative associations"
         >
           <v-icon left class="mr-1">mdi-brain</v-icon>
-          Flexible
+          Creative
         </ToggleOption>
       </ToggleButtons>
 
       <SwitchButton
+        :isDisabled="searchMode != 'creative' || searchType != 'semantic'"
         icon="mdi-eye-outline"
         v-model="withInsights"
         tooltip="Get insights on high potential photos"

@@ -187,7 +187,7 @@ async function analyze() {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
       packageId: "basic_1", //"topological_upgrade",
-      mode: "first",
+      mode: "remake",
       // processId: 93,
     });
   } catch (error) {

@@ -7,19 +7,19 @@
         :items="[
           {
             label: 'General',
-            data: { criteria: 'aesthetic' },
+            data: { criteria: 'embedding' },
           },
           {
             label: 'Context',
-            data: { criteria: 'semantic', field: 'context' },
+            data: { criteria: 'semantic', fields: ['context'] },
           },
           {
             label: 'Story',
-            data: { criteria: 'semantic', field: 'story' },
+            data: { criteria: 'semantic', fields: ['story'] },
           },
           {
-            label: 'Accents',
-            data: { criteria: 'semantic', field: 'visual_accents' },
+            label: 'Topological',
+            data: { criteria: 'topological' },
           },
         ]"
         item-title="label"
@@ -88,8 +88,8 @@
               width: photo.config.width,
               height: photo.config.height,
               image: photo.image,
-              stroke: photo.selected ? secondaryColor : undefined,
-              strokeWidth: photo.selected ? 4 : 0,
+              stroke: photo.selected ? secondaryColor : primaryColor,
+              strokeWidth: photo.selected ? 4 : 2,
             }"
           />
           <template v-if="photo.showButton">
@@ -123,6 +123,7 @@ import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
 import { storeToRefs } from "pinia";
 import { useCanvasStore } from "@/stores/canvas";
 import { usePhotosStore } from "@/stores/photos";
+import { hungarian } from "@/utils/utils";
 
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
@@ -135,7 +136,7 @@ const stageConfig = reactive({
   scale: { x: 1, y: 1 },
   draggable: false,
 });
-const similarityType = ref({ criteria: "aesthetic" });
+const similarityType = ref({ criteria: "embedding" });
 
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
@@ -163,6 +164,7 @@ const setPhotoRef = (id) => (el) => {
 
 const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
+const primaryColor = theme.current.value.colors.primary;
 
 const mode = ref("select");
 watch(mode, (newVal) => {
@@ -185,6 +187,9 @@ const handleSelectPhoto = (photo, event) => {
 };
 
 const handleAddPhotoFromPhoto = async (photo, event) => {
+  photo.baseAngleInc = photo.baseAngleInc || 0;
+  photo.distanceInc = photo.distanceInc || 0;
+
   event.cancelBubble = true;
   const basePosition = { x: photo.config.x, y: photo.config.y };
   const selectedPhotoIds = photos.value
@@ -197,7 +202,7 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
     basePosition
   );
   nextTick(() => {
-    const baseAngle = Math.PI / 4;
+    const baseAngle = Math.PI / 4 + photo.baseAngleInc;
     const spread = Math.PI / 3;
     const newPhotos = photos.value.filter((p) => p.config.opacity === 0);
     newPhotos.forEach((newPhoto, index) => {
@@ -205,10 +210,12 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
       if (!groupNode) return;
       const total = newPhotos.length;
       const angle = baseAngle + (index - (total - 1) / 2) * spread;
-      const distance1 = Math.floor(Math.random() * (300 - 230 + 1)) + 230;
-      const distance2 = Math.floor(Math.random() * (300 - 230 + 1)) + 230;
-      const targetX = basePosition.x + Math.cos(angle) * distance1;
-      const targetY = basePosition.y + Math.sin(angle) * distance2;
+      const distance1 = Math.floor(Math.random() * (310 - 220 + 1)) + 220;
+      const distance2 = Math.floor(Math.random() * (310 - 220 + 1)) + 220;
+      const targetX =
+        basePosition.x + Math.cos(angle) * (distance1 + photo.distanceInc);
+      const targetY =
+        basePosition.y + Math.sin(angle) * (distance2 + photo.distanceInc);
       new Konva.Tween({
         node: groupNode,
         duration: 0.7,
@@ -217,10 +224,14 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
         opacity: 1,
         easing: Konva.Easings.StrongEaseInOut,
       }).play();
-      newPhoto.config.x = targetX;
-      newPhoto.config.y = targetY;
-      newPhoto.config.opacity = 1;
+      setTimeout(() => {
+        newPhoto.config.x = targetX;
+        newPhoto.config.y = targetY;
+        newPhoto.config.opacity = 1;
+      }, 700);
     });
+    photo.baseAngleInc += 30;
+    // photo.distanceInc += 75;
   });
 };
 
@@ -348,36 +359,56 @@ const orderPhotos = () => {
   const photoWidth = photos.value[0].config.width;
   const photoHeight = photos.value[0].config.height;
   const columns = Math.floor(stageConfig.width / (photoWidth + margin)) || 1;
+  const rows = Math.ceil(photos.value.length / columns);
 
-  // Usamos el orden del array (inserción) como criterio estable
-  photos.value.forEach((photo, index) => {
-    const col = index % columns;
-    const row = Math.floor(index / columns);
-    const targetX = margin + col * (photoWidth + margin);
-    const targetY = margin + row * (photoHeight + margin);
-
-    // Calculamos la diferencia con la posición actual
-    const dx = photo.config.x - targetX;
-    const dy = photo.config.y - targetY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Si el movimiento es mayor a un umbral (por ejemplo 5px), se anima
-    if (distance > 5) {
-      if (photoRefs.value[photo.id]) {
-        const groupNode = photoRefs.value[photo.id].getNode();
-        new Konva.Tween({
-          node: groupNode,
-          duration: 0.7,
-          x: targetX,
-          y: targetY,
-          easing: Konva.Easings.StrongEaseInOut,
-        }).play();
+  // Generamos la lista de posiciones del grid
+  const gridPositions = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < columns; col++) {
+      if (gridPositions.length < photos.value.length) {
+        gridPositions.push({
+          x: margin + col * (photoWidth + margin),
+          y: margin + row * (photoHeight + margin),
+        });
       }
-      photo.config.x = targetX;
-      photo.config.y = targetY;
     }
+  }
+
+  // Creamos la matriz de costos (distancias)
+  const costMatrix = photos.value.map((photo) => {
+    return gridPositions.map((pos) => {
+      const dx = photo.config.x - pos.x;
+      const dy = photo.config.y - pos.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    });
+  });
+
+  // Se obtiene la asignación óptima con el algoritmo húngaro
+  const assignments = hungarian(costMatrix);
+
+  // Animamos cada foto a su posición asignada
+  assignments.forEach((gridIndex, photoIndex) => {
+    const targetPos = gridPositions[gridIndex];
+    const photo = photos.value[photoIndex];
+    const dx = photo.config.x - targetPos.x;
+    const dy = photo.config.y - targetPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > 5 && photoRefs.value[photo.id]) {
+      const groupNode = photoRefs.value[photo.id].getNode();
+      new Konva.Tween({
+        node: groupNode,
+        duration: 0.7,
+        x: targetPos.x,
+        y: targetPos.y,
+        easing: Konva.Easings.StrongEaseInOut,
+      }).play();
+    }
+    photo.config.x = targetPos.x;
+    photo.config.y = targetPos.y;
   });
 };
+
+// Implementación del algoritmo húngaro para matrices (se rellena con ceros para cuadrar si es necesario)
 </script>
 
 <style scoped>
