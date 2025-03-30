@@ -18,8 +18,8 @@
             data: { criteria: 'semantic', fields: ['story'] },
           },
           {
-            label: 'Topological',
-            data: { criteria: 'topological' },
+            label: 'Tags',
+            data: { criteria: 'tags' },
           },
         ]"
         item-title="label"
@@ -92,7 +92,23 @@
               strokeWidth: photo.selected ? 4 : 2,
             }"
           />
+
           <template v-if="photo.showButton">
+            <TagPillCanva
+              v-for="(tagPhoto, index) in photo.tags
+                .filter((tag) =>
+                  ['person', 'animals', 'objects', 'environment'].includes(
+                    tag.group
+                  )
+                )
+                .slice(0, 6)"
+              :key="tagPhoto.tag.id"
+              :tag="tagPhoto.tag"
+              :photo="photo"
+              :offsetY="5 + index * 22"
+              v-model="tagPhoto.tag.selected"
+            />
+
             <PhotoCanvasButton
               :photo="photo"
               type="delete"
@@ -124,6 +140,7 @@ import { storeToRefs } from "pinia";
 import { useCanvasStore } from "@/stores/canvas";
 import { usePhotosStore } from "@/stores/photos";
 import { hungarian } from "@/utils/utils";
+import TagPillCanva from "@/components/wrappers/TagPillCanva.vue";
 
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
@@ -238,6 +255,11 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
 const handleDeletePhoto = (photoBase, event) => {
   event.cancelBubble = true;
   canvasStore.deletePhotos(photoBase);
+};
+
+const handleUpdateTag = (event) => {
+  event.cancelBubble = true;
+  canvasStore.updateTag(event.photoBase, event.tagId, event.value);
 };
 
 let dragGroupStart = {};
@@ -421,5 +443,12 @@ const orderPhotos = () => {
   position: absolute;
   right: 8px;
   z-index: 100;
+}
+.tags-container {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
 }
 </style>

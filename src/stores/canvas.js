@@ -27,6 +27,7 @@ function createPhoto(
     image: null,
     selected: false,
     showButton: false,
+    tags: backendPhoto.tags,
   };
 }
 
@@ -66,6 +67,15 @@ export const useCanvasStore = defineStore("canvas", {
           ...this.photos.map((p) => p.id),
           // ...this.discardedPhotos.map((p) => p.id),
         ];
+        let selectedTags = [];
+        for (let photoId of photoIds) {
+          let photo = this.photos.find((p) => p.id == photoId);
+          let selectedPhotoTagsIds = photo.tags
+            .filter((t) => t.tag.selected)
+            .map((t) => t.tag.id);
+          selectedTags = selectedTags.concat(selectedPhotoTagsIds);
+        }
+
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
           {
@@ -73,12 +83,12 @@ export const useCanvasStore = defineStore("canvas", {
             currentPhotosIds: currentOrDiscardedPhotos,
             criteria: similarityType.criteria,
             opposite: false,
-            tagsIds: null,
             descriptionCategories: similarityType.fields,
             iteration: 1,
             pageSize: 1,
             withInsights: false,
             opposite: false,
+            tagIds: selectedTags,
           }
         );
         const backendPhotos = Array.isArray(response.data)
@@ -102,5 +112,16 @@ export const useCanvasStore = defineStore("canvas", {
       );
       this.discardedPhotos = this.discardedPhotos.concat(photosToRemove);
     },
+    // updateTag(photo, tagId, value) {
+    //   if (!photo.selectedTags) {
+    //     photo.selectedTags = [];
+    //   }
+    //   const index = photo.selectedTags.indexOf(tagId);
+    //   if (value) {
+    //     photo.selectedTags.push(tagId);
+    //   } else {
+    //     photo.selectedTags.splice(index, 1);
+    //   }
+    // },
   },
 });
