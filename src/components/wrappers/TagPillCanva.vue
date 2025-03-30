@@ -9,7 +9,7 @@
       :config="{
         width: pillWidth,
         height: pillHeight,
-        fill: isSelected ? selectedColor : defaultColor,
+        fill: isSelected || isHovered ? selectedColor : defaultColor,
         opacity: 0.7,
         cornerRadius: pillHeight / 2,
       }"
@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useTheme } from "vuetify";
 
 const props = defineProps({
@@ -50,7 +50,9 @@ const isSelected = computed({
   },
 });
 
-const fontSize = 12;
+const isHovered = ref(false);
+
+const fontSize = 11;
 const textPadding = 6;
 const defaultColor = "gray";
 
@@ -77,11 +79,13 @@ const handleClick = (e) => {
 };
 
 const handleMouseOver = (e) => {
+  isHovered.value = true;
   const stage = e.target.getStage();
   stage.container().style.cursor = "pointer";
 };
 
 const handleMouseOut = (e) => {
+  isHovered.value = false;
   const stage = e.target.getStage();
   stage.container().style.cursor = "default";
 };

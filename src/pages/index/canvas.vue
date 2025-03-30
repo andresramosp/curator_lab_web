@@ -95,17 +95,18 @@
 
           <template v-if="photo.showButton">
             <TagPillCanva
+              v-if="similarityType.criteria == 'tags'"
               v-for="(tagPhoto, index) in photo.tags
                 .filter((tag) =>
                   ['person', 'animals', 'objects', 'environment'].includes(
                     tag.group
                   )
                 )
-                .slice(0, 6)"
+                .slice(0, 8)"
               :key="tagPhoto.tag.id"
               :tag="tagPhoto.tag"
               :photo="photo"
-              :offsetY="5 + index * 22"
+              :offsetY="5 + index * 20"
               v-model="tagPhoto.tag.selected"
             />
 
