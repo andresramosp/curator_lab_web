@@ -10,11 +10,11 @@
         width: buttonWidth,
         height: buttonHeight,
         fill: fill,
-        opacity: 0.6,
+        opacity: 0.5,
         cornerRadius: 5,
       }"
     />
-    <v-text
+    <!-- <v-text
       :config="{
         x: 0,
         y: (buttonHeight - fontSize) / 2,
@@ -26,7 +26,7 @@
         verticalAlign: 'middle',
         fill: textColor,
       }"
-    />
+    /> -->
   </v-group>
 </template>
 
@@ -52,14 +52,14 @@ const props = defineProps({
   },
   fill: { type: String, required: true },
   icon: { type: String, required: true },
-  fontSize: { type: Number, default: 16 },
+  fontSize: { type: Number, default: 8 },
   textColor: { type: String, default: "white" },
   onClick: { type: Function, required: true },
 });
 
-const buttonWidth = 20;
-const buttonHeight = 20;
-const margin = -10;
+const buttonWidth = 16;
+const buttonHeight = 16;
+const margin = -8;
 
 const computedX = computed(() => {
   const w = props.photo.config.width;

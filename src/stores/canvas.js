@@ -70,7 +70,7 @@ export const useCanvasStore = defineStore("canvas", {
       try {
         const currentOrDiscardedPhotos = [
           ...this.photos.map((p) => p.id),
-          // ...this.discardedPhotos.map((p) => p.id),
+          ...this.discardedPhotos.map((p) => p.id),
         ];
         let selectedTags = [];
         for (let photoId of photoIds) {

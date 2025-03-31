@@ -2,31 +2,33 @@
   <div class="main-container" ref="containerRef">
     <!-- Toolbar vertical a la derecha -->
     <div right permanent width="80" class="toolbar">
-      <v-select
-        v-model="similarityType"
-        :items="[
-          {
-            label: 'General',
-            data: { criteria: 'embedding' },
-          },
-          {
-            label: 'Context',
-            data: { criteria: 'semantic', fields: ['context'] },
-          },
-          {
-            label: 'Story',
-            data: { criteria: 'semantic', fields: ['story'] },
-          },
-          {
-            label: 'Tags',
-            data: { criteria: 'tags' },
-          },
-        ]"
-        item-title="label"
-        item-value="data"
-      ></v-select>
-      <v-select v-model="resultLength" :items="[1, 2, 3]"></v-select>
       <v-list dense>
+        <v-list-item>
+          <v-select
+            v-model="similarityType"
+            :items="[
+              {
+                label: 'General',
+                data: { criteria: 'embedding' },
+              },
+              {
+                label: 'Context',
+                data: { criteria: 'semantic', fields: ['context'] },
+              },
+              {
+                label: 'Story',
+                data: { criteria: 'semantic', fields: ['story'] },
+              },
+              {
+                label: 'Tags',
+                data: { criteria: 'tags' },
+              },
+            ]"
+            item-title="label"
+            item-value="data"
+          ></v-select>
+          <v-select v-model="resultLength" :items="[1, 2, 3]"></v-select>
+        </v-list-item>
         <v-list-item>
           <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
             <v-icon v-if="mode === 'move'" size="30">mdi-dots-square</v-icon>
@@ -107,6 +109,11 @@
             />
             <ExpandPhotoButtons
               :photo="photo"
+              v-if="
+                similarityType.criteria !== 'tags' ||
+                photo.tags.filter((tagPhoto) => tagPhoto.tag.selected).length >
+                  0
+              "
               @click="handleAddPhotoFromPhoto"
             ></ExpandPhotoButtons>
           </template>
