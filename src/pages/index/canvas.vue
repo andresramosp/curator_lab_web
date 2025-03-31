@@ -73,6 +73,7 @@
             zIndex: photo.config.zIndex,
             opacity:
               photo.config.opacity !== undefined ? photo.config.opacity : 1,
+            _isPhoto: true, // Propiedad personalizada para identificar la foto
           }"
           @dragstart="handleDragStart(photo, $event)"
           @dragend="handleDragEnd(photo, $event)"
@@ -94,20 +95,10 @@
           />
 
           <template v-if="photo.showButton">
-            <TagPillCanva
-              v-if="similarityType.criteria == 'tags'"
-              v-for="(tagPhoto, index) in photo.tags
-                .filter((tag) =>
-                  ['person', 'animals', 'objects', 'environment'].includes(
-                    tag.group
-                  )
-                )
-                .slice(0, 8)"
-              :key="tagPhoto.tag.id"
-              :tag="tagPhoto.tag"
+            <TagPillsCanvas
+              v-if="similarityType.criteria === 'tags'"
               :photo="photo"
-              :offsetY="5 + index * 20"
-              v-model="tagPhoto.tag.selected"
+              :tags="photo.tags"
             />
 
             <PhotoCanvasButton
@@ -136,12 +127,11 @@ import { ref, reactive, onMounted, nextTick, watch } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
-import PhotoCanvasButton from "@/components/wrappers/PhotoCanvasButton.vue";
+import PhotoCanvasButton from "@/components/wrappers/canvas/PhotoCanvasButton.vue";
 import { storeToRefs } from "pinia";
 import { useCanvasStore } from "@/stores/canvas";
-import { usePhotosStore } from "@/stores/photos";
+import TagPillsCanvas from "@/components/wrappers/canvas/TagPills/TagPillsCanvas.vue";
 import { hungarian } from "@/utils/utils";
-import TagPillCanva from "@/components/wrappers/TagPillCanva.vue";
 
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
@@ -357,10 +347,29 @@ const handleMouseOut = (photo) => {
 };
 
 const handleWheel = (e) => {
-  e.evt.preventDefault();
   const stage = stageRef.value.getStage();
-  const oldScale = stage.scaleX();
   const pointer = stage.getPointerPosition();
+
+  // Si el criterio es "tags", verificamos si el puntero está sobre una foto
+  if (similarityType.value.criteria === "tags") {
+    let shape = stage.getIntersection(pointer);
+    let isOverPhoto = false;
+    while (shape && shape !== stage) {
+      if (shape.getAttr("_isPhoto")) {
+        isOverPhoto = true;
+        break;
+      }
+      shape = shape.getParent();
+    }
+    if (isOverPhoto) {
+      e.evt.preventDefault();
+      e.evt.stopPropagation();
+      return;
+    }
+  }
+
+  // Lógica de zoom normal
+  const oldScale = stage.scaleX();
   const scaleBy = 1.25;
   const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
   const mousePointTo = {

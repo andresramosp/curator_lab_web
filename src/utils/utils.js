@@ -1,3 +1,5 @@
+import nlp from "compromise";
+
 export function hungarian(matrix) {
   const n = matrix.length;
   const m = matrix[0].length;
@@ -157,4 +159,14 @@ export function hungarian(matrix) {
     }
   }
   return result;
+}
+
+export function shortenTag(tag) {
+  const doc = nlp(tag);
+
+  // Elimina adjetivos (Adjective) y adverbios (Adverb)
+  doc.match("#Adjective").delete();
+  doc.match("#Adverb").delete();
+
+  return doc.text().trim();
 }

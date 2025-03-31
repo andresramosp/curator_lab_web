@@ -19,7 +19,7 @@
         x: 0,
         y: (pillHeight - fontSize) / 2,
         width: pillWidth,
-        text: tag.name,
+        text: shortenTag(tag.name),
         fontSize: fontSize,
         align: 'center',
         fill: textColor,
@@ -29,6 +29,7 @@
 </template>
 
 <script setup>
+import { shortenTag } from "@/utils/utils";
 import { computed, ref } from "vue";
 import { useTheme } from "vuetify";
 
@@ -61,7 +62,7 @@ const selectedColor = theme.current.value.colors.secondary;
 const textColor = theme.current.value.colors.primary;
 
 const pillWidth = computed(() => {
-  const approxWidth = props.tag.name.length * (fontSize * 0.6);
+  const approxWidth = shortenTag(props.tag.name).length * (fontSize * 0.6);
   return approxWidth + textPadding * 1.5;
 });
 const pillHeight = 18;
