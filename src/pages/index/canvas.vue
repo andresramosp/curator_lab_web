@@ -45,6 +45,17 @@
             <v-icon size="30">mdi-delete</v-icon>
           </v-btn>
         </v-list-item>
+        <v-list-item>
+          <!-- Nuevo slider de zoom -->
+          <v-slider
+            v-model="zoom"
+            :min="0.5"
+            :max="2"
+            :step="0.01"
+            hide-details
+            style="width: 100px"
+          ></v-slider>
+        </v-list-item>
       </v-list>
     </div>
     <v-stage
@@ -148,6 +159,27 @@ const stageConfig = reactive({
 const similarityType = ref({ criteria: "embedding" });
 const resultLength = ref(1);
 
+// En el <script setup>
+const zoom = ref(1);
+
+watch(zoom, (newZoom) => {
+  const stage = stageRef.value.getStage();
+  // Calculamos el centro actual del canvas
+  const center = { x: stage.width() / 2, y: stage.height() / 2 };
+  const oldScale = stage.scaleX();
+  const centerPoint = {
+    x: (center.x - stage.x()) / oldScale,
+    y: (center.y - stage.y()) / oldScale,
+  };
+  stage.scale({ x: newZoom, y: newZoom });
+  const newPos = {
+    x: center.x - centerPoint.x * newZoom,
+    y: center.y - centerPoint.y * newZoom,
+  };
+  stage.position(newPos);
+  stage.batchDraw();
+});
+
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
   stageConfig.height = containerRef.value.clientHeight;
@@ -176,10 +208,14 @@ const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
 const primaryColor = theme.current.value.colors.primary;
 
-const mode = ref("select");
-watch(mode, (newVal) => {
-  stageConfig.draggable = newVal === "move";
-});
+const mode = ref("move");
+watch(
+  mode,
+  (newVal) => {
+    stageConfig.draggable = newVal === "move";
+  },
+  { immediate: true }
+);
 
 let selectionStart = null;
 const selectionRect = reactive({
@@ -191,7 +227,7 @@ const selectionRect = reactive({
 });
 
 const handleSelectPhoto = (photo, event) => {
-  if (mode.value === "select" && !selectionRect.visible) {
+  if (!selectionRect.visible) {
     photo.selected = !photo.selected;
   }
 };
