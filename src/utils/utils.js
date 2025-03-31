@@ -162,6 +162,7 @@ export function hungarian(matrix) {
 }
 
 export function shortenTag(tag) {
+  return tag;
   const doc = nlp(tag);
 
   // Elimina adjetivos (Adjective) y adverbios (Adverb)

@@ -9,7 +9,11 @@
       :config="{
         width: pillWidth,
         height: pillHeight,
-        fill: isSelected || isHovered ? selectedColor : defaultColor,
+        fill: isSelected
+          ? selectedColor
+          : isHovered
+          ? 'lightgray'
+          : defaultColor,
         opacity: 0.7,
         cornerRadius: pillHeight / 2,
       }"
