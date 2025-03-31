@@ -10,7 +10,8 @@
         width: buttonWidth,
         height: buttonHeight,
         fill: fill,
-        cornerRadius: 0,
+        opacity: 0.6,
+        cornerRadius: 5,
       }"
     />
     <v-text
@@ -34,7 +35,15 @@ import { computed } from "vue";
 
 const props = defineProps({
   photo: Object,
-  type: { type: String, required: true }, // "delete" o "add"
+  position: {
+    type: String,
+    required: true,
+    validator: (value) =>
+      ["upper-left", "upper-right", "bottom-left", "bottom-right"].includes(
+        value
+      ),
+  },
+
   fill: { type: String, required: true },
   icon: { type: String, required: true },
   fontSize: { type: Number, default: 16 },
@@ -48,25 +57,38 @@ const margin = 5;
 
 const computedX = computed(() => {
   const photoWidth = props.photo.config.width;
-  if (props.type === "delete") {
-    // Centro en la mitad izquierda
-    return (photoWidth / 2 - buttonWidth) / 2;
-  } else if (props.type === "add") {
-    // Centro en la mitad derecha
-    return photoWidth / 2 + (photoWidth / 2 - buttonWidth) / 2;
+  switch (props.position) {
+    case "upper-left":
+    case "bottom-left":
+      return margin;
+    case "upper-right":
+    case "bottom-right":
+      return photoWidth - buttonWidth - margin;
+    default:
+      return 0;
   }
-  return 0;
 });
 
-const computedY = computed(
-  () => props.photo.config.height - buttonHeight - margin
-);
+const computedY = computed(() => {
+  const photoHeight = props.photo.config.height;
+  switch (props.position) {
+    case "upper-left":
+    case "upper-right":
+      return margin;
+    case "bottom-left":
+    case "bottom-right":
+      return photoHeight - buttonHeight - margin;
+    default:
+      return 0;
+  }
+});
+
+const emit = defineEmits(["click"]);
 
 const handleClick = (e) => {
   e.cancelBubble = true;
-  props.onClick(props.photo, e);
+  emit("click", props.position);
 };
-
 const handleMouseOver = (e) => {
   const stage = e.target.getStage();
   stage.container().style.cursor = "pointer";

@@ -102,25 +102,12 @@ export const useCanvasStore = defineStore("canvas", {
         console.error("Error al añadir fotos similares:", error);
       }
     },
-    deletePhotos(photoBase) {
-      const photosToRemove = this.photos.filter(
-        (p) => p.selected || p.id == photoBase.id
-      );
+    deletePhotos() {
+      const photosToRemove = this.photos.filter((p) => p.selected);
       this.photos = this.photos.filter(
         (p) => !photosToRemove.map((p) => p.id).includes(p.id)
       );
       this.discardedPhotos = this.discardedPhotos.concat(photosToRemove);
     },
-    // updateTag(photo, tagId, value) {
-    //   if (!photo.selectedTags) {
-    //     photo.selectedTags = [];
-    //   }
-    //   const index = photo.selectedTags.indexOf(tagId);
-    //   if (value) {
-    //     photo.selectedTags.push(tagId);
-    //   } else {
-    //     photo.selectedTags.splice(index, 1);
-    //   }
-    // },
   },
 });

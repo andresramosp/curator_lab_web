@@ -32,10 +32,14 @@
             <v-icon v-else size="30">mdi-pan</v-icon>
           </v-btn>
         </v-list-item>
-        <!-- Botón ordenar -->
         <v-list-item>
           <v-btn icon @click="orderPhotos">
             <v-icon size="30">mdi-grid</v-icon>
+          </v-btn>
+        </v-list-item>
+        <v-list-item>
+          <v-btn icon @click="handleDeletePhotos">
+            <v-icon size="30">mdi-delete</v-icon>
           </v-btn>
         </v-list-item>
       </v-list>
@@ -100,21 +104,10 @@
               :photo="photo"
               :tags="photo.tags"
             />
-
-            <PhotoCanvasButton
+            <ExpandPhotoButtons
               :photo="photo"
-              type="delete"
-              fill="red"
-              icon="X"
-              :onClick="handleDeletePhoto"
-            />
-            <PhotoCanvasButton
-              :photo="photo"
-              type="add"
-              :fill="secondaryColor"
-              icon="+"
-              :onClick="handleAddPhotoFromPhoto"
-            />
+              @click="handleAddPhotoFromPhoto"
+            ></ExpandPhotoButtons>
           </template>
         </v-group>
       </v-layer>
@@ -127,11 +120,12 @@ import { ref, reactive, onMounted, nextTick, watch } from "vue";
 import { useImage } from "vue-konva";
 import Konva from "konva";
 import { useTheme } from "vuetify";
-import PhotoCanvasButton from "@/components/wrappers/canvas/PhotoCanvasButton.vue";
 import { storeToRefs } from "pinia";
 import { useCanvasStore } from "@/stores/canvas";
-import TagPillsCanvas from "@/components/wrappers/canvas/TagPills/TagPillsCanvas.vue";
 import { hungarian } from "@/utils/utils";
+import PhotoCanvasButton from "@/components/canvas/PhotoCanvasButton.vue";
+import TagPillsCanvas from "@/components/canvas/TagPills/TagPillsCanvas.vue";
+import ExpandPhotoButtons from "@/components/canvas/ExpandPhotoButtons.vue";
 
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
@@ -194,18 +188,18 @@ const handleSelectPhoto = (photo, event) => {
   }
 };
 
-const handleAddPhotoFromPhoto = async (photo, event) => {
+const handleAddPhotoFromPhoto = async (event) => {
+  const { photo, position } = event;
   photo.baseAngleInc = photo.baseAngleInc || 0;
-  photo.distanceInc = photo.distanceInc || 0;
 
   event.cancelBubble = true;
   const basePosition = { x: photo.config.x, y: photo.config.y };
-  const selectedPhotoIds = photos.value
-    .filter((p) => p.selected)
-    .map((p) => p.id);
-  if (!selectedPhotoIds.length) selectedPhotoIds.push(photo.id);
+  // const selectedPhotoIds = photos.value
+  //   .filter((p) => p.selected)
+  //   .map((p) => p.id);
+  // if (!selectedPhotoIds.length) selectedPhotoIds.push(photo.id);
   await canvasStore.addPhotosFromPhoto(
-    selectedPhotoIds,
+    [photo.id], // selectedPhotoIds,
     similarityType.value,
     basePosition
   );
@@ -220,10 +214,8 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
       const angle = baseAngle + (index - (total - 1) / 2) * spread;
       const distance1 = Math.floor(Math.random() * (310 - 220 + 1)) + 220;
       const distance2 = Math.floor(Math.random() * (310 - 220 + 1)) + 220;
-      const targetX =
-        basePosition.x + Math.cos(angle) * (distance1 + photo.distanceInc);
-      const targetY =
-        basePosition.y + Math.sin(angle) * (distance2 + photo.distanceInc);
+      const targetX = basePosition.x + Math.cos(angle) * distance1;
+      const targetY = basePosition.y + Math.sin(angle) * distance2;
       new Konva.Tween({
         node: groupNode,
         duration: 0.7,
@@ -239,13 +231,12 @@ const handleAddPhotoFromPhoto = async (photo, event) => {
       }, 700);
     });
     photo.baseAngleInc += 30;
-    // photo.distanceInc += 75;
   });
 };
 
-const handleDeletePhoto = (photoBase, event) => {
+const handleDeletePhotos = (event) => {
   event.cancelBubble = true;
-  canvasStore.deletePhotos(photoBase);
+  canvasStore.deletePhotos();
 };
 
 const handleUpdateTag = (event) => {

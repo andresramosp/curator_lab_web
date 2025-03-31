@@ -1,10 +1,10 @@
 <template>
   <v-group>
-    <!-- Hit area ampliado para capturar el scroll -->
+    <!-- Hit area inferior (ampliado) -->
     <v-rect
       :config="{
-        x: 0,
-        y: 0,
+        x: -25,
+        y: -25,
         width: hitAreaWidth,
         height: hitAreaHeight,
         opacity: 0,
@@ -12,8 +12,9 @@
       }"
       @wheel="onWheel"
     />
-    <!-- Grupo de tags con clipping -->
-    <v-group :config="{ x: 0, y: 0 }" :clipFunc="clipFunc">
+
+    <!-- Grupo visible de tags, que también capta el wheel -->
+    <v-group :config="{ x: 0, y: 0 }" :clipFunc="clipFunc" @wheel="onWheel">
       <template
         v-for="(tagPhoto, index) in filteredTags"
         :key="tagPhoto.tag.id"
@@ -39,19 +40,33 @@ const props = defineProps({
   tags: { type: Array, required: true },
 });
 
-const allowedGroups = ["person", "animals", "objects", "environment", "misc"];
-const filteredTags = computed(() =>
-  props.tags
-    .filter((tagPhoto) => allowedGroups.includes(tagPhoto.tag.group))
-    .sort(
-      (t1, t2) =>
-        shortenTag(t2.tag.name).length - shortenTag(t1.tag.name).length
-    )
-);
+const allowedGroups = [
+  "person",
+  "animals",
+  "objects",
+  "environment",
+  "misc",
+  "toponym",
+  "mood",
+  "weather",
+  "symbols",
+];
+const filteredTags = computed(() => {
+  const seen = new Map();
+  for (const tagPhoto of props.tags) {
+    const id = tagPhoto.tag.id;
+    if (allowedGroups.includes(tagPhoto.tag.group) && !seen.has(id)) {
+      seen.set(id, tagPhoto);
+    }
+  }
+  return Array.from(seen.values()).sort(
+    (t1, t2) => shortenTag(t2.tag.name).length - shortenTag(t1.tag.name).length
+  );
+});
 
 const scrollOffset = ref(0);
-const itemHeight = 20;
-const initialOffset = 5;
+const itemHeight = 23;
+const initialOffset = 10;
 
 const totalContentHeight = computed(
   () => initialOffset + filteredTags.value.length * itemHeight
@@ -68,7 +83,7 @@ const clampScroll = (offset) => {
 const onWheel = (e) => {
   e.evt.preventDefault();
   e.evt.stopPropagation();
-  const delta = e.evt.deltaY > 0 ? -7 : 7;
+  const delta = e.evt.deltaY > 0 ? -itemHeight * 0.5 : itemHeight * 0.5;
   scrollOffset.value = clampScroll(scrollOffset.value + delta);
 };
 
@@ -78,7 +93,7 @@ const getOffsetY = (index) => {
 
 const clipFunc = (ctx) => {
   ctx.beginPath();
-  ctx.rect(0, 5, props.photo.config.width, clipHeight.value - 10);
+  ctx.rect(0, initialOffset, props.photo.config.width, clipHeight.value - 15);
   ctx.closePath();
   ctx.clip();
 };

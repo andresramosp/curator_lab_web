@@ -58,7 +58,7 @@ const isSelected = computed({
 const isHovered = ref(false);
 
 const fontSize = 11;
-const textPadding = 6;
+const textPadding = 2;
 const defaultColor = "gray";
 
 const theme = useTheme();
@@ -66,8 +66,8 @@ const selectedColor = theme.current.value.colors.secondary;
 const textColor = theme.current.value.colors.primary;
 
 const pillWidth = computed(() => {
-  const approxWidth = shortenTag(props.tag.name).length * (fontSize * 0.6);
-  return approxWidth + textPadding * 1.5;
+  const approxWidth = shortenTag(props.tag.name).length * (fontSize * 0.5);
+  return approxWidth + textPadding + 7;
 });
 const pillHeight = 18;
 
