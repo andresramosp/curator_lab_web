@@ -28,6 +28,7 @@ function createPhoto(
     selected: false,
     showButton: false,
     tags: backendPhoto.tags,
+    loading: false,
   };
 }
 

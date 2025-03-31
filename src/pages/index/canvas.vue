@@ -131,6 +131,33 @@
         </v-group>
       </v-layer>
     </v-stage>
+    <!-- Overlay de spinners -->
+    <div v-if="photos.length">
+      <div
+        class="photo-spinner"
+        v-for="photo in photos.filter((p) => p.loading)"
+        :key="photo.id"
+        :style="{
+          position: 'absolute',
+          left:
+            (photo.config.x + photo.config.width / 2 + 2) * zoom +
+            stageOffset.x +
+            'px',
+          top:
+            (photo.config.y + photo.config.height / 2) * zoom +
+            stageOffset.y +
+            'px',
+          transform: 'translate(-41%, -45%)',
+          pointerEvents: 'none',
+        }"
+      >
+        <v-progress-circular
+          :size="80"
+          indeterminate
+          color="primary"
+        ></v-progress-circular>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -178,11 +205,15 @@ watch(zoom, (newZoom) => {
   };
   stage.position(newPos);
   stage.batchDraw();
+
+  updateStageOffset();
 });
 
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
   stageConfig.height = containerRef.value.clientHeight;
+  const stage = stageRef.value.getStage();
+  stage.on("dragmove", updateStageOffset);
   orderPhotos();
 });
 
@@ -226,6 +257,23 @@ const selectionRect = reactive({
   visible: false,
 });
 
+// loaders
+
+const stageOffset = reactive({ x: 0, y: 0 });
+
+onMounted(() => updateStageOffset());
+
+const updateStageOffset = () => {
+  const stage = stageRef.value?.getStage();
+  if (stage) {
+    zoom.value = stage.scaleX(); // o scaleY, son iguales
+    stageOffset.x = stage.x();
+    stageOffset.y = stage.y();
+  }
+};
+
+//
+
 const handleSelectPhoto = (photo, event) => {
   if (!selectionRect.visible) {
     photo.selected = !photo.selected;
@@ -247,6 +295,7 @@ const handleAddPhotoFromPhoto = async (event) => {
   const offsetX = photoWidth + margin;
   const offsetY = photoHeight + margin;
 
+  photo.loading = true;
   await canvasStore.addPhotosFromPhoto(
     [photo.id],
     similarityType.value,
@@ -369,6 +418,7 @@ const handleAddPhotoFromPhoto = async (event) => {
         easing: Konva.Easings.StrongEaseInOut,
       }).play();
 
+      photo.loading = false;
       setTimeout(() => {
         newPhoto.config.x = targetX;
         newPhoto.config.y = targetY;
@@ -514,6 +564,8 @@ const handleWheel = (e) => {
   };
   stage.position(newPos);
   stage.batchDraw();
+
+  updateStageOffset();
 };
 
 const orderPhotos = () => {
