@@ -25,6 +25,7 @@
         item-title="label"
         item-value="data"
       ></v-select>
+      <v-select v-model="resultLength" :items="[1, 2, 3]"></v-select>
       <v-list dense>
         <v-list-item>
           <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
@@ -123,7 +124,6 @@ import { useTheme } from "vuetify";
 import { storeToRefs } from "pinia";
 import { useCanvasStore } from "@/stores/canvas";
 import { hungarian } from "@/utils/utils";
-import PhotoCanvasButton from "@/components/canvas/PhotoCanvasButton.vue";
 import TagPillsCanvas from "@/components/canvas/TagPills/TagPillsCanvas.vue";
 import ExpandPhotoButtons from "@/components/canvas/ExpandPhotoButtons.vue";
 
@@ -139,6 +139,7 @@ const stageConfig = reactive({
   draggable: false,
 });
 const similarityType = ref({ criteria: "embedding" });
+const resultLength = ref(1);
 
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
@@ -191,31 +192,131 @@ const handleSelectPhoto = (photo, event) => {
 const handleAddPhotoFromPhoto = async (event) => {
   const { photo, position } = event;
   photo.baseAngleInc = photo.baseAngleInc || 0;
-
   event.cancelBubble = true;
   const basePosition = { x: photo.config.x, y: photo.config.y };
-  // const selectedPhotoIds = photos.value
-  //   .filter((p) => p.selected)
-  //   .map((p) => p.id);
-  // if (!selectedPhotoIds.length) selectedPhotoIds.push(photo.id);
+
+  // Extraemos el margen y dimensiones de la foto para el offset
+  const margin = 35;
+  const photoWidth =
+    photos.value.length > 0 ? photos.value[0].config.width : 200;
+  const photoHeight =
+    photos.value.length > 0 ? photos.value[0].config.height : 200;
+  const offsetX = photoWidth + margin;
+  const offsetY = photoHeight + margin;
+
   await canvasStore.addPhotosFromPhoto(
-    [photo.id], // selectedPhotoIds,
+    [photo.id],
     similarityType.value,
+    resultLength.value,
     basePosition
   );
+
   nextTick(() => {
-    const baseAngle = Math.PI / 4 + photo.baseAngleInc;
-    const spread = Math.PI / 3;
     const newPhotos = photos.value.filter((p) => p.config.opacity === 0);
+    const count = newPhotos.length;
+
     newPhotos.forEach((newPhoto, index) => {
       const groupNode = photoRefs.value[newPhoto.id]?.getNode();
       if (!groupNode) return;
-      const total = newPhotos.length;
-      const angle = baseAngle + (index - (total - 1) / 2) * spread;
-      const distance1 = Math.floor(Math.random() * (310 - 220 + 1)) + 220;
-      const distance2 = Math.floor(Math.random() * (310 - 220 + 1)) + 220;
-      const targetX = basePosition.x + Math.cos(angle) * distance1;
-      const targetY = basePosition.y + Math.sin(angle) * distance2;
+      let targetX = basePosition.x;
+      let targetY = basePosition.y;
+
+      if (["left", "right", "upper", "bottom"].includes(position)) {
+        // Disparo en única dirección (fila india)
+        if (position === "left") {
+          targetX = basePosition.x - offsetX * (index + 1);
+        } else if (position === "right") {
+          targetX = basePosition.x + offsetX * (index + 1);
+        } else if (position === "upper") {
+          targetY = basePosition.y - offsetY * (index + 1);
+        } else if (position === "bottom") {
+          targetY = basePosition.y + offsetY * (index + 1);
+        }
+      } else if (
+        ["upper-left", "upper-right", "bottom-right", "bottom-left"].includes(
+          position
+        )
+      ) {
+        // Disparo diagonal, con casos especiales para 1, 2 y 3 fotos
+        if (count === 1) {
+          if (position === "upper-left") {
+            targetX = basePosition.x - offsetX;
+            targetY = basePosition.y - offsetY;
+          } else if (position === "upper-right") {
+            targetX = basePosition.x + offsetX;
+            targetY = basePosition.y - offsetY;
+          } else if (position === "bottom-right") {
+            targetX = basePosition.x + offsetX;
+            targetY = basePosition.y + offsetY;
+          } else if (position === "bottom-left") {
+            targetX = basePosition.x - offsetX;
+            targetY = basePosition.y + offsetY;
+          }
+        } else if (count === 2) {
+          // Primera foto en horizontal, segunda en vertical
+          if (index === 0) {
+            targetX =
+              position === "upper-left" || position === "bottom-left"
+                ? basePosition.x - offsetX
+                : basePosition.x + offsetX;
+            targetY = basePosition.y;
+          } else {
+            targetX = basePosition.x;
+            targetY =
+              position === "upper-left" || position === "upper-right"
+                ? basePosition.y - offsetY
+                : basePosition.y + offsetY;
+          }
+        } else if (count === 3) {
+          // Una diagonal, una horizontal y una vertical
+          if (index === 0) {
+            if (position === "upper-left") {
+              targetX = basePosition.x - offsetX;
+              targetY = basePosition.y - offsetY;
+            } else if (position === "upper-right") {
+              targetX = basePosition.x + offsetX;
+              targetY = basePosition.y - offsetY;
+            } else if (position === "bottom-right") {
+              targetX = basePosition.x + offsetX;
+              targetY = basePosition.y + offsetY;
+            } else if (position === "bottom-left") {
+              targetX = basePosition.x - offsetX;
+              targetY = basePosition.y + offsetY;
+            }
+          } else if (index === 1) {
+            targetX =
+              position === "upper-left" || position === "bottom-left"
+                ? basePosition.x - offsetX
+                : basePosition.x + offsetX;
+            targetY = basePosition.y;
+          } else if (index === 2) {
+            targetX = basePosition.x;
+            targetY =
+              position === "upper-left" || position === "upper-right"
+                ? basePosition.y - offsetY
+                : basePosition.y + offsetY;
+          }
+        } else {
+          // Para más de 3 fotos, se organiza en un grid
+          const cols = Math.ceil(Math.sqrt(count));
+          const row = Math.floor(index / cols);
+          const col = index % cols;
+          if (position === "upper-left") {
+            targetX = basePosition.x - offsetX - col * offsetX;
+            targetY = basePosition.y - offsetY - row * offsetY;
+          } else if (position === "upper-right") {
+            targetX = basePosition.x + offsetX + col * offsetX;
+            targetY = basePosition.y - offsetY - row * offsetY;
+          } else if (position === "bottom-right") {
+            targetX = basePosition.x + offsetX + col * offsetX;
+            targetY = basePosition.y + offsetY + row * offsetY;
+          } else if (position === "bottom-left") {
+            targetX = basePosition.x - offsetX - col * offsetX;
+            targetY = basePosition.y + offsetY + row * offsetY;
+          }
+        }
+      }
+
       new Konva.Tween({
         node: groupNode,
         duration: 0.7,
@@ -224,6 +325,7 @@ const handleAddPhotoFromPhoto = async (event) => {
         opacity: 1,
         easing: Konva.Easings.StrongEaseInOut,
       }).play();
+
       setTimeout(() => {
         newPhoto.config.x = targetX;
         newPhoto.config.y = targetY;
@@ -237,11 +339,6 @@ const handleAddPhotoFromPhoto = async (event) => {
 const handleDeletePhotos = (event) => {
   event.cancelBubble = true;
   canvasStore.deletePhotos();
-};
-
-const handleUpdateTag = (event) => {
-  event.cancelBubble = true;
-  canvasStore.updateTag(event.photoBase, event.tagId, event.value);
 };
 
 let dragGroupStart = {};

@@ -27,6 +27,38 @@
     icon="+"
     @click="handleClick"
   />
+
+  <PhotoCanvasButton
+    :photo="photo"
+    position="left"
+    :fill="secondaryColor"
+    icon="+"
+    @click="handleClick"
+  />
+
+  <PhotoCanvasButton
+    :photo="photo"
+    position="right"
+    :fill="secondaryColor"
+    icon="+"
+    @click="handleClick"
+  />
+
+  <PhotoCanvasButton
+    :photo="photo"
+    position="upper"
+    :fill="secondaryColor"
+    icon="+"
+    @click="handleClick"
+  />
+
+  <PhotoCanvasButton
+    :photo="photo"
+    position="bottom"
+    :fill="secondaryColor"
+    icon="+"
+    @click="handleClick"
+  />
 </template>
 
 <script setup>

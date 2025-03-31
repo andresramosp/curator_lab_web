@@ -61,7 +61,12 @@ export const useCanvasStore = defineStore("canvas", {
       }
     },
     // Trae fotos similares usando el endpoint /byPhotos
-    async addPhotosFromPhoto(photoIds, similarityType, basePosition) {
+    async addPhotosFromPhoto(
+      photoIds,
+      similarityType,
+      resultLength,
+      basePosition
+    ) {
       try {
         const currentOrDiscardedPhotos = [
           ...this.photos.map((p) => p.id),
@@ -84,7 +89,7 @@ export const useCanvasStore = defineStore("canvas", {
             criteria: similarityType.criteria,
             opposite: false,
             descriptionCategories: similarityType.fields,
-            resultLength: 3,
+            resultLength,
             withInsights: false,
             opposite: false,
             tagIds: selectedTags,

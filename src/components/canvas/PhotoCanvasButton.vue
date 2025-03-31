@@ -39,11 +39,17 @@ const props = defineProps({
     type: String,
     required: true,
     validator: (value) =>
-      ["upper-left", "upper-right", "bottom-left", "bottom-right"].includes(
-        value
-      ),
+      [
+        "upper-left",
+        "upper-right",
+        "bottom-left",
+        "bottom-right",
+        "right",
+        "left",
+        "bottom",
+        "upper",
+      ].includes(value),
   },
-
   fill: { type: String, required: true },
   icon: { type: String, required: true },
   fontSize: { type: Number, default: 16 },
@@ -53,31 +59,49 @@ const props = defineProps({
 
 const buttonWidth = 20;
 const buttonHeight = 20;
-const margin = 5;
+const margin = -10;
 
 const computedX = computed(() => {
-  const photoWidth = props.photo.config.width;
+  const w = props.photo.config.width;
   switch (props.position) {
     case "upper-left":
-    case "bottom-left":
-      return margin;
+      return -buttonWidth - margin;
     case "upper-right":
+      return w + margin;
+    case "bottom-left":
+      return -buttonWidth - margin;
     case "bottom-right":
-      return photoWidth - buttonWidth - margin;
+      return w + margin;
+
+    case "left":
+      return -buttonWidth - margin;
+    case "right":
+      return w + margin;
+    case "upper":
+    case "bottom":
+      return (w - buttonWidth) / 2;
     default:
       return 0;
   }
 });
 
 const computedY = computed(() => {
-  const photoHeight = props.photo.config.height;
+  const h = props.photo.config.height;
   switch (props.position) {
     case "upper-left":
     case "upper-right":
-      return margin;
+      return -buttonHeight - margin;
     case "bottom-left":
     case "bottom-right":
-      return photoHeight - buttonHeight - margin;
+      return h + margin;
+
+    case "upper":
+      return -buttonHeight - margin;
+    case "bottom":
+      return h + margin;
+    case "left":
+    case "right":
+      return (h - buttonHeight) / 2;
     default:
       return 0;
   }
@@ -89,13 +113,12 @@ const handleClick = (e) => {
   e.cancelBubble = true;
   emit("click", props.position);
 };
+
 const handleMouseOver = (e) => {
-  const stage = e.target.getStage();
-  stage.container().style.cursor = "pointer";
+  e.target.getStage().container().style.cursor = "pointer";
 };
 
 const handleMouseOut = (e) => {
-  const stage = e.target.getStage();
-  stage.container().style.cursor = "default";
+  e.target.getStage().container().style.cursor = "default";
 };
 </script>
