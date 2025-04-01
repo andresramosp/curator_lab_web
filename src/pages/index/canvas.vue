@@ -107,23 +107,29 @@
               width: photo.config.width,
               height: photo.config.height,
               image: photo.image,
-              stroke: photo.selected ? secondaryColor : primaryColor,
-              strokeWidth: photo.selected ? 4 : 2,
+              stroke: photo.selected
+                ? secondaryColor
+                : photo.hovered
+                ? primaryColor
+                : 'gray',
+              strokeWidth: photo.selected ? 7 : 2.5,
             }"
           />
 
-          <template v-if="photo.showButton">
+          <template>
             <TagPillsCanvas
               v-if="similarityType.criteria === 'tags'"
               :photo="photo"
               :tags="photo.tags"
+              :visible="photo.hovered"
             />
             <ExpandPhotoButtons
               :photo="photo"
               v-if="
-                similarityType.criteria !== 'tags' ||
-                photo.tags.filter((tagPhoto) => tagPhoto.tag.selected).length >
-                  0
+                photo.hovered &&
+                (similarityType.criteria !== 'tags' ||
+                  photo.tags.filter((tagPhoto) => tagPhoto.tag.selected)
+                    .length > 0)
               "
               @click="handleAddPhotoFromPhoto"
             ></ExpandPhotoButtons>
@@ -277,6 +283,13 @@ const updateStageOffset = () => {
 const handleSelectPhoto = (photo, event) => {
   if (!selectionRect.visible) {
     photo.selected = !photo.selected;
+
+    const groupNode = photoRefs.value[photo.id]?.getNode();
+    if (groupNode) {
+      groupNode.moveToTop();
+      const layer = groupNode.getLayer();
+      layer.batchDraw();
+    }
   }
 };
 
@@ -295,9 +308,8 @@ const handleAddPhotoFromPhoto = async (event) => {
   const offsetX = photoWidth + margin;
   const offsetY = photoHeight + margin;
 
-  photo.loading = true;
   await canvasStore.addPhotosFromPhoto(
-    [photo.id],
+    [photo],
     similarityType.value,
     resultLength.value,
     basePosition
@@ -418,7 +430,6 @@ const handleAddPhotoFromPhoto = async (event) => {
         easing: Konva.Easings.StrongEaseInOut,
       }).play();
 
-      photo.loading = false;
       setTimeout(() => {
         newPhoto.config.x = targetX;
         newPhoto.config.y = targetY;
@@ -520,11 +531,11 @@ const handleMouseUp = () => {
 const handleDragEnd = (photo, e) => {};
 
 const handleMouseOver = (photo) => {
-  photo.showButton = true;
+  photo.hovered = true;
 };
 
 const handleMouseOut = (photo) => {
-  photo.showButton = false;
+  photo.hovered = false;
 };
 
 const handleWheel = (e) => {

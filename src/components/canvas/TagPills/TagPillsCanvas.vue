@@ -1,5 +1,5 @@
 <template>
-  <v-group>
+  <v-group :config="{ opacity: visible ? 1 : 0 }">
     <!-- Hit area inferior (ampliado) -->
     <v-rect
       :config="{
@@ -38,6 +38,7 @@ import { shortenTag } from "@/utils/utils";
 const props = defineProps({
   photo: { type: Object, required: true },
   tags: { type: Array, required: true },
+  visible: { type: Boolean, required: true },
 });
 
 const allowedGroups = [

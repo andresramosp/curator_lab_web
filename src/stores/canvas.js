@@ -3,14 +3,13 @@ import axios from "axios";
 
 const PHOTO_WIDTH = 150 * 1.5;
 const PHOTO_HEIGHT = 100 * 1.5;
-let currentZIndex = 1;
 
 function createPhoto(
   backendPhoto,
   basePosition = { x: 150, y: 100 },
-  fromPhoto = false
+  fromPhoto = false,
+  currentZIndex
 ) {
-  currentZIndex++;
   return {
     id: backendPhoto.id,
     src: `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
@@ -36,6 +35,7 @@ export const useCanvasStore = defineStore("canvas", {
   state: () => ({
     photos: [],
     discardedPhotos: [],
+    currentZIndex: 1,
   }),
   actions: {
     // Trae la info básica de la foto si no se tiene, usando el endpoint /catalog/photosByIds
@@ -54,7 +54,14 @@ export const useCanvasStore = defineStore("canvas", {
           : [response.data];
         backendPhotos.forEach((backendPhoto) => {
           if (!this.photos.some((photo) => photo.id === backendPhoto.id)) {
-            this.photos.push(createPhoto(backendPhoto));
+            this.photos.push(
+              createPhoto(
+                backendPhoto,
+                undefined,
+                undefined,
+                this.currentZIndex
+              )
+            );
           }
         });
       } catch (error) {
@@ -63,12 +70,17 @@ export const useCanvasStore = defineStore("canvas", {
     },
     // Trae fotos similares usando el endpoint /byPhotos
     async addPhotosFromPhoto(
-      photoIds,
+      basePhotos,
       similarityType,
       resultLength,
       basePosition
     ) {
+      let basePhoto = basePhotos[0];
       try {
+        basePhoto.loading = true;
+
+        const photoIds = basePhotos.map((bp) => bp.id);
+
         const currentOrDiscardedPhotos = [
           ...this.photos.map((p) => p.id),
           ...this.discardedPhotos.map((p) => p.id),
@@ -101,11 +113,15 @@ export const useCanvasStore = defineStore("canvas", {
           : [response.data];
         backendPhotos.forEach((backendPhoto) => {
           if (!this.photos.some((photo) => photo.id === backendPhoto.id)) {
-            this.photos.push(createPhoto(backendPhoto, basePosition, true));
+            this.photos.push(
+              createPhoto(backendPhoto, basePosition, true, this.currentZIndex)
+            );
           }
         });
       } catch (error) {
         console.error("Error al añadir fotos similares:", error);
+      } finally {
+        basePhoto.loading = false;
       }
     },
     deletePhotos() {
