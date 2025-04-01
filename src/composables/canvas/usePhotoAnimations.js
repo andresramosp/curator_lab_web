@@ -20,17 +20,16 @@ export function usePhotoAnimations() {
     basePosition,
     position,
     offsetX,
-    offsetY,
-    photo
+    offsetY
   ) => {
     nextTick(() => {
       const newPhotos = photos.value.filter((p) => p.config.opacity === 0);
-      const count = newPhotos.length;
       newPhotos.forEach((newPhoto, index) => {
         const groupNode = photoRefs.value[newPhoto.id]?.getNode();
         if (!groupNode) return;
         let targetX = basePosition.x;
         let targetY = basePosition.y;
+
         if (["left", "right", "upper", "bottom"].includes(position)) {
           if (position === "left") {
             targetX = basePosition.x - offsetX * (index + 1);
@@ -46,81 +45,15 @@ export function usePhotoAnimations() {
             position
           )
         ) {
-          if (count === 1) {
-            if (position === "upper-left") {
-              targetX = basePosition.x - offsetX;
-              targetY = basePosition.y - offsetY;
-            } else if (position === "upper-right") {
-              targetX = basePosition.x + offsetX;
-              targetY = basePosition.y - offsetY;
-            } else if (position === "bottom-right") {
-              targetX = basePosition.x + offsetX;
-              targetY = basePosition.y + offsetY;
-            } else if (position === "bottom-left") {
-              targetX = basePosition.x - offsetX;
-              targetY = basePosition.y + offsetY;
-            }
-          } else if (count === 2) {
-            if (index === 0) {
-              targetX =
-                position === "upper-left" || position === "bottom-left"
-                  ? basePosition.x - offsetX
-                  : basePosition.x + offsetX;
-              targetY = basePosition.y;
-            } else {
-              targetX = basePosition.x;
-              targetY =
-                position === "upper-left" || position === "upper-right"
-                  ? basePosition.y - offsetY
-                  : basePosition.y + offsetY;
-            }
-          } else if (count === 3) {
-            if (index === 0) {
-              if (position === "upper-left") {
-                targetX = basePosition.x - offsetX;
-                targetY = basePosition.y - offsetY;
-              } else if (position === "upper-right") {
-                targetX = basePosition.x + offsetX;
-                targetY = basePosition.y - offsetY;
-              } else if (position === "bottom-right") {
-                targetX = basePosition.x + offsetX;
-                targetY = basePosition.y + offsetY;
-              } else if (position === "bottom-left") {
-                targetX = basePosition.x - offsetX;
-                targetY = basePosition.y + offsetY;
-              }
-            } else if (index === 1) {
-              targetX =
-                position === "upper-left" || position === "bottom-left"
-                  ? basePosition.x - offsetX
-                  : basePosition.x + offsetX;
-              targetY = basePosition.y;
-            } else if (index === 2) {
-              targetX = basePosition.x;
-              targetY =
-                position === "upper-left" || position === "upper-right"
-                  ? basePosition.y - offsetY
-                  : basePosition.y + offsetY;
-            }
-          } else {
-            const cols = Math.ceil(Math.sqrt(count));
-            const row = Math.floor(index / cols);
-            const col = index % cols;
-            if (position === "upper-left") {
-              targetX = basePosition.x - offsetX - col * offsetX;
-              targetY = basePosition.y - offsetY - row * offsetY;
-            } else if (position === "upper-right") {
-              targetX = basePosition.x + offsetX + col * offsetX;
-              targetY = basePosition.y - offsetY - row * offsetY;
-            } else if (position === "bottom-right") {
-              targetX = basePosition.x + offsetX + col * offsetX;
-              targetY = basePosition.y + offsetY + row * offsetY;
-            } else if (position === "bottom-left") {
-              targetX = basePosition.x - offsetX - col * offsetX;
-              targetY = basePosition.y + offsetY + row * offsetY;
-            }
-          }
+          // Definir signos según la dirección diagonal
+          const signX =
+            position === "upper-left" || position === "bottom-left" ? -1 : 1;
+          const signY =
+            position === "upper-left" || position === "upper-right" ? -1 : 1;
+          targetX = basePosition.x + signX * offsetX * (index + 1);
+          targetY = basePosition.y + signY * offsetY * (index + 1);
         }
+
         animatePhoto(groupNode, targetX, targetY, 0.7);
         setTimeout(() => {
           newPhoto.config.x = targetX;
@@ -128,9 +61,90 @@ export function usePhotoAnimations() {
           newPhoto.config.opacity = 1;
         }, 700);
       });
-      photo.baseAngleInc = (photo.baseAngleInc || 0) + 30;
     });
   };
 
-  return { animatePhoto, animatePhotoGroup };
+  const animatePhotoGroupExplosion = (
+    photoRefs,
+    photos,
+    basePosition,
+    position
+  ) => {
+    nextTick(() => {
+      const newPhotos = photos.value.filter((p) => p.config.opacity === 0);
+      // Constantes para el efecto de explosión
+      const ANGLE_STEP = 55 - 5 * newPhotos.length; // separación angular entre fotos en una capa
+      const EXPLOSION_DISTANCE = 250 + newPhotos.length * 45; // distancia base (disparo de 1 foto)
+      const NUM_LAYERS = 1; // número de capas del abanico
+
+      // Determinar el ángulo base según la dirección indicada
+      let baseAngle = 0;
+      switch (position) {
+        case "left":
+          baseAngle = 180;
+          break;
+        case "right":
+          baseAngle = 0;
+          break;
+        case "upper":
+          baseAngle = -90;
+          break;
+        case "bottom":
+          baseAngle = 90;
+          break;
+        case "upper-left":
+          baseAngle = 225;
+          break;
+        case "upper-right":
+          baseAngle = -45;
+          break;
+        case "bottom-right":
+          baseAngle = 45;
+          break;
+        case "bottom-left":
+          baseAngle = 135;
+          break;
+        default:
+          baseAngle = 0;
+      }
+
+      const totalPhotos = newPhotos.length;
+      // Si hay menos fotos que capas deseadas, las colocamos todas en una capa
+      const actualLayers = totalPhotos < NUM_LAYERS ? 1 : NUM_LAYERS;
+      const photosPerLayer = Math.ceil(totalPhotos / actualLayers);
+
+      newPhotos.forEach((newPhoto, index) => {
+        const groupNode = photoRefs.value[newPhoto.id]?.getNode();
+        if (!groupNode) return;
+
+        const layer = Math.floor(index / photosPerLayer);
+        const indexInLayer = index % photosPerLayer;
+        let layerCount;
+        if (layer === actualLayers - 1) {
+          layerCount = totalPhotos - photosPerLayer * layer;
+        } else {
+          layerCount = photosPerLayer;
+        }
+        // Calcular el centro de la capa y distribuir las fotos simétricamente
+        const mid = (layerCount - 1) / 2;
+        const angleOffset = (indexInLayer - mid) * ANGLE_STEP;
+        const angleDeg = baseAngle + angleOffset;
+        const angleRad = (angleDeg * Math.PI) / 180;
+        // La distancia radial aumenta con cada capa
+        const radialDistance = (layer * 0.8 + 1) * EXPLOSION_DISTANCE;
+
+        const targetX = basePosition.x + radialDistance * Math.cos(angleRad);
+        const targetY = basePosition.y + radialDistance * Math.sin(angleRad);
+
+        animatePhoto(groupNode, targetX, targetY, 0.7);
+        setTimeout(() => {
+          newPhoto.config.x = targetX;
+          newPhoto.config.y = targetY;
+          newPhoto.config.opacity = 1;
+        }, 700);
+      });
+    });
+  };
+
+  return { animatePhoto, animatePhotoGroup, animatePhotoGroupExplosion };
 }

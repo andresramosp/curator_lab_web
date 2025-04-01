@@ -41,21 +41,10 @@ export function useCanvasStage(stageRef, photos, mode, zoom, similarityType) {
     const stage = stageRef.value.getStage();
     const pointer = stage.getPointerPosition();
     // Si el criterio es "tags", evitamos el zoom si el puntero está sobre una foto
-    if (similarityType.value.criteria === "tags") {
-      let shape = stage.getIntersection(pointer);
-      let isOverPhoto = false;
-      while (shape && shape !== stage) {
-        if (shape.getAttr("_isPhoto")) {
-          isOverPhoto = true;
-          break;
-        }
-        shape = shape.getParent();
-      }
-      if (isOverPhoto) {
-        e.evt.preventDefault();
-        e.evt.stopPropagation();
-        return;
-      }
+    if (similarityType.value.criteria === "tags" && isHoverPhoto()) {
+      e.evt.preventDefault();
+      e.evt.stopPropagation();
+      return;
     }
     const oldScale = stage.scaleX();
     const scaleBy = 1.11;
@@ -75,7 +64,12 @@ export function useCanvasStage(stageRef, photos, mode, zoom, similarityType) {
   };
 
   const handleMouseDown = (e) => {
-    if (mode.value !== "select") return;
+    if (mode.value !== "select" && !isHoverPhoto()) {
+      photos.value.forEach((photo) => {
+        photo.selected = false;
+      });
+      return;
+    }
     const stage = stageRef.value.getStage();
     if (e.target === stage) {
       const pointer = stage.getPointerPosition();
@@ -121,6 +115,21 @@ export function useCanvasStage(stageRef, photos, mode, zoom, similarityType) {
     });
     selectionRect.visible = false;
     stageConfig.draggable = mode.value === "move";
+  };
+
+  const isHoverPhoto = () => {
+    const stage = stageRef.value.getStage();
+    const pointer = stage.getPointerPosition();
+    let shape = stage.getIntersection(pointer);
+    let isOverPhoto = false;
+    while (shape && shape !== stage) {
+      if (shape.getAttr("_isPhoto")) {
+        isOverPhoto = true;
+        break;
+      }
+      shape = shape.getParent();
+    }
+    return isOverPhoto;
   };
 
   return {

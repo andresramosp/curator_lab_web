@@ -10,11 +10,6 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
     if (!selectionRectVisible()) {
       photo.selected = !photo.selected;
     }
-    const groupNode = photoRefs.value[photo.id]?.getNode();
-    if (groupNode) {
-      groupNode.moveToTop();
-      groupNode.getLayer().batchDraw();
-    }
   };
 
   // Función auxiliar (si fuese necesario comprobar si el rectángulo de selección está visible)
@@ -25,17 +20,28 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
 
   const handleDragStart = (photo, e) => {
     e.cancelBubble = true;
-    // Reiniciamos el objeto de inicio del drag
+
+    const moveGroupToTop = (p) => {
+      const node = photoRefs.value[p.id]?.getNode();
+      if (node) node.moveToTop();
+    };
+
+    // Limpiar estado anterior
     Object.keys(dragGroupStart).forEach((key) => delete dragGroupStart[key]);
+
     if (photo.selected) {
       photos.value.forEach((p) => {
         if (p.selected) {
           dragGroupStart[p.id] = { x: p.config.x, y: p.config.y };
+          moveGroupToTop(p); // <-- subir cada nodo seleccionado
         }
       });
     } else {
       dragGroupStart[photo.id] = { x: photo.config.x, y: photo.config.y };
+      moveGroupToTop(photo); // <-- subir también si no está seleccionado
     }
+
+    photoRefs.value[photo.id]?.getNode()?.getLayer()?.batchDraw();
   };
 
   const handleDragMove = (photo, e) => {
@@ -114,6 +120,15 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
       photo.config.x = targetPos.x;
       photo.config.y = targetPos.y;
     });
+  };
+
+  const bringPhotosToFront = (photoList) => {
+    photoList.forEach((photo) => {
+      const node = photoRefs.value[photo.id]?.getNode();
+      if (node) node.moveToTop();
+    });
+    const anyNode = photoRefs.value[photoList[0]?.id]?.getNode();
+    if (anyNode) anyNode.getLayer().batchDraw();
   };
 
   return {

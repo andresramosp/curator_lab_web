@@ -10,7 +10,14 @@
             item-title="label"
             item-value="data"
           ></v-select>
-          <v-select v-model="resultLength" :items="[1, 2, 3]"></v-select>
+          <v-select v-model="resultLength" :items="[1, 2, 3, 4, 5]"></v-select>
+        </v-list-item>
+        <v-list-item>
+          <v-switch
+            v-model="spreadAligned"
+            color="secondary"
+            label="Aligned"
+          ></v-switch>
         </v-list-item>
         <v-list-item>
           <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
@@ -26,6 +33,11 @@
         <v-list-item>
           <v-btn icon @click="handleDeletePhotos">
             <v-icon size="30">mdi-delete</v-icon>
+          </v-btn>
+        </v-list-item>
+        <v-list-item>
+          <v-btn icon @click="fitStageToPhotos">
+            <v-icon size="30">mdi-crop-free</v-icon>
           </v-btn>
         </v-list-item>
         <v-list-item>
@@ -168,6 +180,7 @@ const stageRef = ref(null);
 const containerRef = ref(null);
 const zoom = ref(1);
 const mode = ref("move");
+const spreadAligned = ref(true);
 
 const similarityType = ref({ criteria: "embedding" });
 const resultLength = ref(1);
@@ -211,12 +224,11 @@ const {
 } = useCanvasPhoto(photos, photoRefs, stageConfig);
 
 // Composable de animaciones: para disparar tweens
-const { animatePhotoGroup } = usePhotoAnimations();
+const { animatePhotoGroup, animatePhotoGroupExplosion } = usePhotoAnimations();
 
 // Función para añadir fotos a partir de una foto y disparar animaciones
 const handleAddPhotoFromPhoto = async (event) => {
   const { photo, position } = event;
-  photo.baseAngleInc = photo.baseAngleInc || 0;
   event.cancelBubble = true;
   const basePosition = { x: photo.config.x, y: photo.config.y };
 
@@ -236,15 +248,86 @@ const handleAddPhotoFromPhoto = async (event) => {
     basePosition
   );
 
-  animatePhotoGroup(
-    photoRefs,
-    photos,
-    basePosition,
-    position,
-    offsetX,
-    offsetY,
-    photo
+  if (spreadAligned.value) {
+    animatePhotoGroup(
+      photoRefs,
+      photos,
+      basePosition,
+      position,
+      offsetX,
+      offsetY
+    );
+  } else {
+    animatePhotoGroupExplosion(photoRefs, photos, basePosition, position);
+  }
+};
+
+const fitStageToPhotos = () => {
+  if (!photos.value.length) return;
+
+  const stage = stageRef.value.getStage();
+  const containerWidth = stage.width();
+  const containerHeight = stage.height();
+  const margin = 40;
+  const extraPaddingRatio = 0.15; // 10% de padding
+
+  // Bounding box de todas las fotos
+  const bounds = photos.value.reduce(
+    (acc, p) => {
+      const { x, y, width, height } = p.config;
+      acc.minX = Math.min(acc.minX, x);
+      acc.minY = Math.min(acc.minY, y);
+      acc.maxX = Math.max(acc.maxX, x + width);
+      acc.maxY = Math.max(acc.maxY, y + height);
+      return acc;
+    },
+    {
+      minX: Infinity,
+      minY: Infinity,
+      maxX: -Infinity,
+      maxY: -Infinity,
+    }
   );
+
+  // Añadir padding adicional
+  const paddingX = (bounds.maxX - bounds.minX) * extraPaddingRatio;
+  const paddingY = (bounds.maxY - bounds.minY) * extraPaddingRatio;
+  bounds.minX -= paddingX;
+  bounds.maxX += paddingX;
+  bounds.minY -= paddingY;
+  bounds.maxY += paddingY;
+
+  const photosWidth = bounds.maxX - bounds.minX + margin * 2;
+  const photosHeight = bounds.maxY - bounds.minY + margin * 2;
+  const targetZoom = Math.min(
+    containerWidth / photosWidth,
+    containerHeight / photosHeight,
+    2
+  );
+
+  const targetX =
+    (containerWidth - photosWidth * targetZoom) / 2 -
+    bounds.minX * targetZoom +
+    margin * targetZoom;
+  const targetY =
+    (containerHeight - photosHeight * targetZoom) / 2 -
+    bounds.minY * targetZoom +
+    margin * targetZoom;
+
+  // Tween para animar el zoom y el desplazamiento
+  new Konva.Tween({
+    node: stage,
+    scaleX: targetZoom,
+    scaleY: targetZoom,
+    x: targetX,
+    y: targetY,
+    duration: 0.4,
+    easing: Konva.Easings.EaseInOut,
+    onFinish: () => {
+      zoom.value = targetZoom;
+      updateStageOffset();
+    },
+  }).play();
 };
 
 const handleDeletePhotos = (event) => {
