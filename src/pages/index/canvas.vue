@@ -20,6 +20,20 @@
           ></v-switch>
         </v-list-item>
         <v-list-item>
+          <v-switch
+            v-model="opposite"
+            color="secondary"
+            label="Opposite"
+          ></v-switch>
+        </v-list-item>
+        <v-list-item>
+          <v-switch
+            v-model="inverted"
+            color="secondary"
+            label="Inverted"
+          ></v-switch>
+        </v-list-item>
+        <v-list-item>
           <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
             <v-icon v-if="mode === 'move'" size="30">mdi-dots-square</v-icon>
             <v-icon v-else size="30">mdi-pan</v-icon>
@@ -85,49 +99,71 @@
             y: photo.config.y,
             draggable: true,
             zIndex: photo.config.zIndex,
-            opacity:
-              photo.config.opacity !== undefined ? photo.config.opacity : 1,
+            opacity: photo.config.opacity ?? 1,
             _isPhoto: true,
           }"
           @dragstart="handleDragStart(photo, $event)"
           @dragend="handleDragEnd(photo, $event)"
           @dragmove="handleDragMove(photo, $event)"
           @click="handleSelectPhoto(photo, $event)"
-          @mouseover="handleMouseOver(photo)"
-          @mouseout="handleMouseOut(photo)"
         >
-          <v-image
-            :config="{
-              x: 0,
-              y: 0,
-              width: photo.config.width,
-              height: photo.config.height,
-              image: photo.image,
-              stroke: photo.selected
-                ? secondaryColor
-                : photo.hovered
-                ? primaryColor
-                : 'gray',
-              strokeWidth: photo.selected ? 7 : 2.5,
-            }"
-          />
-          <template>
-            <TagPillsCanvas
-              v-if="similarityType.criteria === 'tags'"
-              :photo="photo"
-              :tags="photo.tags"
-              :visible="photo.hovered"
+          <v-group
+            :config="{}"
+            @mouseover="handleMouseOver(photo)"
+            @mouseout="handleMouseOut(photo)"
+          >
+            <!-- Área de hover con padding invisible -->
+            <v-rect
+              :config="{
+                x: -10,
+                y: -10,
+                width: photo.config.width + 20,
+                height: photo.config.height + 20,
+                fill: 'transparent',
+              }"
             />
-            <ExpandPhotoButtons
-              :photo="photo"
-              v-if="
-                photo.hovered &&
-                (similarityType.criteria !== 'tags' ||
-                  photo.tags.some((t) => t.tag.selected))
-              "
-              @click="handleAddPhotoFromPhoto"
-            ></ExpandPhotoButtons>
-          </template>
+            <!-- Imagen -->
+            <v-image
+              :config="{
+                x: 0,
+                y: 0,
+                width: photo.config.width,
+                height: photo.config.height,
+                image: photo.image,
+                stroke: photo.selected
+                  ? secondaryColor
+                  : photo.hovered
+                  ? primaryColor
+                  : 'gray',
+                strokeWidth: photo.selected ? 7 : 2.5,
+              }"
+            />
+
+            <!-- Tags y botones -->
+            <template>
+              <PhotoDetectionAreas
+                :photo="photo"
+                :detections="photo.detectionAreas"
+                :visible="photo.hovered"
+                >/</PhotoDetectionAreas
+              >
+              <TagPillsCanvas
+                v-if="similarityType.criteria === 'tags'"
+                :photo="photo"
+                :tags="photo.tags"
+                :visible="photo.hovered"
+              />
+              <ExpandPhotoButtons
+                :photo="photo"
+                v-if="
+                  photo.hovered &&
+                  (similarityType.criteria !== 'tags' ||
+                    photo.tags.some((t) => t.tag.selected))
+                "
+                @click="handleAddPhotoFromPhoto"
+              />
+            </template>
+          </v-group>
         </v-group>
       </v-layer>
     </v-stage>
@@ -172,6 +208,7 @@ import { storeToRefs } from "pinia";
 import { useCanvasStore } from "@/stores/canvas";
 import TagPillsCanvas from "@/components/canvas/TagPills/TagPillsCanvas.vue";
 import ExpandPhotoButtons from "@/components/canvas/ExpandPhotoButtons.vue";
+import PhotoDetectionAreas from "@/components/canvas/PhotoDetectionAreas.vue";
 
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
@@ -181,6 +218,8 @@ const containerRef = ref(null);
 const zoom = ref(1);
 const mode = ref("move");
 const spreadAligned = ref(true);
+const opposite = ref(false);
+const inverted = ref(false);
 
 const similarityType = ref({ criteria: "embedding" });
 const resultLength = ref(1);
@@ -189,6 +228,9 @@ const similarityItems = [
   { label: "Context", data: { criteria: "semantic", fields: ["context"] } },
   { label: "Story", data: { criteria: "semantic", fields: ["story"] } },
   { label: "Tags", data: { criteria: "tags" } },
+  { label: "Composition", data: { criteria: "composition" } },
+  { label: "Geometrical", data: { criteria: "geometrical" } },
+  { label: "Chromatic", data: { criteria: "chromatic" } },
 ];
 
 const photoRefs = ref({});
@@ -245,7 +287,9 @@ const handleAddPhotoFromPhoto = async (event) => {
     [photo],
     similarityType.value,
     resultLength.value,
-    basePosition
+    basePosition,
+    opposite.value,
+    inverted.value
   );
 
   if (spreadAligned.value) {

@@ -15,6 +15,7 @@ function createPhoto(
     src: `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
       backendPhoto.name
     }`,
+    // src: `C:/Users/andre/Desktop/Curator Lab/API_MODELS/debug_groundingdino_hf/${backendPhoto.id}.jpg`,
     config: {
       x: basePosition.x,
       y: basePosition.y,
@@ -28,6 +29,7 @@ function createPhoto(
     showButton: false,
     tags: backendPhoto.tags,
     loading: false,
+    detectionAreas: backendPhoto.detectionAreas,
   };
 }
 
@@ -73,7 +75,9 @@ export const useCanvasStore = defineStore("canvas", {
       basePhotos,
       similarityType,
       resultLength,
-      basePosition
+      basePosition,
+      opposite,
+      inverted
     ) {
       let basePhoto = basePhotos[0];
       try {
@@ -83,7 +87,7 @@ export const useCanvasStore = defineStore("canvas", {
 
         const currentOrDiscardedPhotos = [
           ...this.photos.map((p) => p.id),
-          ...this.discardedPhotos.map((p) => p.id),
+          // ...this.discardedPhotos.map((p) => p.id),
         ];
         let selectedTags = [];
         for (let photoId of photoIds) {
@@ -100,11 +104,11 @@ export const useCanvasStore = defineStore("canvas", {
             photoIds,
             currentPhotosIds: currentOrDiscardedPhotos,
             criteria: similarityType.criteria,
-            opposite: false,
+            opposite,
+            inverted,
             descriptionCategories: similarityType.fields,
             resultLength,
             withInsights: false,
-            opposite: false,
             tagIds: selectedTags,
           }
         );

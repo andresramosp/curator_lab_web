@@ -1,10 +1,10 @@
-// src/composables/useCanvasPhoto.js
 import { reactive } from "vue";
 import Konva from "konva";
 import { hungarian } from "@/utils/utils";
 
 export function useCanvasPhoto(photos, photoRefs, stageConfig) {
   const dragGroupStart = reactive({});
+  const hoverTimeouts = reactive({});
 
   const handleSelectPhoto = (photo, event) => {
     if (!selectionRectVisible()) {
@@ -12,11 +12,7 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
     }
   };
 
-  // Función auxiliar (si fuese necesario comprobar si el rectángulo de selección está visible)
-  const selectionRectVisible = () => {
-    // Aquí se podría recibir el estado desde el composable del stage
-    return false;
-  };
+  const selectionRectVisible = () => false;
 
   const handleDragStart = (photo, e) => {
     e.cancelBubble = true;
@@ -26,19 +22,18 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
       if (node) node.moveToTop();
     };
 
-    // Limpiar estado anterior
     Object.keys(dragGroupStart).forEach((key) => delete dragGroupStart[key]);
 
     if (photo.selected) {
       photos.value.forEach((p) => {
         if (p.selected) {
           dragGroupStart[p.id] = { x: p.config.x, y: p.config.y };
-          moveGroupToTop(p); // <-- subir cada nodo seleccionado
+          moveGroupToTop(p);
         }
       });
     } else {
       dragGroupStart[photo.id] = { x: photo.config.x, y: photo.config.y };
-      moveGroupToTop(photo); // <-- subir también si no está seleccionado
+      moveGroupToTop(photo);
     }
 
     photoRefs.value[photo.id]?.getNode()?.getLayer()?.batchDraw();
@@ -64,15 +59,42 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
   };
 
   const handleDragEnd = (photo, e) => {
-    // Si se requiere lógica adicional al terminar el drag, se implementa aquí.
+    // lógica al soltar el drag, si aplica
   };
 
   const handleMouseOver = (photo) => {
+    // Cancelar su propio timeout si estaba en curso
+    if (hoverTimeouts[photo.id]) {
+      clearTimeout(hoverTimeouts[photo.id]);
+      hoverTimeouts[photo.id] = null;
+    }
+
+    // Desactivar hovered en otras fotos (y cancelar sus timeouts)
+    photos.value.forEach((p) => {
+      if (p.id !== photo.id) {
+        if (hoverTimeouts[p.id]) {
+          clearTimeout(hoverTimeouts[p.id]);
+          hoverTimeouts[p.id] = null;
+        }
+        if (p.hovered) {
+          p.hovered = false;
+        }
+      }
+    });
+
+    // Activar hovered en esta foto
     photo.hovered = true;
   };
 
   const handleMouseOut = (photo) => {
-    photo.hovered = false;
+    // Si ya hay un timeout, lo cancelamos por seguridad
+    if (hoverTimeouts[photo.id]) clearTimeout(hoverTimeouts[photo.id]);
+
+    // Programamos desactivar hovered después del delay
+    hoverTimeouts[photo.id] = setTimeout(() => {
+      photo.hovered = false;
+      hoverTimeouts[photo.id] = null;
+    }, 250); // o el tiempo que quieras
   };
 
   const orderPhotos = () => {

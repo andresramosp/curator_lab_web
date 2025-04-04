@@ -135,7 +135,7 @@
           tooltip="Allows the engine to find indirect and figurative associations"
         >
           <v-icon left class="mr-1">mdi-brain</v-icon>
-          Creative
+          Flexible
         </ToggleOption>
       </ToggleButtons>
 
