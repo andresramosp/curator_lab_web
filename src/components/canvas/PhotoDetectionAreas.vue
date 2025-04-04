@@ -1,22 +1,10 @@
 <template>
-  <v-group :config="{ opacity: 1 }">
-    <v-rect
-      :config="{
-        x: -25,
-        y: -25,
-        width: photo.config.width + 50,
-        height: photo.config.height + 50,
-        opacity: 0,
-        listening: true,
-      }"
-      @wheel="onWheel"
-    />
-
+  <v-group :config="{ opacity: visible ? 1 : 0 }">
     <v-group :config="{ x: 0, y: 0 }" :clipFunc="clipFunc">
-      <template v-for="detection in detections" :key="detection.id">
+      <template v-for="detection in sortedDetections" :key="detection.id">
         <v-rect
           :config="getRectConfig(detection)"
-          @click="toggleSelected(detection)"
+          @click="(e) => toggleSelected(e, detection)"
           @mouseenter="detection.hover = true"
           @mouseleave="detection.hover = false"
         />
@@ -26,7 +14,7 @@
 </template>
 
 <script setup>
-import { defineProps } from "vue";
+import { computed } from "vue";
 import { useTheme } from "vuetify";
 
 const theme = useTheme();
@@ -40,6 +28,15 @@ const props = defineProps({
 const originalWidth = 1500;
 const scale = props.photo.config.width / originalWidth;
 
+// Ordenar detections de menor a mayor área (los pequeños encima)
+const sortedDetections = computed(() => {
+  return [...props.detections].sort((a, b) => {
+    const areaA = (a.x2 - a.x1) * (a.y2 - a.y1);
+    const areaB = (b.x2 - b.x1) * (b.y2 - b.y1);
+    return areaB - areaA; // ✅ grande primero → pequeño encima
+  });
+});
+
 const clipFunc = (ctx) => {
   ctx.beginPath();
   ctx.rect(0, 0, props.photo.config.width, props.photo.config.height);
@@ -52,7 +49,8 @@ const onWheel = (e) => {
   e.evt.stopPropagation();
 };
 
-const toggleSelected = (detection) => {
+const toggleSelected = (e, detection) => {
+  e.cancelBubble = true; // evita propagación en Konva
   detection.selected = !detection.selected;
 };
 
@@ -65,20 +63,18 @@ const getRectConfig = (detection) => {
   const selectedColor = theme.current.value.colors.secondary;
   const hoverColor = theme.current.value.colors.primary;
 
-  const isSelected = detection.selected;
-  const isHovered = detection.hover;
-
   return {
     x,
     y,
     width,
     height,
-    stroke: isSelected ? selectedColor : "red",
-    strokeWidth: 2,
-    fill: isSelected
-      ? `${selectedColor}33` // 20% opacity
-      : isHovered
-      ? `${hoverColor}33`
+    stroke: "white",
+    strokeWidth: 1.5,
+    opacity: 0.4,
+    fill: detection.selected
+      ? `${selectedColor}`
+      : detection.hover
+      ? `${hoverColor}`
       : "transparent",
     listening: true,
   };

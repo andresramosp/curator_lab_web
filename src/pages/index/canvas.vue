@@ -142,6 +142,7 @@
             <!-- Tags y botones -->
             <template>
               <PhotoDetectionAreas
+                v-if="similarityType.criteria === 'composition'"
                 :photo="photo"
                 :detections="photo.detectionAreas"
                 :visible="photo.hovered"
@@ -158,7 +159,9 @@
                 v-if="
                   photo.hovered &&
                   (similarityType.criteria !== 'tags' ||
-                    photo.tags.some((t) => t.tag.selected))
+                    photo.tags.some((t) => t.tag.selected)) &&
+                  (similarityType.criteria !== 'composition' ||
+                    photo.detectionAreas.some((dt) => dt.selected))
                 "
                 @click="handleAddPhotoFromPhoto"
               />
