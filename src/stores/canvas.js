@@ -98,6 +98,15 @@ export const useCanvasStore = defineStore("canvas", {
           selectedTags = selectedTags.concat(selectedPhotoTagsIds);
         }
 
+        let selectedBoxes = [];
+        for (let photoId of photoIds) {
+          let photo = this.photos.find((p) => p.id == photoId);
+          let selectedDetectionAreasIds = photo.detectionAreas
+            .filter((dt) => dt.selected)
+            .map((dt) => dt.id);
+          selectedBoxes = selectedBoxes.concat(selectedDetectionAreasIds);
+        }
+
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
           {
@@ -110,6 +119,7 @@ export const useCanvasStore = defineStore("canvas", {
             resultLength,
             withInsights: false,
             tagIds: selectedTags,
+            boxesIds: selectedBoxes,
           }
         );
         const backendPhotos = Array.isArray(response.data)
