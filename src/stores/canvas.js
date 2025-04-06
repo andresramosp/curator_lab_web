@@ -101,10 +101,10 @@ export const useCanvasStore = defineStore("canvas", {
         let selectedBoxes = [];
         for (let photoId of photoIds) {
           let photo = this.photos.find((p) => p.id == photoId);
-          let selectedDetectionAreasIds = photo.detectionAreas
+          let selectedDetectionIds = photo.detectionAreas
             .filter((dt) => dt.selected)
             .map((dt) => dt.id);
-          selectedBoxes = selectedBoxes.concat(selectedDetectionAreasIds);
+          selectedBoxes = selectedBoxes.concat(selectedDetectionIds);
         }
 
         const response = await axios.post(

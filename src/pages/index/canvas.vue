@@ -144,7 +144,7 @@
               <PhotoDetectionAreas
                 v-if="similarityType.criteria === 'composition'"
                 :photo="photo"
-                :detections="photo.detectionAreas"
+                :detectionAreas="photo.detectionAreas"
                 :visible="photo.hovered"
                 >/</PhotoDetectionAreas
               >
@@ -416,6 +416,13 @@ watch(
       if (!photo.image) {
         const img = new Image();
         img.src = photo.src;
+        // img.src =
+        //   "data:image/svg+xml;base64," +
+        //   btoa(`
+        //   <svg xmlns="http://www.w3.org/2000/svg" width="300" height="200">
+        //     <rect width="100%" height="100%" fill="black"/>
+        //   </svg>
+        // `);
         photo.image = img;
       }
     });
