@@ -1,71 +1,8 @@
 <template>
   <div class="main-container" ref="containerRef">
     <!-- Toolbar vertical a la derecha -->
-    <div right permanent width="80" class="toolbar">
-      <v-list dense>
-        <v-list-item>
-          <v-select
-            v-model="similarityType"
-            :items="similarityItems"
-            item-title="label"
-            item-value="data"
-          ></v-select>
-          <v-select v-model="resultLength" :items="[1, 2, 3, 4, 5]"></v-select>
-        </v-list-item>
-        <v-list-item>
-          <v-switch
-            v-model="spreadAligned"
-            color="secondary"
-            label="Aligned"
-          ></v-switch>
-        </v-list-item>
-        <v-list-item>
-          <v-switch
-            v-model="opposite"
-            color="secondary"
-            label="Opposite"
-          ></v-switch>
-        </v-list-item>
-        <v-list-item>
-          <v-switch
-            v-model="inverted"
-            color="secondary"
-            label="Inverted"
-          ></v-switch>
-        </v-list-item>
-        <v-list-item>
-          <v-btn icon @click="mode = mode === 'move' ? 'select' : 'move'">
-            <v-icon v-if="mode === 'move'" size="30">mdi-dots-square</v-icon>
-            <v-icon v-else size="30">mdi-pan</v-icon>
-          </v-btn>
-        </v-list-item>
-        <v-list-item>
-          <v-btn icon @click="orderPhotos">
-            <v-icon size="30">mdi-grid</v-icon>
-          </v-btn>
-        </v-list-item>
-        <v-list-item>
-          <v-btn icon @click="handleDeletePhotos">
-            <v-icon size="30">mdi-delete</v-icon>
-          </v-btn>
-        </v-list-item>
-        <v-list-item>
-          <v-btn icon @click="fitStageToPhotos">
-            <v-icon size="30">mdi-crop-free</v-icon>
-          </v-btn>
-        </v-list-item>
-        <v-list-item>
-          <!-- Slider de zoom -->
-          <v-slider
-            v-model="zoom"
-            :min="0.5"
-            :max="2"
-            :step="0.01"
-            hide-details
-            style="width: 100px"
-          ></v-slider>
-        </v-list-item>
-      </v-list>
+    <div width="80" class="toolbar">
+      <CanvasToolbar />
     </div>
 
     <v-stage
@@ -212,6 +149,7 @@ import { useCanvasStore } from "@/stores/canvas";
 import TagPillsCanvas from "@/components/canvas/TagPills/TagPillsCanvas.vue";
 import ExpandPhotoButtons from "@/components/canvas/ExpandPhotoButtons.vue";
 import PhotoDetectionAreas from "@/components/canvas/PhotoDetectionAreas.vue";
+import CanvasToolbar from "@/components/canvas/CanvasToolbar.vue";
 
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
