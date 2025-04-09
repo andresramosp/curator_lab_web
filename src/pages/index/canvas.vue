@@ -1,8 +1,14 @@
 <template>
   <div class="main-container" ref="containerRef">
+    {{ toolbarState }}
     <!-- Toolbar vertical a la derecha -->
     <div width="80" class="toolbar">
-      <CanvasToolbar />
+      <CanvasToolbar
+        v-model="toolbarState"
+        @deletePhotos="handleDeletePhotos"
+        @orderPhotos="orderPhotos"
+        @fitStage="fitStageToPhotos"
+      />
     </div>
 
     <v-stage
@@ -79,14 +85,14 @@
             <!-- Tags y botones -->
             <template>
               <PhotoDetectionAreas
-                v-if="similarityType.criteria === 'composition'"
+                v-if="toolbarState.expansion.type.criteria === 'composition'"
                 :photo="photo"
                 :detectionAreas="photo.detectionAreas"
                 :visible="photo.hovered"
                 >/</PhotoDetectionAreas
               >
               <TagPillsCanvas
-                v-if="similarityType.criteria === 'tags'"
+                v-if="toolbarState.expansion.type.criteria === 'tags'"
                 :photo="photo"
                 :tags="photo.tags"
                 :visible="photo.hovered"
@@ -95,9 +101,9 @@
                 :photo="photo"
                 v-if="
                   photo.hovered &&
-                  (similarityType.criteria !== 'tags' ||
+                  (toolbarState.expansion.type.criteria !== 'tags' ||
                     photo.tags.some((t) => t.tag.selected)) &&
-                  (similarityType.criteria !== 'composition' ||
+                  (toolbarState.expansion.type.criteria !== 'composition' ||
                     photo.detectionAreas.some((dt) => dt.selected))
                 "
                 @click="handleAddPhotoFromPhoto"
@@ -154,25 +160,22 @@ import CanvasToolbar from "@/components/canvas/CanvasToolbar.vue";
 const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
 
+const toolbarState = ref({
+  mouseMode: "move", // antiguo 'mode'
+  zoomLevel: 0, // antiguo 'zoom'
+  expansion: {
+    type: { criteria: "embedding" },
+    inverted: false, // antiguo 'inverted'
+    opposite: false, // antiguo opposite
+  },
+  photoOptions: {
+    count: 1, // antiguo resultLength
+    spreadMode: "vertical", // tres valores que reemplazan al antiguo aligned boolean
+  },
+});
+
 const stageRef = ref(null);
 const containerRef = ref(null);
-const zoom = ref(1);
-const mode = ref("move");
-const spreadAligned = ref(true);
-const opposite = ref(false);
-const inverted = ref(false);
-
-const similarityType = ref({ criteria: "embedding" });
-const resultLength = ref(1);
-const similarityItems = [
-  { label: "General", data: { criteria: "embedding" } },
-  { label: "Context", data: { criteria: "semantic", fields: ["context"] } },
-  { label: "Story", data: { criteria: "semantic", fields: ["story"] } },
-  { label: "Tags", data: { criteria: "tags" } },
-  { label: "Composition", data: { criteria: "composition" } },
-  { label: "Geometrical", data: { criteria: "geometrical" } },
-  { label: "Chromatic", data: { criteria: "chromatic" } },
-];
 
 const photoRefs = ref({});
 const setPhotoRef = (id) => (el) => {
@@ -193,7 +196,7 @@ const {
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
-} = useCanvasStage(stageRef, photos, mode, zoom, similarityType);
+} = useCanvasStage(stageRef, photos, toolbarState);
 
 // Composable de las fotos: eventos de drag, selección, mouseover/out y ordenación
 const {
@@ -226,14 +229,17 @@ const handleAddPhotoFromPhoto = async (event) => {
 
   await canvasStore.addPhotosFromPhoto(
     [photo],
-    similarityType.value,
-    resultLength.value,
+    toolbarState.value.expansion.type,
+    toolbarState.value.photoOptions.count,
     basePosition,
-    opposite.value,
-    inverted.value
+    toolbarState.value.opposite,
+    toolbarState.value.inverted
   );
 
-  if (spreadAligned.value) {
+  if (
+    toolbarState.value.photoOptions.spreadMode == "vertical" ||
+    toolbarState.value.photoOptions.spreadMode == "horizontal"
+  ) {
     animatePhotoGroup(
       photoRefs,
       photos,
@@ -309,7 +315,7 @@ const fitStageToPhotos = () => {
     duration: 0.4,
     easing: Konva.Easings.EaseInOut,
     onFinish: () => {
-      zoom.value = targetZoom;
+      toolbarState.value.zoomLevel = targetZoom;
       updateStageOffset();
     },
   }).play();
@@ -329,23 +335,30 @@ onMounted(() => {
   updateStageOffset();
 });
 
-watch(zoom, (newZoom) => {
-  const stage = stageRef.value.getStage();
-  const center = { x: stage.width() / 2, y: stage.height() / 2 };
-  const oldScale = stage.scaleX();
-  const centerPoint = {
-    x: (center.x - stage.x()) / oldScale,
-    y: (center.y - stage.y()) / oldScale,
-  };
-  stage.scale({ x: newZoom, y: newZoom });
-  const newPos = {
-    x: center.x - centerPoint.x * newZoom,
-    y: center.y - centerPoint.y * newZoom,
-  };
-  stage.position(newPos);
-  stage.batchDraw();
-  updateStageOffset();
-});
+watch(
+  () => toolbarState.value.zoomLevel,
+  (newZoom) => {
+    const stage = stageRef.value.getStage();
+    const center = { x: stage.width() / 2, y: stage.height() / 2 };
+    const oldScale = stage.scaleX();
+
+    const centerPoint = {
+      x: (center.x - stage.x()) / oldScale,
+      y: (center.y - stage.y()) / oldScale,
+    };
+
+    stage.scale({ x: newZoom, y: newZoom });
+
+    const newPos = {
+      x: center.x - centerPoint.x * newZoom,
+      y: center.y - centerPoint.y * newZoom,
+    };
+
+    stage.position(newPos);
+    stage.batchDraw();
+    updateStageOffset();
+  }
+);
 
 watch(
   () => photos.value.map((p) => p.src),

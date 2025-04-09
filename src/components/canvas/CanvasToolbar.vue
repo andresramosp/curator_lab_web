@@ -13,7 +13,7 @@
         <v-btn icon variant="outlined" size="small" class="mx-auto">
           <v-icon size="20">mdi-folder</v-icon>
         </v-btn>
-        <v-btn icon @click="handleDeletePhotos" size="small" class="mx-auto">
+        <v-btn icon @click="emitDelete" size="small" class="mx-auto">
           <v-icon size="30">mdi-delete</v-icon>
         </v-btn>
       </div>
@@ -25,28 +25,27 @@
         Navegación
       </div>
       <div class="d-flex justify-space-between mt-2">
-        <v-btn
-          @click="mouseMode = mouseMode === 'move' ? 'select' : 'move'"
-          icon
-          size="small"
-          class="mx-auto"
-        >
-          <v-icon v-if="mouseMode === 'move'" size="30">mdi-dots-square</v-icon>
+        <v-btn @click="toggleMouseMode" icon size="small" class="mx-auto">
+          <v-icon v-if="toolbarState.mouseMode === 'move'" size="30"
+            >mdi-dots-square</v-icon
+          >
           <v-icon v-else size="30">mdi-pan</v-icon>
         </v-btn>
-        <v-btn icon @click="orderPhotos" size="small" class="mx-auto">
+        <v-btn icon @click="emitOrderPhotos" size="small" class="mx-auto">
           <v-icon size="30">mdi-grid</v-icon>
         </v-btn>
-        <v-btn icon @click="fitStageToPhotos" size="small" class="mx-auto">
+        <v-btn icon @click="emitFitStage" size="small" class="mx-auto">
           <v-icon size="30">mdi-crop-free</v-icon>
         </v-btn>
       </div>
       <v-slider
-        v-model="slider"
+        v-model="toolbarState.zoomLevel"
         hide-details
         density="compact"
         class="mt-1"
         style="height: 24px"
+        min="0"
+        max="100"
       />
     </div>
 
@@ -57,8 +56,10 @@
       </div>
       <v-select
         label="Tipo de expansión"
-        :items="['General', 'Context']"
-        v-model="config.type"
+        :items="expansionTypes"
+        item-title="label"
+        item-value="data"
+        v-model="toolbarState.expansion.type"
         density="compact"
         hide-details
         class="mt-1"
@@ -67,16 +68,16 @@
       <v-row dense class="mt-1">
         <v-col>
           <v-switch
-            label="Inverted"
-            v-model="config.inverted"
+            label="Invertido"
+            v-model="toolbarState.expansion.inverted"
             density="compact"
             hide-details
           />
         </v-col>
         <v-col>
           <v-switch
-            label="Opposite"
-            v-model="config.opposite"
+            label="Opuesto"
+            v-model="toolbarState.expansion.opposite"
             density="compact"
             hide-details
           />
@@ -94,68 +95,94 @@
           <v-text-field
             type="number"
             label="Número de fotos"
-            v-model.number="photoOptions.count"
+            v-model.number="toolbarState.photoOptions.count"
             density="compact"
             hide-details
             style="height: 36px; font-size: 12px"
           />
         </v-col>
-        <v-col>
-          <v-switch
-            label="Aligned"
-            v-model="photoOptions.aligned"
-            density="compact"
-            hide-details
-          />
-        </v-col>
       </v-row>
 
       <div class="d-flex justify-space-between mt-2">
-        <v-btn
-          icon
-          size="small"
-          :color="photoOptions.layout === 'vertical' ? 'primary' : ''"
-          @click="photoOptions.layout = 'vertical'"
-        >
-          <v-icon size="18">mdi-view-sequential</v-icon>
-        </v-btn>
-        <v-btn
-          icon
-          size="small"
-          :color="photoOptions.layout === 'horizontal' ? 'primary' : ''"
-          @click="photoOptions.layout = 'horizontal'"
-        >
-          <v-icon size="18">mdi-view-parallel</v-icon>
-        </v-btn>
-        <v-btn
-          icon
-          size="small"
-          :color="photoOptions.layout === 'circular' ? 'primary' : ''"
-          @click="photoOptions.layout = 'circular'"
-        >
-          <v-icon size="18">mdi-circle-slice-3</v-icon>
-        </v-btn>
+        <ToggleButtons v-model="toolbarState.photoOptions.spreadMode">
+          <ToggleOption
+            value="horizontal"
+            tooltip="Expandir en línea horizontal"
+          >
+            <v-icon left class="mr-1">mdi-pan-horizontal</v-icon>
+          </ToggleOption>
+
+          <ToggleOption value="vertical" tooltip="Expandir en columna vertical">
+            <v-icon left class="mr-1">mdi-pan-vertical</v-icon>
+          </ToggleOption>
+
+          <ToggleOption
+            value="circular"
+            tooltip="Expandir en círculo alrededor"
+          >
+            <v-icon left class="mr-1">mdi-orbit-variant</v-icon>
+          </ToggleOption>
+        </ToggleButtons>
       </div>
     </div>
   </v-card>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed } from "vue";
+import ToggleButtons from "../wrappers/ToggleButtons.vue";
+import ToggleOption from "../wrappers/ToggleOption.vue";
 
-const slider = ref(0);
+// Props y emit para v-model personalizado
+const props = defineProps({
+  modelValue: {
+    type: Object,
+    required: true,
+  },
+});
+const emit = defineEmits([
+  "update:modelValue",
+  "deletePhotos",
+  "orderPhotos",
+  "fitStage",
+]);
 
-const config = ref({
-  type: "General",
-  inverted: false,
-  opposite: false,
+const expansionTypes = [
+  { label: "General", data: { criteria: "embedding" } },
+  { label: "Context", data: { criteria: "semantic", fields: ["context"] } },
+  { label: "Story", data: { criteria: "semantic", fields: ["story"] } },
+  { label: "Tags", data: { criteria: "tags" } },
+  { label: "Composition", data: { criteria: "composition" } },
+  { label: "Geometrical", data: { criteria: "geometrical" } },
+  { label: "Chromatic", data: { criteria: "chromatic" } },
+];
+
+// Acceso reactivo al modelo externo
+const toolbarState = computed({
+  get: () => props.modelValue,
+  set: (val) => emit("update:modelValue", val),
 });
 
-const photoOptions = ref({
-  count: 1,
-  aligned: true,
-  layout: "vertical",
-});
+// Métodos internos
+function toggleMouseMode() {
+  const newMode = toolbarState.value.mouseMode === "move" ? "select" : "move";
+  emit("update:modelValue", {
+    ...toolbarState.value,
+    mouseMode: newMode,
+  });
+}
+
+function emitDelete() {
+  emit("deletePhotos");
+}
+
+function emitOrderPhotos() {
+  emit("orderPhotos");
+}
+
+function emitFitStage() {
+  emit("fitStage");
+}
 </script>
 
 <style scoped>
