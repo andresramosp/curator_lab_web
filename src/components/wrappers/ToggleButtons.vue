@@ -1,5 +1,11 @@
 <template>
-  <v-btn-toggle v-model="value" color="secondary" mandatory class="mx-3">
+  <v-btn-toggle
+    v-model="value"
+    color="secondary"
+    mandatory
+    class="mx-3"
+    style="height: auto !important; justify-content: center"
+  >
     <slot />
   </v-btn-toggle>
 </template>

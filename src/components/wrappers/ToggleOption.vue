@@ -1,7 +1,12 @@
 <template>
   <v-tooltip location="bottom">
     <template #activator="{ props }">
-      <v-btn v-bind="props" class="toolbar-control switch" :value="value">
+      <v-btn
+        v-bind="props"
+        class="toolbar-control switch"
+        :class="[`toggle-option-${size}`]"
+        :value="value"
+      >
         <slot />
       </v-btn>
     </template>
@@ -21,6 +26,18 @@ export default {
       type: String,
       default: "",
     },
+    size: {
+      type: String,
+      default: "large",
+    },
   },
 };
 </script>
+<style>
+.toggle-option-large {
+  height: 48px !important;
+}
+.toggle-option-small {
+  height: 35px !important;
+}
+</style>

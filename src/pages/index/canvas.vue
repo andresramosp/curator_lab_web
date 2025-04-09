@@ -1,8 +1,7 @@
 <template>
   <div class="main-container" ref="containerRef">
-    {{ toolbarState }}
     <!-- Toolbar vertical a la derecha -->
-    <div width="80" class="toolbar">
+    <div class="toolbar">
       <CanvasToolbar
         v-model="toolbarState"
         @deletePhotos="handleDeletePhotos"
@@ -115,7 +114,7 @@
     </v-stage>
 
     <!-- Overlay de spinners -->
-    <div v-if="photos.length">
+    <div v-if="photos.some((p) => p.loading)">
       <div
         class="photo-spinner"
         v-for="photo in photos.filter((p) => p.loading)"
@@ -123,11 +122,13 @@
         :style="{
           position: 'absolute',
           left:
-            (photo.config.x + photo.config.width / 2 + 2) * zoom +
+            (photo.config.x + photo.config.width / 2 + 2) *
+              toolbarState.zoomLevel +
             stageOffset.x +
             'px',
           top:
-            (photo.config.y + photo.config.height / 2) * zoom +
+            (photo.config.y + photo.config.height / 2) *
+              toolbarState.zoomLevel +
             stageOffset.y +
             'px',
           transform: 'translate(-41%, -45%)',
@@ -161,16 +162,18 @@ const canvasStore = useCanvasStore();
 const { photos } = storeToRefs(canvasStore);
 
 const toolbarState = ref({
-  mouseMode: "move", // antiguo 'mode'
-  zoomLevel: 0, // antiguo 'zoom'
+  mouseMode: "move",
+  zoomLevel: 0,
   expansion: {
     type: { criteria: "embedding" },
-    inverted: false, // antiguo 'inverted'
-    opposite: false, // antiguo opposite
+    inverted: false,
+    opposite: false,
+    repeat: false,
+    // strict: false,
   },
   photoOptions: {
-    count: 1, // antiguo resultLength
-    spreadMode: "vertical", // tres valores que reemplazan al antiguo aligned boolean
+    count: 1,
+    spreadMode: "vertical",
   },
 });
 
@@ -232,8 +235,8 @@ const handleAddPhotoFromPhoto = async (event) => {
     toolbarState.value.expansion.type,
     toolbarState.value.photoOptions.count,
     basePosition,
-    toolbarState.value.opposite,
-    toolbarState.value.inverted
+    toolbarState.value.expansion.opposite,
+    toolbarState.value.expansion.inverted
   );
 
   if (

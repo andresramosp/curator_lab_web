@@ -143,3 +143,32 @@
 
   bottom: 62px;
 }
+
+.switch-compact .v-label {
+  font-size: 12px !important;
+  margin-inline-start: 4px;
+}
+
+// .select-compact .v-label {
+//   font-size: 12px !important;
+//   margin-bottom: -2px;
+// }
+
+.select-compact {
+  font-size: 12px; /* valor seleccionado */
+}
+
+.select-compact .v-select__selection-text {
+  font-size: 12px; /* valor seleccionado */
+}
+
+.select-compact .v-label,
+.text-compact .v-label {
+  font-size: 11px !important; /* título flotante (label) más pequeño */
+  opacity: 0.7;
+  transform: translateY(-4px) scale(0.9); /* opcional para refinar */
+}
+
+.select-compact .v-list-item-title {
+  font-size: 12px; /* opciones del dropdown */
+}
