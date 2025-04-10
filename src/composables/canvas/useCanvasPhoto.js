@@ -1,4 +1,4 @@
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
 import Konva from "konva";
 import { hungarian } from "@/utils/utils";
 import { useCanvasStore } from "@/stores/canvas";
@@ -7,6 +7,8 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
   const dragGroupStart = reactive({});
   const hoverTimeouts = reactive({});
   const canvasStore = useCanvasStore();
+
+  const isHoveringTrash = ref(false);
 
   const handleSelectPhoto = (photo, event) => {
     if (!selectionRectVisible()) {
@@ -58,6 +60,12 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
       photo.config.x = newX;
       photo.config.y = newY;
     }
+
+    const hoveringTrash = photo.selected
+      ? photos.value.some((p) => p.selected && isInTrashZone(p))
+      : isInTrashZone(photo);
+
+    isHoveringTrash.value = hoveringTrash;
   };
 
   function isInTrashZone(photo) {
@@ -107,10 +115,6 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
     if (photosToRemove.length) {
       canvasStore.deletePhotos(photosToRemove.map((p) => p.id));
-      // canvasStore.photos = canvasStore.photos.filter(
-      //   (p) => !photosToRemove.some((r) => r.id === p.id)
-      // );
-      // canvasStore.discardedPhotos.push(...photosToRemove);
     }
   };
 
@@ -213,5 +217,6 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     handleMouseOver,
     handleMouseOut,
     orderPhotos,
+    isHoveringTrash,
   };
 }

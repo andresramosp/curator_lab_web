@@ -30,9 +30,9 @@
 
       <v-card-actions class="mt-auto mr-13">
         <v-btn size="small" class="outline" text @click="close">Close</v-btn>
-        <v-btn size="small" color="primary" @click="confirmSelection"
-          >Add to Canvas</v-btn
-        >
+        <v-btn size="small" color="primary" @click="confirmSelection">{{
+          isTrash ? "Restore" : "Add to Canvas"
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

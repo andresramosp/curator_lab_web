@@ -1,7 +1,6 @@
 <template>
   <div class="main-container" ref="containerRef">
     <!-- Toolbar vertical a la derecha -->
-
     <div class="toolbar">
       <CanvasToolbar
         v-model="toolbarState"
@@ -154,7 +153,12 @@
       :isTrash="true"
       @add-photos="handleAddPhotos"
     />
-    <div @click="dialogTrashVisible = true" class="trash-zone">🗑️</div>
+    <div
+      @click="dialogTrashVisible = true"
+      :class="['trash-zone', { hovering: isHoveringTrash }]"
+    >
+      🗑️
+    </div>
   </div>
 </template>
 
@@ -228,6 +232,7 @@ const {
   handleMouseOver,
   handleMouseOut,
   orderPhotos,
+  isHoveringTrash,
 } = useCanvasPhoto(stageRef, photos, photoRefs, stageConfig);
 
 // Composable de animaciones: para disparar tweens
@@ -434,13 +439,13 @@ watch(
 }
 .trash-zone {
   position: absolute;
-  width: 80px;
-  height: 80px;
-  bottom: 100px;
+  width: 100px;
+  height: 100px;
+  bottom: 66px;
   display: flex;
-  right: 39px;
+  right: 1px;
   background-color: rgba(255, 0, 0, 0.1);
-  border: 1px solid red;
+  border: 1px solid rgba(250, 11, 11, 0.5);
   border-radius: 8px;
   font-size: 40px;
   text-align: center;
@@ -456,5 +461,8 @@ watch(
 .trash-zone.hovering {
   background-color: rgba(255, 0, 0, 0.25);
   border-color: darkred;
+  transform: rotate(8deg) scale(1.08);
+  transition: transform 0.2s ease, background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 </style>
