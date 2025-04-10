@@ -1,6 +1,7 @@
 <template>
   <div class="main-container" ref="containerRef">
     <!-- Toolbar vertical a la derecha -->
+
     <div class="toolbar">
       <CanvasToolbar
         v-model="toolbarState"
@@ -32,38 +33,6 @@
             dash: [4, 4],
           }"
         />
-        <!-- Zona de papelera que no se ve afectada por zoom -->
-        <v-group
-          :config="{
-            x: trashPosition.x,
-            y: trashPosition.y,
-            scaleX: 1 / toolbarState.zoomLevel,
-            scaleY: 1 / toolbarState.zoomLevel,
-            draggable: true,
-          }"
-        >
-          <v-rect
-            :config="{
-              width: 90,
-              height: 90,
-              fill: trashHovering
-                ? 'rgba(255, 0, 0, 0.25)'
-                : 'rgba(255, 0, 0, 0.1)',
-              stroke: trashHovering ? 'darkred' : 'red',
-              strokeWidth: 2,
-              cornerRadius: 8,
-            }"
-          />
-          <v-text
-            :config="{
-              x: 10,
-              y: 30,
-              text: '🗑️',
-              fontSize: 30,
-            }"
-          />
-        </v-group>
-
         <!-- Fotos -->
         <v-group
           v-for="photo in photos"
@@ -175,7 +144,17 @@
         ></v-progress-circular>
       </div>
     </div>
-    <PhotoDialogCanvas v-model="dialogVisible" @add-photos="handleAddPhotos" />
+    <PhotoDialogCanvas
+      v-model="dialogVisible"
+      :isTrash="false"
+      @add-photos="handleAddPhotos"
+    />
+    <PhotoDialogCanvas
+      v-model="dialogTrashVisible"
+      :isTrash="true"
+      @add-photos="handleAddPhotos"
+    />
+    <div @click="dialogTrashVisible = true" class="trash-zone">🗑️</div>
   </div>
 </template>
 
@@ -222,6 +201,7 @@ const setPhotoRef = (id) => (el) => {
   if (el) photoRefs.value[id] = el;
 };
 const dialogVisible = ref(false);
+const dialogTrashVisible = ref(false);
 
 const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
@@ -248,7 +228,7 @@ const {
   handleMouseOver,
   handleMouseOut,
   orderPhotos,
-} = useCanvasPhoto(photos, photoRefs, stageConfig);
+} = useCanvasPhoto(stageRef, photos, photoRefs, stageConfig);
 
 // Composable de animaciones: para disparar tweens
 const { animatePhotoGroup, animatePhotoGroupExplosion } = usePhotoAnimations();
@@ -443,7 +423,7 @@ watch(
   position: absolute;
   right: 0px;
   top: 0px;
-  z-index: 100;
+  z-index: 200;
 }
 .tags-container {
   position: absolute;
@@ -451,5 +431,30 @@ watch(
   left: 0;
   display: flex;
   flex-wrap: wrap;
+}
+.trash-zone {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  bottom: 100px;
+  display: flex;
+  right: 39px;
+  background-color: rgba(255, 0, 0, 0.1);
+  border: 1px solid red;
+  border-radius: 8px;
+  font-size: 40px;
+  text-align: center;
+  align-items: center;
+  line-height: 90px;
+
+  transition: background-color 0.2s, border-color 0.2s;
+  align-content: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.trash-zone.hovering {
+  background-color: rgba(255, 0, 0, 0.25);
+  border-color: darkred;
 }
 </style>

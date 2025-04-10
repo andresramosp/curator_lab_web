@@ -118,8 +118,8 @@ export const useCanvasStore = defineStore("canvas", {
         basePhoto.loading = false;
       }
     },
-    deletePhotos() {
-      const photosToRemove = this.photos.filter((p) => p.selected);
+    deletePhotos(photoIds) {
+      const photosToRemove = this.photos.filter((p) => photoIds.includes(p.id));
       this.photos = this.photos.filter(
         (p) => !photosToRemove.map((p) => p.id).includes(p.id)
       );

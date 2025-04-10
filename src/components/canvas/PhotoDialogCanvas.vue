@@ -9,7 +9,7 @@
         <v-container fluid>
           <v-row>
             <v-col
-              v-for="photo in photosStore.photos"
+              v-for="photo in photos"
               :key="photo.id"
               cols="2"
               class="d-flex justify-center"
@@ -41,10 +41,11 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { usePhotosStore } from "@/stores/photos";
-import PhotoCard from "../PhotoCard.vue";
+import { useCanvasStore } from "@/stores/canvas";
 
 const props = defineProps({
   modelValue: Boolean,
+  isTrash: Boolean,
 });
 
 const emit = defineEmits(["update:modelValue", "add-photos"]);
@@ -55,8 +56,19 @@ const dialog = computed({
 });
 
 const photosStore = usePhotosStore();
+const canvasStore = useCanvasStore();
 const selectedIds = ref([]);
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
+const photos = computed(() => {
+  if (props.isTrash) {
+    return canvasStore.discardedPhotos.map((dp) =>
+      photosStore.photos.find((p) => p.id == dp.id)
+    );
+  } else {
+    return photosStore.photos;
+  }
+});
 
 function toggleSelection(photoId) {
   if (selectedIds.value.includes(photoId)) {
@@ -67,6 +79,11 @@ function toggleSelection(photoId) {
 }
 
 function confirmSelection() {
+  if (props.isTrash) {
+    canvasStore.discardedPhotos = canvasStore.discardedPhotos.filter(
+      (dp) => !selectedIds.value.includes(dp.id)
+    );
+  }
   emit("add-photos", selectedIds.value);
   close();
 }

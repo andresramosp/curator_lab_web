@@ -3,7 +3,7 @@ import Konva from "konva";
 import { hungarian } from "@/utils/utils";
 import { useCanvasStore } from "@/stores/canvas";
 
-export function useCanvasPhoto(photos, photoRefs, stageConfig) {
+export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
   const dragGroupStart = reactive({});
   const hoverTimeouts = reactive({});
   const canvasStore = useCanvasStore();
@@ -61,22 +61,25 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
   };
 
   function isInTrashZone(photo) {
-    const trashX = stageConfig.width - 110;
-    const trashY = 20;
-    const trashW = 90;
-    const trashH = 90;
+    const trashEl = document.querySelector(".trash-zone");
+    if (!trashEl) return false;
 
+    const trashRect = trashEl.getBoundingClientRect();
+
+    const stage = stageRef.value.getStage();
     const { x, y, width, height } = photo.config;
+    const centerKonva = { x: x + width / 2, y: y + height / 2 };
+    const centerScreen = stage.getAbsoluteTransform().point(centerKonva);
 
-    // Comprobamos si el centro de la foto está dentro del área
-    const centerX = x + width / 2;
-    const centerY = y + height / 2;
+    const containerRect = stage.container().getBoundingClientRect();
+    const screenX = containerRect.left + centerScreen.x;
+    const screenY = containerRect.top + centerScreen.y;
 
     return (
-      centerX >= trashX &&
-      centerX <= trashX + trashW &&
-      centerY >= trashY &&
-      centerY <= trashY + trashH
+      screenX >= trashRect.left &&
+      screenX <= trashRect.right &&
+      screenY >= trashRect.top &&
+      screenY <= trashRect.bottom
     );
   }
 
@@ -103,10 +106,11 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
     }
 
     if (photosToRemove.length) {
-      canvasStore.photos = canvasStore.photos.filter(
-        (p) => !photosToRemove.some((r) => r.id === p.id)
-      );
-      canvasStore.discardedPhotos.push(...photosToRemove);
+      canvasStore.deletePhotos(photosToRemove.map((p) => p.id));
+      // canvasStore.photos = canvasStore.photos.filter(
+      //   (p) => !photosToRemove.some((r) => r.id === p.id)
+      // );
+      // canvasStore.discardedPhotos.push(...photosToRemove);
     }
   };
 
