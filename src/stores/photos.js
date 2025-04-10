@@ -18,8 +18,27 @@ export const usePhotosStore = defineStore("photos", {
   },
 
   actions: {
-    setPhotos(photos) {
-      this.photos = photos.map((photo) => ({ ...photo }));
+    async getOrFetch() {
+      if (this.photos.length === 0 && !this.isLoading) {
+        this.isLoading = true;
+        try {
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_BASE_URL}/api/catalog`
+          );
+
+          const photos = response.data.photos.map((photo) => ({
+            ...photo,
+            analyzing: photo.needProcess,
+          }));
+
+          this.photos = photos.map((photo) => ({ ...photo }));
+        } catch (error) {
+          console.error("Error en getOrFetchAll:", error);
+        } finally {
+          this.isLoading = false;
+        }
+      }
+      return this.photos;
     },
 
     addPhotos(newPhotos) {
@@ -50,7 +69,6 @@ export const usePhotosStore = defineStore("photos", {
 
     togglePhotoSelection(photoId) {
       this.selectedPhotosRecord[photoId] = !this.selectedPhotosRecord[photoId];
-      console.log(this.selectedPhotosRecord);
     },
   },
 });

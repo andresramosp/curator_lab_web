@@ -86,6 +86,7 @@ import { ref, onMounted } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import axios from "axios";
 import { io } from "socket.io-client";
+import PhotosGrid from "@/components/PhotosGrid.vue";
 
 const photosStore = usePhotosStore();
 const fileInput = ref(null);
@@ -122,7 +123,7 @@ async function uploadLocalFiles(event) {
       }
     );
 
-    await fetchFiles();
+    await photosStore.getOrFetch();
   } catch (error) {
     console.error("❌ Error uploading photos:", error);
   } finally {
@@ -154,28 +155,9 @@ async function uploadGooglePhotos(mediaItems) {
 
     uploadingPhotos.value = 0;
 
-    await fetchFiles(); // Refrescar la lista de fotos
+    await photosStore.getOrFetch(); // Refrescar la lista de fotos
   } catch (error) {
     console.error("❌ Error uploading Google Photos:", error);
-  } finally {
-  }
-}
-
-/** 🔹 Obtiene la lista de fotos y detecta si hay fotos en análisis */
-async function fetchFiles() {
-  try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/api/catalog`
-    );
-
-    const photos = response.data.photos.map((photo) => ({
-      ...photo,
-      analyzing: photo.needProcess,
-    }));
-
-    photosStore.setPhotos(photos);
-  } catch (error) {
-    console.error("❌ Error fetching photos:", error);
   } finally {
   }
 }
@@ -292,12 +274,12 @@ const checkGooglePhotosCallback = () => {
 /** 🔹 Configuración de WebSockets */
 onMounted(() => {
   checkGooglePhotosCallback();
-  fetchFiles();
+  photosStore.getOrFetch();
 
   socket.on("analysisComplete", (data) => {
     console.log("✔️ Análisis completado. Costo total:", data.cost);
     photosStore.isAnalyzing = false;
-    fetchFiles();
+    photosStore.getOrFetch();
   });
 
   socket.on("photoProcessed", (data) => {

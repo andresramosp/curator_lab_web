@@ -1,40 +1,73 @@
 <template>
   <v-card class="d-flex flex-column canvas-toolbar" elevation="2">
-    <!-- Sección de fotos -->
+    <!-- Photos Section -->
     <div class="section">
       <div class="text-caption font-weight-medium text-grey-lighten-1 mb-1">
-        Fotos
+        Photos
       </div>
       <div class="d-flex justify-space-between">
-        <v-btn icon variant="outlined" size="small" class="mx-auto">
-          <v-icon size="20">mdi-folder</v-icon>
-        </v-btn>
-        <v-btn icon @click="emitOrderPhotos" size="small" class="mx-auto">
-          <v-icon size="30">mdi-grid</v-icon>
-        </v-btn>
-        <v-btn icon @click="emitFitStage" size="small" class="mx-auto">
-          <v-icon size="30">mdi-crop-free</v-icon>
-        </v-btn>
+        <v-tooltip text="Open folder" location="bottom">
+          <template #activator="{ props }">
+            <v-btn
+              icon
+              @click="emitOpenDialog"
+              variant="outlined"
+              size="small"
+              class="mx-auto"
+              v-bind="props"
+            >
+              <v-icon size="20">mdi-folder</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+
+        <v-tooltip text="Order photos" location="bottom">
+          <template #activator="{ props }">
+            <v-btn
+              icon
+              @click="emitOrderPhotos"
+              size="small"
+              class="mx-auto"
+              v-bind="props"
+            >
+              <v-icon size="30">mdi-grid</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+
+        <v-tooltip text="Fit to view" location="bottom">
+          <template #activator="{ props }">
+            <v-btn
+              icon
+              @click="emitFitStage"
+              size="small"
+              class="mx-auto"
+              v-bind="props"
+            >
+              <v-icon size="30">mdi-crop-free</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
       </div>
     </div>
 
-    <!-- Navegación -->
+    <!-- Navigation -->
     <div class="section">
       <div class="text-caption font-weight-medium text-grey-lighten-1 mb-1">
-        Navegación
+        Navigation
       </div>
       <ToggleButtons v-model="toolbarState.mouseMode">
-        <ToggleOption size="small" value="move" tooltip="Mover el lienzo (pan)">
+        <ToggleOption size="small" value="move" tooltip="Move the canvas (pan)">
           <v-icon left class="mr-1">mdi-pan</v-icon>
           Pan
         </ToggleOption>
         <ToggleOption
           size="small"
           value="select"
-          tooltip="Seleccionar múltiples fotos"
+          tooltip="Select multiple photos"
         >
           <v-icon left class="mr-1">mdi-selection-drag</v-icon>
-          Selección
+          Select
         </ToggleOption>
       </ToggleButtons>
 
@@ -49,14 +82,14 @@
       />
     </div>
 
-    <!-- Configuración -->
+    <!-- Settings -->
     <div class="section">
       <div class="text-caption font-weight-medium text-grey-lighten-1 mb-1">
-        Configuración
+        Settings
       </div>
 
       <v-select
-        label="Tipo de expansión"
+        label="Expansion type"
         :items="expansionTypes"
         item-title="label"
         item-value="data"
@@ -68,7 +101,7 @@
 
       <v-row dense align="center" justify="space-around" class="mt-2">
         <v-switch
-          label="Invertido"
+          label="Inverted"
           color="secondary"
           class="switch-compact"
           v-model="toolbarState.expansion.inverted"
@@ -76,35 +109,36 @@
           hide-details
         />
         <v-switch
-          label="Opuesto"
+          label="Opposite"
           color="secondary"
           class="switch-compact"
           v-model="toolbarState.expansion.opposite"
           density="compact"
           hide-details
         />
-
-        <!-- <v-switch
+        <!--
+        <v-switch
           label="Strict"
           color="secondary"
           class="switch-compact"
           v-model="toolbarState.expansion.strict"
           density="compact"
           hide-details
-        /> -->
+        />
+        -->
       </v-row>
     </div>
 
-    <!-- Expansión de fotos -->
+    <!-- Photo Expansion -->
     <div class="section">
       <div class="text-caption font-weight-medium text-grey-lighten-1 mb-1">
-        Expansión de fotos
+        Photo Expansion
       </div>
       <v-row dense>
         <v-col>
           <v-text-field
             type="number"
-            label="Número de fotos"
+            label="Number of photos"
             v-model.number="toolbarState.photoOptions.count"
             density="compact"
             class="text-compact mt-1"
@@ -121,7 +155,8 @@
             v-model="toolbarState.expansion.repeat"
             density="compact"
             hide-details
-        /></v-col>
+          />
+        </v-col>
       </v-row>
 
       <div class="d-flex justify-space-around mt-2">
@@ -129,7 +164,7 @@
           <ToggleOption
             size="small"
             value="horizontal"
-            tooltip="Expandir en línea horizontal"
+            tooltip="Expand in horizontal line"
           >
             <v-icon left class="mr-1">mdi-pan-horizontal</v-icon>
           </ToggleOption>
@@ -137,7 +172,7 @@
           <ToggleOption
             size="small"
             value="vertical"
-            tooltip="Expandir en columna vertical"
+            tooltip="Expand in vertical column"
           >
             <v-icon left class="mr-1">mdi-pan-vertical</v-icon>
           </ToggleOption>
@@ -145,7 +180,7 @@
           <ToggleOption
             size="small"
             value="circular"
-            tooltip="Expandir en círculo alrededor"
+            tooltip="Expand in circular layout"
           >
             <v-icon left class="mr-1">mdi-orbit-variant</v-icon>
           </ToggleOption>
@@ -166,7 +201,12 @@ const props = defineProps({
     required: true,
   },
 });
-const emit = defineEmits(["update:modelValue", "orderPhotos", "fitStage"]);
+const emit = defineEmits([
+  "update:modelValue",
+  "orderPhotos",
+  "fitStage",
+  "openDialog",
+]);
 
 const expansionTypes = [
   { label: "General", data: { criteria: "embedding" } },
@@ -188,6 +228,9 @@ function emitOrderPhotos() {
 }
 function emitFitStage() {
   emit("fitStage");
+}
+function emitOpenDialog() {
+  emit("openDialog");
 }
 </script>
 

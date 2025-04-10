@@ -7,5 +7,11 @@
 </template>
 
 <script setup>
-//
+import { onMounted } from "vue";
+import { usePhotosStore } from "./stores/photos";
+const photosStore = usePhotosStore();
+
+onMounted(() => {
+  photosStore.getOrFetch();
+});
 </script>

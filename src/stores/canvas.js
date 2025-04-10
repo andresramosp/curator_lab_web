@@ -40,36 +40,45 @@ export const useCanvasStore = defineStore("canvas", {
     currentZIndex: 1,
   }),
   actions: {
-    // Trae la info básica de la foto si no se tiene, usando el endpoint /catalog/photosByIds
-    async addPhotos(photoIds) {
-      const missingIds = photoIds.filter(
-        (id) => !this.photos.some((photo) => photo.id === id)
-      );
-      if (!missingIds.length) return;
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/catalog/photosByIds`,
-          { photosIds: missingIds }
-        );
-        const backendPhotos = Array.isArray(response.data)
-          ? response.data
-          : [response.data];
-        backendPhotos.forEach((backendPhoto) => {
-          if (!this.photos.some((photo) => photo.id === backendPhoto.id)) {
-            this.photos.push(
-              createPhoto(
-                backendPhoto,
-                undefined,
-                undefined,
-                this.currentZIndex
-              )
-            );
-          }
-        });
-      } catch (error) {
-        console.error("Error al añadir fotos desde el catálogo:", error);
-      }
+    addPhotos(photoObjects) {
+      photoObjects.forEach((photo) => {
+        if (!this.photos.some((p) => p.id === photo.id)) {
+          this.photos.push(
+            createPhoto(photo, undefined, false, this.currentZIndex)
+          );
+        }
+      });
     },
+    // Trae la info básica de la foto si no se tiene, usando el endpoint /catalog/photosByIds
+    // async addPhotos(photoIds) {
+    //   const missingIds = photoIds.filter(
+    //     (id) => !this.photos.some((photo) => photo.id === id)
+    //   );
+    //   if (!missingIds.length) return;
+    //   try {
+    //     const response = await axios.post(
+    //       `${import.meta.env.VITE_API_BASE_URL}/api/catalog/photosByIds`,
+    //       { photosIds: missingIds }
+    //     );
+    //     const backendPhotos = Array.isArray(response.data)
+    //       ? response.data
+    //       : [response.data];
+    //     backendPhotos.forEach((backendPhoto) => {
+    //       if (!this.photos.some((photo) => photo.id === backendPhoto.id)) {
+    //         this.photos.push(
+    //           createPhoto(
+    //             backendPhoto,
+    //             undefined,
+    //             undefined,
+    //             this.currentZIndex
+    //           )
+    //         );
+    //       }
+    //     });
+    //   } catch (error) {
+    //     console.error("Error al añadir fotos desde el catálogo:", error);
+    //   }
+    // },
     // Trae fotos similares usando el endpoint /byPhotos
     async addPhotosFromPhoto(
       basePhotos,

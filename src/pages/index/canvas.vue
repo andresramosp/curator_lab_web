@@ -7,6 +7,7 @@
         @deletePhotos="handleDeletePhotos"
         @orderPhotos="orderPhotos"
         @fitStage="fitStageToPhotos"
+        @openDialog="dialogVisible = true"
       />
     </div>
 
@@ -142,6 +143,7 @@
         ></v-progress-circular>
       </div>
     </div>
+    <PhotoDialogCanvas v-model="dialogVisible" @add-photos="handleAddPhotos" />
   </div>
 </template>
 
@@ -157,8 +159,11 @@ import TagPillsCanvas from "@/components/canvas/TagPills/TagPillsCanvas.vue";
 import ExpandPhotoButtons from "@/components/canvas/ExpandPhotoButtons.vue";
 import PhotoDetectionAreas from "@/components/canvas/PhotoDetectionAreas.vue";
 import CanvasToolbar from "@/components/canvas/CanvasToolbar.vue";
+import PhotoDialogCanvas from "@/components/canvas/PhotoDialogCanvas.vue";
+import { usePhotosStore } from "@/stores/photos";
 
 const canvasStore = useCanvasStore();
+const photosStore = usePhotosStore();
 const { photos } = storeToRefs(canvasStore);
 
 const toolbarState = ref({
@@ -184,6 +189,7 @@ const photoRefs = ref({});
 const setPhotoRef = (id) => (el) => {
   if (el) photoRefs.value[id] = el;
 };
+const dialogVisible = ref(false);
 
 const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
@@ -329,6 +335,16 @@ const handleDeletePhotos = (event) => {
   canvasStore.deletePhotos();
 };
 
+function handleAddPhotos(photoIds) {
+  const photosToAdd = photoIds
+    .map((id) => photosStore.photos.find((p) => p.id === id))
+    .filter(Boolean); // por si acaso
+
+  canvasStore.addPhotos(photosToAdd);
+  orderPhotos();
+  updateStageOffset();
+}
+
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
   stageConfig.height = containerRef.value.clientHeight;
@@ -393,7 +409,8 @@ watch(
 }
 .toolbar {
   position: absolute;
-  right: 8px;
+  right: 0px;
+  top: 0px;
   z-index: 100;
 }
 .tags-container {

@@ -65,13 +65,18 @@
   object-fit: scale-down;
 }
 
-.v-btn:not(.switch) {
+.v-btn:not(.switch):not(.outline) {
   background-color: rgb(var(--v-theme-secondary)) !important;
   color: rgb(var(--v-theme-on-secondary)) !important;
 }
 
 .v-btn.switch {
   border-radius: 15px;
+}
+
+.v-btn.outline {
+  // background-color: rgb(var(--v-theme-surface-light)) !important;
+  border: 1px solid rgb(var(--v-theme-secondary));
 }
 
 .v-btn.switch.on {

@@ -72,7 +72,7 @@
       <v-btn
         :loading="loadingIteration"
         @click="$emit('next-iteration')"
-        class="centered-btn"
+        class="centered-btn outline"
         :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
       >
         <v-icon size="23">mdi-autorenew</v-icon> Load More
