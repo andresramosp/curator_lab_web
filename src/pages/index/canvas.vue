@@ -32,6 +32,38 @@
             dash: [4, 4],
           }"
         />
+        <!-- Zona de papelera que no se ve afectada por zoom -->
+        <v-group
+          :config="{
+            x: trashPosition.x,
+            y: trashPosition.y,
+            scaleX: 1 / toolbarState.zoomLevel,
+            scaleY: 1 / toolbarState.zoomLevel,
+            draggable: true,
+          }"
+        >
+          <v-rect
+            :config="{
+              width: 90,
+              height: 90,
+              fill: trashHovering
+                ? 'rgba(255, 0, 0, 0.25)'
+                : 'rgba(255, 0, 0, 0.1)',
+              stroke: trashHovering ? 'darkred' : 'red',
+              strokeWidth: 2,
+              cornerRadius: 8,
+            }"
+          />
+          <v-text
+            :config="{
+              x: 10,
+              y: 30,
+              text: '🗑️',
+              fontSize: 30,
+            }"
+          />
+        </v-group>
+
         <!-- Fotos -->
         <v-group
           v-for="photo in photos"

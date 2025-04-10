@@ -1,10 +1,12 @@
 import { reactive } from "vue";
 import Konva from "konva";
 import { hungarian } from "@/utils/utils";
+import { useCanvasStore } from "@/stores/canvas";
 
 export function useCanvasPhoto(photos, photoRefs, stageConfig) {
   const dragGroupStart = reactive({});
   const hoverTimeouts = reactive({});
+  const canvasStore = useCanvasStore();
 
   const handleSelectPhoto = (photo, event) => {
     if (!selectionRectVisible()) {
@@ -58,8 +60,54 @@ export function useCanvasPhoto(photos, photoRefs, stageConfig) {
     }
   };
 
-  const handleDragEnd = (photo, e) => {
-    // lógica al soltar el drag, si aplica
+  function isInTrashZone(photo) {
+    const trashX = stageConfig.width - 110;
+    const trashY = 20;
+    const trashW = 90;
+    const trashH = 90;
+
+    const { x, y, width, height } = photo.config;
+
+    // Comprobamos si el centro de la foto está dentro del área
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+
+    return (
+      centerX >= trashX &&
+      centerX <= trashX + trashW &&
+      centerY >= trashY &&
+      centerY <= trashY + trashH
+    );
+  }
+
+  const handleDragEnd = (photo, evt) => {
+    const node = evt.target;
+    const newPos = node.position();
+    photo.config.x = newPos.x;
+    photo.config.y = newPos.y;
+
+    let photosToRemove = [];
+
+    if (photo.selected) {
+      const selectedPhotos = photos.value.filter((p) => p.selected);
+
+      // Si al menos una está dentro → se eliminan todas las seleccionadas
+      const anyInTrash = selectedPhotos.some((p) => isInTrashZone(p));
+      if (anyInTrash) {
+        photosToRemove = selectedPhotos;
+      }
+    } else {
+      if (isInTrashZone(photo)) {
+        photosToRemove = [photo];
+      }
+    }
+
+    if (photosToRemove.length) {
+      canvasStore.photos = canvasStore.photos.filter(
+        (p) => !photosToRemove.some((r) => r.id === p.id)
+      );
+      canvasStore.discardedPhotos.push(...photosToRemove);
+    }
   };
 
   const handleMouseOver = (photo) => {
