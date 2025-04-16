@@ -18,8 +18,8 @@ export const usePhotosStore = defineStore("photos", {
   },
 
   actions: {
-    async getOrFetch() {
-      if (this.photos.length === 0 && !this.isLoading) {
+    async getOrFetch(force) {
+      if (force || (this.photos.length === 0 && !this.isLoading)) {
         this.isLoading = true;
         try {
           const response = await axios.get(

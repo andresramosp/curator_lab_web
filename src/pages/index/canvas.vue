@@ -5,7 +5,7 @@
       <CanvasToolbar
         v-model="toolbarState"
         @deletePhotos="handleDeletePhotos"
-        @orderPhotos="orderPhotos"
+        @orderPhotos="handleOrderPhotos"
         @fitStage="fitStageToPhotos"
         @openDialog="dialogVisible = true"
       />
@@ -279,6 +279,11 @@ const handleAddPhotoFromPhoto = async (event) => {
   }
 };
 
+const handleOrderPhotos = () => {
+  orderPhotos();
+  fitStageToPhotos();
+};
+
 const fitStageToPhotos = () => {
   if (!photos.value.length) return;
 
@@ -286,7 +291,7 @@ const fitStageToPhotos = () => {
   const containerWidth = stage.width();
   const containerHeight = stage.height();
   const margin = 40;
-  const extraPaddingRatio = 0.15; // 10% de padding
+  const extraPaddingRatio = 0.25; // 10% de padding
 
   // Bounding box de todas las fotos
   const bounds = photos.value.reduce(

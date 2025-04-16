@@ -15,7 +15,9 @@ function createPhoto(
     src: `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
       backendPhoto.name
     }`,
-    // src: `C:/Users/andre/Desktop/Curator Lab/API_MODELS/debug_groundingdino_hf/${backendPhoto.id}.jpg`,
+    // src: `${
+    //   import.meta.env.VITE_API_BASE_URL
+    // }/uploads/photos/boxes/structure_mlsd_${backendPhoto.id}.png`,
     config: {
       x: basePosition.x,
       y: basePosition.y,

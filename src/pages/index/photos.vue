@@ -114,7 +114,6 @@ async function uploadLocalFiles(event) {
 
   try {
     uploadingPhotos.value = selectedFiles.length;
-
     await fetch(
       `${import.meta.env.VITE_API_BASE_URL}/api/catalog/uploadLocal`,
       {
@@ -123,7 +122,7 @@ async function uploadLocalFiles(event) {
       }
     );
 
-    await photosStore.getOrFetch();
+    await photosStore.getOrFetch(true);
   } catch (error) {
     console.error("❌ Error uploading photos:", error);
   } finally {
@@ -169,7 +168,7 @@ async function analyze() {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
       packageId: "basic_1", //"topological_upgrade",
-      mode: "remake",
+      mode: "adding",
       // processId: 93,
     });
   } catch (error) {
