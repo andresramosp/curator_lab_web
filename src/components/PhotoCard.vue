@@ -65,7 +65,7 @@ const emit = defineEmits(["view-info"]);
 const photosStore = usePhotosStore();
 
 const photoSrc = computed(
-  () => `${import.meta.env.VITE_PHOTOS_BASE_URL}/${props.photo.name}`
+  () => `${import.meta.env.VITE_PHOTOS_BASE_URL}/${props.photo.thumbnailName}`
 );
 
 const cardStyle = computed(() => ({

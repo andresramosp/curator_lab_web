@@ -12,7 +12,8 @@
               <strong>Id:</strong> {{ selectedPhoto.id }}
             </v-col>
             <v-col cols="12">
-              <strong>Name:</strong> {{ selectedPhoto.name.split("-")[1] }}
+              <strong>Name:</strong>
+              {{ selectedPhoto.thumbnailName.split("-")[1] }}
             </v-col>
             <v-col cols="12">
               <strong>File: </strong>

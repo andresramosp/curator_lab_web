@@ -167,8 +167,8 @@ async function analyze() {
     photosStore.isAnalyzing = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
-      packageId: "basic_1", //"topological_upgrade",
-      mode: "adding",
+      packageId: "basic_1",
+      mode: "first",
       // processId: 93,
     });
   } catch (error) {

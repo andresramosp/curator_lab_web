@@ -13,7 +13,7 @@ function createPhoto(
   return {
     id: backendPhoto.id,
     src: `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
-      backendPhoto.name
+      backendPhoto.thumbnailName
     }`,
     // src: `${
     //   import.meta.env.VITE_API_BASE_URL
