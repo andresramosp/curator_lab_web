@@ -335,8 +335,7 @@ function handleAddPhotos(photoIds) {
     .filter(Boolean); // por si acaso
 
   canvasStore.addPhotos(photosToAdd);
-  orderPhotos();
-  updateStageOffset();
+  // fitStageToPhotos();
 }
 
 onMounted(() => {

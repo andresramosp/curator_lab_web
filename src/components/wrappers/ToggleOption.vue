@@ -3,7 +3,7 @@
     <template #activator="{ props }">
       <v-btn
         v-bind="props"
-        class="toolbar-control switch"
+        class="toolbar-control switch outline"
         :class="[`toggle-option-${size}`]"
         :value="value"
       >

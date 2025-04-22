@@ -230,11 +230,11 @@ const emitOpenDialog = () => emit("openDialog");
 }
 
 .section {
-  padding: 0 15px 10px;
+  padding: 0 17px 15px;
   margin-bottom: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   .text-caption {
     opacity: 0.8;

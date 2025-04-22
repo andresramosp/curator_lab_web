@@ -1,6 +1,6 @@
 <template>
   <div class="main-container">
-    <v-toolbar :elevation="8" class="sticky-toolbar d-flex">
+    <v-toolbar color="surface" :elevation="8" class="sticky-toolbar d-flex">
       <!-- Área de input (condicional) -->
       <div style="width: 55%">
         <template v-if="searchType == 'semantic'">
@@ -439,6 +439,7 @@ onUnmounted(() => {
   top: 10px;
   z-index: 10;
   width: 100%;
+  padding-top: 10px;
 }
 .toolbar-control {
   font-size: 11px !important;

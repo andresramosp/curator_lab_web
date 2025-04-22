@@ -66,7 +66,11 @@ const photos = computed(() => {
       photosStore.photos.find((p) => p.id == dp.id)
     );
   } else {
-    return photosStore.photos;
+    return photosStore.photos.filter(
+      (p) =>
+        !canvasStore.photos.find((photo) => photo.id == p.id) &&
+        !canvasStore.discardedPhotos.find((photo) => photo.id == p.id)
+    );
   }
 });
 

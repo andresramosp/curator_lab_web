@@ -6,9 +6,10 @@ const PHOTO_HEIGHT = 100 * 1.5;
 
 function createPhoto(
   backendPhoto,
-  basePosition = { x: 150, y: 100 },
+  basePosition = { x: 15, y: 15 },
   fromPhoto = false,
-  currentZIndex
+  currentZIndex,
+  index = 0
 ) {
   return {
     id: backendPhoto.id,
@@ -19,8 +20,8 @@ function createPhoto(
     //   import.meta.env.VITE_API_BASE_URL
     // }/uploads/photos/boxes/structure_mlsd_${backendPhoto.id}.png`,
     config: {
-      x: basePosition.x,
-      y: basePosition.y,
+      x: basePosition.x + (index * PHOTO_WIDTH * 1) / 2,
+      y: basePosition.y + (index * PHOTO_HEIGHT * 1) / 2,
       width: PHOTO_WIDTH,
       height: PHOTO_HEIGHT,
       opacity: fromPhoto ? 0 : 1,
@@ -43,10 +44,10 @@ export const useCanvasStore = defineStore("canvas", {
   }),
   actions: {
     addPhotos(photoObjects) {
-      photoObjects.forEach((photo) => {
+      photoObjects.forEach((photo, index) => {
         if (!this.photos.some((p) => p.id === photo.id)) {
           this.photos.push(
-            createPhoto(photo, undefined, false, this.currentZIndex)
+            createPhoto(photo, undefined, false, this.currentZIndex, index)
           );
         }
       });
