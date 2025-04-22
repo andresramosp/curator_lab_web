@@ -1,5 +1,5 @@
 <template>
-  <div class="main-container" ref="containerRef">
+  <div class="canvas-container">
     <!-- Toolbar vertical a la derecha -->
     <div class="toolbar">
       <CanvasToolbar
@@ -10,109 +10,110 @@
         @openDialog="dialogVisible = true"
       />
     </div>
-
-    <v-stage
-      :config="stageConfig"
-      ref="stageRef"
-      @wheel="handleWheel"
-      @mousedown="handleMouseDown"
-      @mousemove="handleMouseMove"
-      @mouseup="handleMouseUp"
-    >
-      <v-layer>
-        <!-- Rectángulo de selección -->
-        <v-rect
-          v-if="selectionRect.visible"
-          :config="{
-            x: selectionRect.x,
-            y: selectionRect.y,
-            width: selectionRect.width,
-            height: selectionRect.height,
-            stroke: secondaryColor,
-            dash: [4, 4],
-          }"
-        />
-        <!-- Fotos -->
-        <v-group
-          v-for="photo in photos"
-          :key="photo.id"
-          :ref="setPhotoRef(photo.id)"
-          :config="{
-            x: photo.config.x,
-            y: photo.config.y,
-            draggable: true,
-            zIndex: photo.config.zIndex,
-            opacity: photo.config.opacity ?? 1,
-            _isPhoto: true,
-          }"
-          @dragstart="handleDragStart(photo, $event)"
-          @dragend="handleDragEnd(photo, $event)"
-          @dragmove="handleDragMove(photo, $event)"
-          @click="handleSelectPhoto(photo, $event)"
-        >
+    <div ref="containerRef">
+      <v-stage
+        :config="stageConfig"
+        ref="stageRef"
+        @wheel="handleWheel"
+        @mousedown="handleMouseDown"
+        @mousemove="handleMouseMove"
+        @mouseup="handleMouseUp"
+      >
+        <v-layer>
+          <!-- Rectángulo de selección -->
+          <v-rect
+            v-if="selectionRect.visible"
+            :config="{
+              x: selectionRect.x,
+              y: selectionRect.y,
+              width: selectionRect.width,
+              height: selectionRect.height,
+              stroke: secondaryColor,
+              dash: [4, 4],
+            }"
+          />
+          <!-- Fotos -->
           <v-group
-            :config="{}"
-            @mouseover="handleMouseOver(photo)"
-            @mouseout="handleMouseOut(photo)"
+            v-for="photo in photos"
+            :key="photo.id"
+            :ref="setPhotoRef(photo.id)"
+            :config="{
+              x: photo.config.x,
+              y: photo.config.y,
+              draggable: true,
+              zIndex: photo.config.zIndex,
+              opacity: photo.config.opacity ?? 1,
+              _isPhoto: true,
+            }"
+            @dragstart="handleDragStart(photo, $event)"
+            @dragend="handleDragEnd(photo, $event)"
+            @dragmove="handleDragMove(photo, $event)"
+            @click="handleSelectPhoto(photo, $event)"
           >
-            <!-- Área de hover con padding invisible -->
-            <v-rect
-              :config="{
-                x: -10,
-                y: -10,
-                width: photo.config.width + 20,
-                height: photo.config.height + 20,
-                fill: 'transparent',
-              }"
-            />
-            <!-- Imagen -->
-            <v-image
-              :config="{
-                x: 0,
-                y: 0,
-                width: photo.config.width,
-                height: photo.config.height,
-                image: photo.image,
-                stroke: photo.selected
-                  ? secondaryColor
-                  : photo.hovered
-                  ? primaryColor
-                  : 'gray',
-                strokeWidth: photo.selected ? 7 : 2.5,
-              }"
-            />
+            <v-group
+              :config="{}"
+              @mouseover="handleMouseOver(photo)"
+              @mouseout="handleMouseOut(photo)"
+            >
+              <!-- Área de hover con padding invisible -->
+              <v-rect
+                :config="{
+                  x: -10,
+                  y: -10,
+                  width: photo.config.width + 20,
+                  height: photo.config.height + 20,
+                  fill: 'transparent',
+                }"
+              />
+              <!-- Imagen -->
+              <v-image
+                :config="{
+                  x: 0,
+                  y: 0,
+                  width: photo.config.width,
+                  height: photo.config.height,
+                  image: photo.image,
+                  stroke: photo.selected
+                    ? secondaryColor
+                    : photo.hovered
+                    ? primaryColor
+                    : 'gray',
+                  strokeWidth: photo.selected ? 7 : 2.5,
+                }"
+              />
 
-            <!-- Tags y botones -->
-            <template>
-              <PhotoDetectionAreas
-                v-if="toolbarState.expansion.type.criteria === 'composition'"
-                :photo="photo"
-                :detectionAreas="photo.detectionAreas"
-                :visible="photo.hovered"
-                >/</PhotoDetectionAreas
-              >
-              <TagPillsCanvas
-                v-if="toolbarState.expansion.type.criteria === 'tags'"
-                :photo="photo"
-                :tags="photo.tags"
-                :visible="photo.hovered"
-              />
-              <ExpandPhotoButtons
-                :photo="photo"
-                v-if="
-                  photo.hovered &&
-                  (toolbarState.expansion.type.criteria !== 'tags' ||
-                    photo.tags.some((t) => t.tag.selected)) &&
-                  (toolbarState.expansion.type.criteria !== 'composition' ||
-                    photo.detectionAreas.some((dt) => dt.selected))
-                "
-                @click="handleAddPhotoFromPhoto"
-              />
-            </template>
+              <!-- Tags y botones -->
+              <template>
+                <PhotoDetectionAreas
+                  v-if="toolbarState.expansion.type.criteria === 'composition'"
+                  :photo="photo"
+                  :detectionAreas="photo.detectionAreas"
+                  :visible="photo.hovered"
+                  >/</PhotoDetectionAreas
+                >
+                <TagPillsCanvas
+                  v-if="toolbarState.expansion.type.criteria === 'tags'"
+                  :photo="photo"
+                  :tags="photo.tags"
+                  :visible="photo.hovered"
+                />
+                <ExpandPhotoButtons
+                  :photo="photo"
+                  v-if="
+                    photo.hovered &&
+                    (toolbarState.expansion.type.criteria !== 'tags' ||
+                      photo.tags.some((t) => t.tag.selected)) &&
+                    (toolbarState.expansion.type.criteria !== 'composition' ||
+                      photo.detectionAreas.some((dt) => dt.selected))
+                  "
+                  @click="handleAddPhotoFromPhoto"
+                />
+              </template>
+            </v-group>
           </v-group>
-        </v-group>
-      </v-layer>
-    </v-stage>
+        </v-layer>
+      </v-stage>
+    </div>
 
     <!-- Overlay de spinners -->
     <div v-if="photos.some((p) => p.loading)">
@@ -425,15 +426,16 @@ watch(
 
 <style scoped>
 .v-stage {
-  display: block;
+  /* display: block; */
   outline: none;
   border: none !important;
 }
+.canvas-container {
+  display: flex;
+}
 .toolbar {
-  position: absolute;
-  right: 0px;
-  top: 0px;
   z-index: 200;
+  display: flex;
 }
 .tags-container {
   position: absolute;
