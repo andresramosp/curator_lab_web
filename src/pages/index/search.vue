@@ -169,7 +169,7 @@
         theme="dark"
       ></v-alert>
     </div> -->
-    <div
+    <!-- <div
       v-if="photos.length"
       class="toolbar-control photos-options d-flex align-center"
     >
@@ -181,7 +181,7 @@
           hide-details
         ></v-switch>
       </div>
-    </div>
+    </div> -->
     <PhotosSearchGrid
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
