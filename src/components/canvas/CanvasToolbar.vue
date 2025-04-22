@@ -217,7 +217,6 @@ const emitOpenDialog = () => emit("openDialog");
 <style scoped lang="scss">
 .canvas-toolbar {
   height: 100%;
-  max-width: 260px;
   padding-top: 5px;
 }
 

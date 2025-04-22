@@ -2,6 +2,7 @@ import { reactive, ref } from "vue";
 import Konva from "konva";
 import { hungarian } from "@/utils/utils";
 import { useCanvasStore } from "@/stores/canvas";
+import { TOOLBAR_WIDTH } from "./useCanvasStage";
 
 export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
   const dragGroupStart = reactive({});
@@ -158,14 +159,16 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     if (photos.value.length === 0) return;
     const photoWidth = photos.value[0].config.width;
     const photoHeight = photos.value[0].config.height;
-    const columns = Math.floor(stageConfig.width / (photoWidth + margin)) || 1;
+    const columns =
+      Math.floor((stageConfig.width - TOOLBAR_WIDTH) / (photoWidth + margin)) ||
+      1;
     const rows = Math.ceil(photos.value.length / columns);
     const gridPositions = [];
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
         if (gridPositions.length < photos.value.length) {
           gridPositions.push({
-            x: margin + col * (photoWidth + margin),
+            x: margin + col * (photoWidth + margin) + TOOLBAR_WIDTH,
             y: margin + row * (photoHeight + margin),
           });
         }

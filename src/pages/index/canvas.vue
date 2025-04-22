@@ -10,7 +10,7 @@
         @openDialog="dialogVisible = true"
       />
     </div>
-    <div ref="containerRef">
+    <div ref="containerRef" class="canvas-wrapper">
       <v-stage
         :config="stageConfig"
         ref="stageRef"
@@ -115,35 +115,6 @@
       </v-stage>
     </div>
 
-    <!-- Overlay de spinners -->
-    <div v-if="photos.some((p) => p.loading)">
-      <div
-        class="photo-spinner"
-        v-for="photo in photos.filter((p) => p.loading)"
-        :key="photo.id"
-        :style="{
-          position: 'absolute',
-          left:
-            (photo.config.x + photo.config.width / 2 + 2) *
-              toolbarState.zoomLevel +
-            stageOffset.x +
-            'px',
-          top:
-            (photo.config.y + photo.config.height / 2) *
-              toolbarState.zoomLevel +
-            stageOffset.y +
-            'px',
-          transform: 'translate(-41%, -45%)',
-          pointerEvents: 'none',
-        }"
-      >
-        <v-progress-circular
-          :size="80"
-          indeterminate
-          color="primary"
-        ></v-progress-circular>
-      </div>
-    </div>
     <PhotoDialogCanvas
       v-model="dialogVisible"
       :isTrash="false"
@@ -165,7 +136,10 @@
 
 <script setup>
 import { ref, onMounted, watch } from "vue";
-import { useCanvasStage } from "@/composables/canvas/useCanvasStage";
+import {
+  useCanvasStage,
+  TOOLBAR_WIDTH,
+} from "@/composables/canvas/useCanvasStage";
 import { useCanvasPhoto } from "@/composables/canvas/useCanvasPhoto";
 import { usePhotoAnimations } from "@/composables/canvas/usePhotoAnimations";
 import { useTheme } from "vuetify";
@@ -212,7 +186,6 @@ const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
 const primaryColor = theme.current.value.colors.primary;
 
-// Composable del stage (se le pasa similarityType para el comportamiento especial en wheel)
 const {
   stageConfig,
   stageOffset,
@@ -224,7 +197,6 @@ const {
   handleMouseUp,
 } = useCanvasStage(stageRef, photos, toolbarState);
 
-// Composable de las fotos: eventos de drag, selección, mouseover/out y ordenación
 const {
   handleSelectPhoto,
   handleDragStart,
@@ -236,10 +208,8 @@ const {
   isHoveringTrash,
 } = useCanvasPhoto(stageRef, photos, photoRefs, stageConfig);
 
-// Composable de animaciones: para disparar tweens
 const { animatePhotoGroup, animatePhotoGroupExplosion } = usePhotoAnimations();
 
-// Función para añadir fotos a partir de una foto y disparar animaciones
 const handleAddPhotoFromPhoto = async (event) => {
   const { photo, position } = event;
   event.cancelBubble = true;
@@ -289,7 +259,7 @@ const fitStageToPhotos = () => {
   if (!photos.value.length) return;
 
   const stage = stageRef.value.getStage();
-  const containerWidth = stage.width();
+  const containerWidth = stage.width() - TOOLBAR_WIDTH; // Restamos el ancho de la toolbar
   const containerHeight = stage.height();
   const margin = 40;
   const extraPaddingRatio = 0.25; // 10% de padding
@@ -331,7 +301,8 @@ const fitStageToPhotos = () => {
   const targetX =
     (containerWidth - photosWidth * targetZoom) / 2 -
     bounds.minX * targetZoom +
-    margin * targetZoom;
+    margin * targetZoom +
+    TOOLBAR_WIDTH / 2; // Ajustamos el offset para centrar en el espacio disponible
   const targetY =
     (containerHeight - photosHeight * targetZoom) / 2 -
     bounds.minY * targetZoom +
@@ -409,13 +380,6 @@ watch(
       if (!photo.image) {
         const img = new Image();
         img.src = photo.src;
-        // img.src =
-        //   "data:image/svg+xml;base64," +
-        //   btoa(`
-        //   <svg xmlns="http://www.w3.org/2000/svg" width="300" height="200">
-        //     <rect width="100%" height="100%" fill="black"/>
-        //   </svg>
-        // `);
         photo.image = img;
       }
     });
@@ -432,10 +396,19 @@ watch(
 }
 .canvas-container {
   display: flex;
+  width: 100%;
+  height: 100%;
 }
 .toolbar {
   z-index: 200;
   display: flex;
+  width: v-bind(TOOLBAR_WIDTH + "px");
+  flex-shrink: 0;
+}
+.canvas-wrapper {
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
 }
 .tags-container {
   position: absolute;

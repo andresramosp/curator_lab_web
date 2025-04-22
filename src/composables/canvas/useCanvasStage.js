@@ -2,6 +2,10 @@
 import { reactive, watch } from "vue";
 import Konva from "konva";
 
+const TOOLBAR_WIDTH = 260;
+
+export { TOOLBAR_WIDTH };
+
 export function useCanvasStage(stageRef, photos, toolbarState) {
   const stageConfig = reactive({
     width: window.innerWidth,
