@@ -118,7 +118,9 @@ export const useCanvasStore = defineStore("canvas", {
       } catch (error) {
         console.error("Error al añadir fotos similares:", error);
       } finally {
-        basePhoto.loading = false;
+        setTimeout(() => {
+          basePhoto.loading = false;
+        }, 500);
       }
     },
     deletePhotos(photoIds) {

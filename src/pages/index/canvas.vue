@@ -74,6 +74,7 @@
                   fill: 'transparent',
                 }"
               />
+
               <!-- Imagen -->
               <v-image
                 :config="{
@@ -86,6 +87,27 @@
                   strokeWidth: photo.selected ? 7 : 2.5,
                 }"
               />
+              <!-- Spinner de carga -->
+              <v-group
+                v-if="photo.loading"
+                :config="{
+                  x: photo.config.width / 2,
+                  y: photo.config.height / 2,
+                }"
+                ref="spinnerRefs"
+              >
+                <v-arc
+                  :config="{
+                    innerRadius: 15,
+                    outerRadius: 45,
+                    angle: 270,
+                    fill: 'transparent',
+                    stroke: 'white',
+                    strokeWidth: 3,
+                    rotation: photo.spinnerRotation || 0,
+                  }"
+                />
+              </v-group>
               <!-- Filtro rojo pre-borrado -->
               <v-rect
                 v-if="photo.inTrash"

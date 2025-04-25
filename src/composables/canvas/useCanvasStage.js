@@ -1,5 +1,5 @@
 // src/composables/useCanvasStage.js
-import { reactive, watch } from "vue";
+import { reactive, watch, watchPostEffect } from "vue";
 import Konva from "konva";
 
 const TOOLBAR_WIDTH = 260;
@@ -141,6 +141,30 @@ export function useCanvasStage(stageRef, photos, toolbarState) {
 
     return isOverPhoto;
   };
+
+  let spinnerAnim = null;
+
+  watchPostEffect(() => {
+    const stage = stageRef.value?.getStage?.();
+    if (!stage) return;
+
+    const layer = stage.getLayers()[0];
+    const isAnyLoading = photos.value.some((p) => p.loading);
+
+    if (isAnyLoading && !spinnerAnim) {
+      spinnerAnim = new Konva.Animation(() => {
+        photos.value.forEach((photo) => {
+          if (photo.loading) {
+            photo.spinnerRotation = (photo.spinnerRotation || 0) + 6;
+          }
+        });
+      }, layer);
+      spinnerAnim.start();
+    } else if (!isAnyLoading && spinnerAnim) {
+      spinnerAnim.stop();
+      spinnerAnim = null;
+    }
+  });
 
   return {
     stageConfig,
