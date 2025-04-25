@@ -205,8 +205,6 @@ const expansionTypes = [
   { label: "Story", data: { criteria: "semantic", fields: ["story"] } },
   { label: "Tags", data: { criteria: "tags" } },
   { label: "Composition", data: { criteria: "composition" } },
-  { label: "Geometrical", data: { criteria: "geometrical" } },
-  { label: "Chromatic", data: { criteria: "chromatic" } },
 ];
 
 const emitOrderPhotos = () => emit("orderPhotos");

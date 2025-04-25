@@ -139,6 +139,7 @@ import { ref, onMounted, watch } from "vue";
 import {
   useCanvasStage,
   TOOLBAR_WIDTH,
+  applyZoom,
 } from "@/composables/canvas/useCanvasStage";
 import { useCanvasPhoto } from "@/composables/canvas/useCanvasPhoto";
 import { usePhotoAnimations } from "@/composables/canvas/usePhotoAnimations";
@@ -347,30 +348,14 @@ onMounted(() => {
   updateStageOffset();
 });
 
-watch(
-  () => toolbarState.value.zoomLevel,
-  (newZoom) => {
-    const stage = stageRef.value.getStage();
-    const center = { x: stage.width() / 2, y: stage.height() / 2 };
-    const oldScale = stage.scaleX();
-
-    const centerPoint = {
-      x: (center.x - stage.x()) / oldScale,
-      y: (center.y - stage.y()) / oldScale,
-    };
-
-    stage.scale({ x: newZoom, y: newZoom });
-
-    const newPos = {
-      x: center.x - centerPoint.x * newZoom,
-      y: center.y - centerPoint.y * newZoom,
-    };
-
-    stage.position(newPos);
-    stage.batchDraw();
-    updateStageOffset();
-  }
-);
+// watch(
+//   () => toolbarState.value.zoomLevel,
+//   (newZoom) => {
+//     const stage = stageRef.value.getStage();
+//     const scale = 0.5 + (newZoom / 100) * (3 - 0.5); // MIN_SCALE = 0.5, MAX_SCALE = 3
+//     applyZoom(stage, scale, updateStageOffset);
+//   }
+// );
 
 watch(
   () => photos.value.map((p) => p.src),

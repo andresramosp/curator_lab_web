@@ -53,25 +53,13 @@ export function useCanvasStage(stageRef, photos, toolbarState) {
       return;
     }
 
+    e.evt.preventDefault();
+
     const oldScale = stage.scaleX();
     const scaleBy = 1.11;
     const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
-    const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
-    };
-
-    stage.scale({ x: newScale, y: newScale });
-
-    const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    };
-
-    stage.position(newPos);
-    stage.batchDraw();
-    updateStageOffset();
+    applyZoom(stage, newScale, updateStageOffset, pointer);
   };
 
   const handleMouseDown = (e) => {
@@ -163,5 +151,35 @@ export function useCanvasStage(stageRef, photos, toolbarState) {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    applyZoom,
   };
 }
+
+export const applyZoom = (
+  stage,
+  newScale,
+  updateOffsetFn,
+  centerPoint = null
+) => {
+  const oldScale = stage.scaleX();
+
+  const pointer = centerPoint || {
+    x: stage.width() / 2,
+    y: stage.height() / 2,
+  };
+
+  const mousePointTo = {
+    x: (pointer.x - stage.x()) / oldScale,
+    y: (pointer.y - stage.y()) / oldScale,
+  };
+
+  stage.scale({ x: newScale, y: newScale });
+
+  stage.position({
+    x: pointer.x - mousePointTo.x * newScale,
+    y: pointer.y - mousePointTo.y * newScale,
+  });
+
+  stage.batchDraw();
+  updateOffsetFn?.();
+};
