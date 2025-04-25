@@ -6,6 +6,7 @@
         v-model="toolbarState"
         @deletePhotos="handleDeletePhotos"
         @orderPhotos="handleOrderPhotos"
+        @zoomChanged="handleZoomChanged"
         @fitStage="fitStageToPhotos"
         @openDialog="dialogVisible = true"
       />
@@ -18,6 +19,14 @@
         @mousedown="handleMouseDown"
         @mousemove="handleMouseMove"
         @mouseup="handleMouseUp"
+        :style="{
+          cursor:
+            toolbarState.mouseMode === 'move'
+              ? 'grab'
+              : toolbarState.mouseMode === 'select'
+              ? 'crosshair'
+              : 'default',
+        }"
       >
         <v-layer>
           <!-- Rectángulo de selección -->
@@ -73,15 +82,21 @@
                   width: photo.config.width,
                   height: photo.config.height,
                   image: photo.image,
-                  stroke: photo.selected
-                    ? secondaryColor
-                    : photo.hovered
-                    ? primaryColor
-                    : 'gray',
+                  stroke: getPhotoStrokeColor(photo),
                   strokeWidth: photo.selected ? 7 : 2.5,
                 }"
               />
-
+              <!-- Filtro rojo pre-borrado -->
+              <v-rect
+                v-if="photo.inTrash"
+                :config="{
+                  x: 0,
+                  y: 0,
+                  width: photo.config.width,
+                  height: photo.config.height,
+                  fill: 'rgba(255, 0, 0, 0.3)',
+                }"
+              />
               <!-- Tags y botones -->
               <template>
                 <PhotoDetectionAreas
@@ -100,6 +115,7 @@
                 <ExpandPhotoButtons
                   :photo="photo"
                   v-if="
+                    !photo.inTrash &&
                     photo.hovered &&
                     (toolbarState.expansion.type.criteria !== 'tags' ||
                       photo.tags.some((t) => t.tag.selected)) &&
@@ -152,6 +168,7 @@ import PhotoDetectionAreas from "@/components/canvas/PhotoDetectionAreas.vue";
 import CanvasToolbar from "@/components/canvas/CanvasToolbar.vue";
 import PhotoDialogCanvas from "@/components/canvas/PhotoDialogCanvas.vue";
 import { usePhotosStore } from "@/stores/photos";
+import Konva from "konva";
 
 const canvasStore = useCanvasStore();
 const photosStore = usePhotosStore();
@@ -251,6 +268,13 @@ const handleAddPhotoFromPhoto = async (event) => {
   }
 };
 
+const getPhotoStrokeColor = (photo) => {
+  if (photo.inTrash) return "rgba(250, 11, 11, 0.5)";
+  if (photo.selected) return secondaryColor;
+  if (photo.hovered) return primaryColor;
+  return "gray";
+};
+
 const handleOrderPhotos = () => {
   orderPhotos();
   fitStageToPhotos();
@@ -339,6 +363,15 @@ function handleAddPhotos(photoIds) {
   // fitStageToPhotos();
 }
 
+const handleZoomChanged = (newZoom) => {
+  const stage = stageRef.value.getStage();
+  const scale = 0.5 + (newZoom / 100) * (3 - 0.5);
+
+  applyZoom(stage, scale, updateStageOffset);
+
+  toolbarState.value.zoomLevel = newZoom;
+};
+
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
   stageConfig.height = containerRef.value.clientHeight;
@@ -347,15 +380,6 @@ onMounted(() => {
   orderPhotos();
   updateStageOffset();
 });
-
-// watch(
-//   () => toolbarState.value.zoomLevel,
-//   (newZoom) => {
-//     const stage = stageRef.value.getStage();
-//     const scale = 0.5 + (newZoom / 100) * (3 - 0.5); // MIN_SCALE = 0.5, MAX_SCALE = 3
-//     applyZoom(stage, scale, updateStageOffset);
-//   }
-// );
 
 watch(
   () => photos.value.map((p) => p.src),
@@ -416,7 +440,8 @@ watch(
   align-items: center;
   line-height: 90px;
 
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s ease;
+  transform: rotate(0deg) scale(1);
   align-content: center;
   justify-content: center;
   cursor: pointer;

@@ -50,6 +50,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     const origin = dragGroupStart[photo.id];
     const deltaX = newX - origin.x;
     const deltaY = newY - origin.y;
+
     if (photo.selected) {
       photos.value.forEach((p) => {
         if (p.selected && dragGroupStart[p.id]) {
@@ -62,11 +63,19 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
       photo.config.y = newY;
     }
 
-    const hoveringTrash = photo.selected
+    const anyInTrash = photo.selected
       ? photos.value.some((p) => p.selected && isInTrashZone(p))
       : isInTrashZone(photo);
 
-    isHoveringTrash.value = hoveringTrash;
+    isHoveringTrash.value = anyInTrash;
+
+    photos.value.forEach((p) => {
+      if (photo.selected) {
+        p.inTrash = p.selected && anyInTrash;
+      } else {
+        p.inTrash = p.id === photo.id && anyInTrash;
+      }
+    });
   };
 
   function isInTrashZone(photo) {
@@ -74,6 +83,16 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     if (!trashEl) return false;
 
     const trashRect = trashEl.getBoundingClientRect();
+
+    // Expandimos la zona virtual de la papelera
+    const margin = 30; // píxeles extra de margen de detección
+
+    const expandedRect = {
+      left: trashRect.left - margin,
+      right: trashRect.right + margin,
+      top: trashRect.top - margin,
+      bottom: trashRect.bottom + margin,
+    };
 
     const stage = stageRef.value.getStage();
     const { x, y, width, height } = photo.config;
@@ -85,10 +104,10 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     const screenY = containerRect.top + centerScreen.y;
 
     return (
-      screenX >= trashRect.left &&
-      screenX <= trashRect.right &&
-      screenY >= trashRect.top &&
-      screenY <= trashRect.bottom
+      screenX >= expandedRect.left &&
+      screenX <= expandedRect.right &&
+      screenY >= expandedRect.top &&
+      screenY <= expandedRect.bottom
     );
   }
 
@@ -116,6 +135,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
     if (photosToRemove.length) {
       canvasStore.deletePhotos(photosToRemove.map((p) => p.id));
+      isHoveringTrash.value = false;
     }
   };
 

@@ -73,8 +73,10 @@
             <v-icon left class="mr-1">mdi-selection-drag</v-icon> Select
           </ToggleOption>
         </ToggleButtons>
+
         <v-slider
           v-model="toolbarState.zoomLevel"
+          @update:modelValue="emitZoomChanged"
           hide-details
           density="compact"
           class="mt-1"
@@ -126,14 +128,14 @@
         </div>
         <v-row dense>
           <v-col>
-            <v-text-field
-              type="number"
-              label="Number of photos"
+            <v-select
+              label="Number"
+              :items="[1, 2, 3, 4, 5]"
               v-model.number="toolbarState.photoOptions.count"
               density="compact"
-              class="text-compact mt-1"
               hide-details
-              style="height: 36px; font-size: 12px"
+              class="select-compact mt-1"
+              style="width: 120px"
             />
           </v-col>
           <v-col>
@@ -192,6 +194,7 @@ const emit = defineEmits([
   "orderPhotos",
   "fitStage",
   "openDialog",
+  "zoomChanged", // Nuevo evento
 ]);
 
 const toolbarState = computed({
@@ -210,6 +213,7 @@ const expansionTypes = [
 const emitOrderPhotos = () => emit("orderPhotos");
 const emitFitStage = () => emit("fitStage");
 const emitOpenDialog = () => emit("openDialog");
+const emitZoomChanged = (newValue) => emit("zoomChanged", newValue);
 </script>
 
 <style scoped lang="scss">
@@ -218,7 +222,7 @@ const emitOpenDialog = () => emit("openDialog");
   padding-top: 5px;
 }
 
-.section-list {
+section-list {
   list-style: none;
   padding: 0;
   margin: 0;
