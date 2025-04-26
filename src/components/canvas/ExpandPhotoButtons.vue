@@ -1,5 +1,6 @@
 <template>
   <PhotoCanvasButton
+    v-if="enableDiagonal"
     :photo="photo"
     position="bottom-right"
     :fill="secondaryColor"
@@ -7,6 +8,7 @@
     @click="handleClick"
   />
   <PhotoCanvasButton
+    v-if="enableDiagonal"
     :photo="photo"
     position="bottom-left"
     :fill="secondaryColor"
@@ -14,6 +16,7 @@
     @click="handleClick"
   />
   <PhotoCanvasButton
+    v-if="enableDiagonal"
     :photo="photo"
     position="upper-right"
     :fill="secondaryColor"
@@ -21,6 +24,7 @@
     @click="handleClick"
   />
   <PhotoCanvasButton
+    v-if="enableDiagonal"
     :photo="photo"
     position="upper-left"
     :fill="secondaryColor"
@@ -69,6 +73,7 @@ const theme = useTheme();
 const secondaryColor = theme.current.value.colors.secondary;
 const props = defineProps({
   photo: Object,
+  enableDiagonal: Boolean,
 });
 const emit = defineEmits(["click"]);
 

@@ -176,50 +176,82 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
   const orderPhotos = () => {
     const margin = 35;
-    if (photos.value.length === 0) return;
-    const photoWidth = photos.value[0].config.width;
-    const photoHeight = photos.value[0].config.height;
-    const columns =
-      Math.floor((stageConfig.width - TOOLBAR_WIDTH) / (photoWidth + margin)) ||
-      1;
-    const rows = Math.ceil(photos.value.length / columns);
+    // Seleccionar fotos
+    const toOrder = photos.value.filter((p) => p.selected);
+    const items = toOrder.length > 0 ? toOrder : photos.value;
+    if (!items.length) return;
+
+    // Calcular centroide
+    const centroid = items.reduce(
+      (acc, p) => {
+        acc.x += p.config.x;
+        acc.y += p.config.y;
+        return acc;
+      },
+      { x: 0, y: 0 }
+    );
+    centroid.x /= items.length;
+    centroid.y /= items.length;
+
+    const w = items[0].config.width;
+    const h = items[0].config.height;
+    const cols = Math.max(
+      1,
+      Math.floor((stageConfig.width - TOOLBAR_WIDTH) / (w + margin))
+    );
+    const rows = Math.ceil(items.length / cols);
+
+    // Tamaño total de la grilla
+    const gridW = cols * w + (cols - 1) * margin;
+    const gridH = rows * h + (rows - 1) * margin;
+
+    // Punto de inicio (esquina superior izquierda) centrado en el centroide
+    const startX = centroid.x - gridW / 2 + TOOLBAR_WIDTH;
+    const startY = centroid.y - gridH / 2;
+
+    // Generar posiciones
     const gridPositions = [];
     for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < columns; col++) {
-        if (gridPositions.length < photos.value.length) {
-          gridPositions.push({
-            x: margin + col * (photoWidth + margin) + TOOLBAR_WIDTH,
-            y: margin + row * (photoHeight + margin),
-          });
-        }
+      for (
+        let col = 0;
+        col < cols && gridPositions.length < items.length;
+        col++
+      ) {
+        gridPositions.push({
+          x: startX + col * (w + margin),
+          y: startY + row * (h + margin),
+        });
       }
     }
-    const costMatrix = photos.value.map((photo) =>
+
+    // Matriz de coste y asignaciones
+    const cost = items.map((p) =>
       gridPositions.map((pos) => {
-        const dx = photo.config.x - pos.x;
-        const dy = photo.config.y - pos.y;
-        return Math.sqrt(dx * dx + dy * dy);
+        const dx = p.config.x - pos.x,
+          dy = p.config.y - pos.y;
+        return Math.hypot(dx, dy);
       })
     );
-    const assignments = hungarian(costMatrix);
-    assignments.forEach((gridIndex, photoIndex) => {
-      const targetPos = gridPositions[gridIndex];
-      const photo = photos.value[photoIndex];
-      const dx = photo.config.x - targetPos.x;
-      const dy = photo.config.y - targetPos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance > 5 && photoRefs.value[photo.id]) {
-        const groupNode = photoRefs.value[photo.id].getNode();
+    const assign = hungarian(cost);
+
+    // Animar y actualizar posiciones
+    assign.forEach((gi, idx) => {
+      const p = items[idx],
+        pos = gridPositions[gi];
+      if (
+        Math.hypot(p.config.x - pos.x, p.config.y - pos.y) > 5 &&
+        photoRefs.value[p.id]
+      ) {
         new Konva.Tween({
-          node: groupNode,
+          node: photoRefs.value[p.id].getNode(),
           duration: 0.7,
-          x: targetPos.x,
-          y: targetPos.y,
+          x: pos.x,
+          y: pos.y,
           easing: Konva.Easings.StrongEaseInOut,
         }).play();
       }
-      photo.config.x = targetPos.x;
-      photo.config.y = targetPos.y;
+      p.config.x = pos.x;
+      p.config.y = pos.y;
     });
   };
 

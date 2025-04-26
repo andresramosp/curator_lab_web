@@ -136,6 +136,9 @@
                 />
                 <ExpandPhotoButtons
                   :photo="photo"
+                  :enableDiagonal="
+                    toolbarState.photoOptions.spreadMode === 'circular'
+                  "
                   v-if="
                     !photo.inTrash &&
                     photo.hovered &&
@@ -300,8 +303,12 @@ const getPhotoStrokeColor = (photo) => {
 };
 
 const handleOrderPhotos = () => {
-  autoAlignPhotos();
-  // fitStageToPhotos();
+  orderPhotos();
+  if (
+    !photos.value.some((p) => p.selected) ||
+    photos.value.every((p) => p.selected)
+  )
+    fitStageToPhotos();
 };
 
 const fitStageToPhotos = () => {
