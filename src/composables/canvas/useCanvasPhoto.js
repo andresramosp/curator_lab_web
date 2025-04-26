@@ -175,13 +175,14 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
   };
 
   const orderPhotos = () => {
-    const margin = 35;
-    // Seleccionar fotos
+    const margin = 50;
+    const tolerance = margin; // margen de tolerancia para detectar alineación
+    // 1. Seleccionar fotos a ordenar
     const toOrder = photos.value.filter((p) => p.selected);
     const items = toOrder.length > 0 ? toOrder : photos.value;
     if (!items.length) return;
 
-    // Calcular centroide
+    // 2. Calcular centroide
     const centroid = items.reduce(
       (acc, p) => {
         acc.x += p.config.x;
@@ -195,21 +196,65 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
     const w = items[0].config.width;
     const h = items[0].config.height;
+
+    // 3. Detectar alineación casi perfecta
+    const xs = items.map((p) => p.config.x);
+    const ys = items.map((p) => p.config.y);
+    const isVertical =
+      Math.max(...xs) - Math.min(...xs) <= tolerance && items.length > 1;
+    const isHorizontal =
+      Math.max(...ys) - Math.min(...ys) <= tolerance && items.length > 1;
+
+    if (isVertical || isHorizontal) {
+      // 3a. Generar posiciones en una única fila o columna centrada en el centroide
+      const cols = isHorizontal ? items.length : 1;
+      const rows = isVertical ? items.length : 1;
+      const gridW = cols * w + (cols - 1) * margin;
+      const gridH = rows * h + (rows - 1) * margin;
+      const startX = centroid.x - gridW / 2 + TOOLBAR_WIDTH;
+      const startY = centroid.y - gridH / 2;
+
+      const positions = [];
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          positions.push({
+            x: startX + col * (w + margin),
+            y: startY + row * (h + margin),
+          });
+        }
+      }
+
+      // 3b. Ordenar items según la orientación para emparejar posición correcta
+      const sorted = items
+        .slice()
+        .sort((a, b) =>
+          isHorizontal ? a.config.x - b.config.x : a.config.y - b.config.y
+        );
+      sorted.forEach((photo, i) => {
+        const pos = positions[i];
+        const dx = photo.config.x - pos.x,
+          dy = photo.config.y - pos.y;
+        if (Math.hypot(dx, dy) > 5 && photoRefs.value[photo.id]) {
+          new Konva.Tween({
+            node: photoRefs.value[photo.id].getNode(),
+            duration: 0.7,
+            x: pos.x,
+            y: pos.y,
+            easing: Konva.Easings.StrongEaseInOut,
+          }).play();
+        }
+        photo.config.x = pos.x;
+        photo.config.y = pos.y;
+      });
+      return;
+    }
+
+    // 4. Si no hay alineación, montar grid y aplicar Hungarian como antes
     const cols = Math.max(
       1,
       Math.floor((stageConfig.width - TOOLBAR_WIDTH) / (w + margin))
     );
     const rows = Math.ceil(items.length / cols);
-
-    // Tamaño total de la grilla
-    const gridW = cols * w + (cols - 1) * margin;
-    const gridH = rows * h + (rows - 1) * margin;
-
-    // Punto de inicio (esquina superior izquierda) centrado en el centroide
-    const startX = centroid.x - gridW / 2 + TOOLBAR_WIDTH;
-    const startY = centroid.y - gridH / 2;
-
-    // Generar posiciones
     const gridPositions = [];
     for (let row = 0; row < rows; row++) {
       for (
@@ -218,13 +263,18 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
         col++
       ) {
         gridPositions.push({
-          x: startX + col * (w + margin),
-          y: startY + row * (h + margin),
+          x:
+            centroid.x -
+            (cols * w + (cols - 1) * margin) / 2 +
+            TOOLBAR_WIDTH +
+            col * (w + margin),
+          y:
+            centroid.y -
+            (rows * h + (rows - 1) * margin) / 2 +
+            row * (h + margin),
         });
       }
     }
-
-    // Matriz de coste y asignaciones
     const cost = items.map((p) =>
       gridPositions.map((pos) => {
         const dx = p.config.x - pos.x,
@@ -233,8 +283,6 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
       })
     );
     const assign = hungarian(cost);
-
-    // Animar y actualizar posiciones
     assign.forEach((gi, idx) => {
       const p = items[idx],
         pos = gridPositions[gi];

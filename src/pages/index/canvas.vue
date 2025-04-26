@@ -148,6 +148,7 @@
                       photo.detectionAreas.some((dt) => dt.selected))
                   "
                   @click="handleAddPhotoFromPhoto"
+                  :sizeFactor="dynamicSizeFactor"
                 />
               </template>
             </v-group>
@@ -176,7 +177,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import {
   useCanvasStage,
   TOOLBAR_WIDTH,
@@ -253,6 +254,13 @@ const {
 } = useCanvasPhoto(stageRef, photos, photoRefs, stageConfig);
 
 const { animatePhotoGroup, animatePhotoGroupExplosion } = usePhotoAnimations();
+
+const dynamicSizeFactor = computed(() => {
+  const baseSize = 1.25;
+  const zoom = toolbarState.value.zoomLevel || 100;
+  let newFactor = baseSize * (0.8 / zoom);
+  return Math.min(Math.max(newFactor, 1), 5);
+});
 
 const handleAddPhotoFromPhoto = async (event) => {
   const { photo, position } = event;

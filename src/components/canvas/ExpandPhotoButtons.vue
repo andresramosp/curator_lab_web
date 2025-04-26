@@ -6,6 +6,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
   <PhotoCanvasButton
     v-if="enableDiagonal"
@@ -14,6 +15,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
   <PhotoCanvasButton
     v-if="enableDiagonal"
@@ -22,6 +24,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
   <PhotoCanvasButton
     v-if="enableDiagonal"
@@ -30,6 +33,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
 
   <PhotoCanvasButton
@@ -38,6 +42,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
 
   <PhotoCanvasButton
@@ -46,6 +51,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
 
   <PhotoCanvasButton
@@ -54,6 +60,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
 
   <PhotoCanvasButton
@@ -62,6 +69,7 @@
     :fill="secondaryColor"
     icon="+"
     @click="handleClick"
+    :sizeFactor="sizeFactor"
   />
 </template>
 
@@ -74,6 +82,7 @@ const secondaryColor = theme.current.value.colors.secondary;
 const props = defineProps({
   photo: Object,
   enableDiagonal: Boolean,
+  sizeFactor: { type: Number, default: 1 },
 });
 const emit = defineEmits(["click"]);
 

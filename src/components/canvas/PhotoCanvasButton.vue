@@ -10,18 +10,18 @@
         width: buttonWidth,
         height: buttonHeight,
         fill: fill,
-        opacity: 1,
+        opacity: 0.8,
         cornerRadius: 5,
       }"
     />
     <v-text
       :config="{
         x: 0,
-        y: (buttonHeight - fontSize - 2) / 2,
+        y: (buttonHeight - computedFontSize - 2) / 2,
         width: buttonWidth,
         height: buttonHeight,
         text: icon,
-        fontSize: fontSize,
+        fontSize: computedFontSize,
         align: 'center',
         verticalAlign: 'middle',
         fill: textColor,
@@ -54,32 +54,31 @@ const props = defineProps({
   icon: { type: String, required: true },
   fontSize: { type: Number, default: 12 },
   textColor: { type: String, default: "white" },
-  onClick: { type: Function, required: true },
+  sizeFactor: { type: Number, default: 1 }, // <- nuevo prop
 });
 
-const buttonWidth = 16;
-const buttonHeight = 16;
-const margin = -7;
+const buttonWidth = computed(() => 16 * props.sizeFactor);
+const buttonHeight = computed(() => 16 * props.sizeFactor);
+const margin = computed(() => -7 * props.sizeFactor);
+
+const computedFontSize = computed(() => props.fontSize * props.sizeFactor);
 
 const computedX = computed(() => {
   const w = props.photo.config.width;
   switch (props.position) {
     case "upper-left":
-      return -buttonWidth - margin;
-    case "upper-right":
-      return w + margin;
     case "bottom-left":
-      return -buttonWidth - margin;
+      return -buttonWidth.value - margin.value;
+    case "upper-right":
     case "bottom-right":
-      return w + margin;
-
+      return w + margin.value;
     case "left":
-      return -buttonWidth - margin;
+      return -buttonWidth.value - margin.value;
     case "right":
-      return w + margin;
+      return w + margin.value;
     case "upper":
     case "bottom":
-      return (w - buttonWidth) / 2;
+      return (w - buttonWidth.value) / 2;
     default:
       return 0;
   }
@@ -90,18 +89,15 @@ const computedY = computed(() => {
   switch (props.position) {
     case "upper-left":
     case "upper-right":
-      return -buttonHeight - margin;
+    case "upper":
+      return -buttonHeight.value - margin.value;
     case "bottom-left":
     case "bottom-right":
-      return h + margin;
-
-    case "upper":
-      return -buttonHeight - margin;
     case "bottom":
-      return h + margin;
+      return h + margin.value;
     case "left":
     case "right":
-      return (h - buttonHeight) / 2;
+      return (h - buttonHeight.value) / 2;
     default:
       return 0;
   }
