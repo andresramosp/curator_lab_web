@@ -20,38 +20,57 @@ export function usePhotoAnimations() {
     basePosition,
     position,
     offsetX,
-    offsetY
+    offsetY,
+    expansionType = "linear" // por defecto "linear"
   ) => {
     nextTick(() => {
       const newPhotos = photos.value.filter((p) => p.config.opacity === 0);
+      const n = newPhotos.length;
+
       newPhotos.forEach((newPhoto, index) => {
         const groupNode = photoRefs.value[newPhoto.id]?.getNode();
         if (!groupNode) return;
+
         let targetX = basePosition.x;
         let targetY = basePosition.y;
 
         if (["left", "right", "upper", "bottom"].includes(position)) {
-          if (position === "left") {
-            targetX = basePosition.x - offsetX * (index + 1);
-          } else if (position === "right") {
-            targetX = basePosition.x + offsetX * (index + 1);
-          } else if (position === "upper") {
-            targetY = basePosition.y - offsetY * (index + 1);
-          } else if (position === "bottom") {
-            targetY = basePosition.y + offsetY * (index + 1);
+          const isHorizontal = position === "left" || position === "right";
+          const isPositive = position === "right" || position === "bottom";
+
+          if (expansionType === "linear") {
+            // Expansión normal, misma dirección
+            if (isHorizontal) {
+              targetX += (isPositive ? 1 : -1) * offsetX * (index + 1);
+            } else {
+              targetY += (isPositive ? 1 : -1) * offsetY * (index + 1);
+            }
+          } else if (expansionType === "perpendicular") {
+            // Expansión en eje perpendicular, centrada
+            const relativeIndex = index - (n - 1) / 2;
+
+            if (isHorizontal) {
+              // Mueves a la derecha/izquierda (X), pero expandes en columnas verticales (Y)
+              targetX += (isPositive ? 1 : -1) * offsetX;
+              targetY += relativeIndex * offsetY;
+            } else {
+              // Mueves arriba/abajo (Y), pero expandes en filas horizontales (X)
+              targetY += (isPositive ? 1 : -1) * offsetY;
+              targetX += relativeIndex * offsetX;
+            }
           }
         } else if (
           ["upper-left", "upper-right", "bottom-right", "bottom-left"].includes(
             position
           )
         ) {
-          // Definir signos según la dirección diagonal
-          const signX =
-            position === "upper-left" || position === "bottom-left" ? -1 : 1;
-          const signY =
-            position === "upper-left" || position === "upper-right" ? -1 : 1;
-          targetX = basePosition.x + signX * offsetX * (index + 1);
-          targetY = basePosition.y + signY * offsetY * (index + 1);
+          if (expansionType === "linear") {
+            const signX = position.includes("left") ? -1 : 1;
+            const signY = position.includes("upper") ? -1 : 1;
+            targetX += signX * offsetX * (index + 1);
+            targetY += signY * offsetY * (index + 1);
+          }
+          // En perpendicular no expandimos diagonales
         }
 
         animatePhoto(groupNode, targetX, targetY, 0.7);

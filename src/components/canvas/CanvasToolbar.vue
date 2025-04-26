@@ -155,14 +155,14 @@
           <ToggleButtons v-model="toolbarState.photoOptions.spreadMode">
             <ToggleOption
               size="small"
-              value="horizontal"
+              value="linear"
               tooltip="Expand in horizontal line"
             >
               <v-icon left class="mr-1">mdi-pan-horizontal</v-icon>
             </ToggleOption>
             <ToggleOption
               size="small"
-              value="vertical"
+              value="perpendicular"
               tooltip="Expand in vertical column"
             >
               <v-icon left class="mr-1">mdi-pan-vertical</v-icon>

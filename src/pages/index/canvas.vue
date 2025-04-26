@@ -207,8 +207,8 @@ const toolbarState = ref({
     // strict: false,
   },
   photoOptions: {
-    count: 1,
-    spreadMode: "vertical",
+    count: 3,
+    spreadMode: "perpendicular",
   },
 });
 
@@ -245,6 +245,7 @@ const {
   handleMouseOver,
   handleMouseOut,
   orderPhotos,
+  autoAlignPhotos,
   isHoveringTrash,
 } = useCanvasPhoto(stageRef, photos, photoRefs, stageConfig);
 
@@ -274,8 +275,8 @@ const handleAddPhotoFromPhoto = async (event) => {
   );
 
   if (
-    toolbarState.value.photoOptions.spreadMode == "vertical" ||
-    toolbarState.value.photoOptions.spreadMode == "horizontal"
+    toolbarState.value.photoOptions.spreadMode == "linear" ||
+    toolbarState.value.photoOptions.spreadMode == "perpendicular"
   ) {
     animatePhotoGroup(
       photoRefs,
@@ -283,7 +284,8 @@ const handleAddPhotoFromPhoto = async (event) => {
       basePosition,
       position,
       offsetX,
-      offsetY
+      offsetY,
+      toolbarState.value.photoOptions.spreadMode
     );
   } else {
     animatePhotoGroupExplosion(photoRefs, photos, basePosition, position);
@@ -298,8 +300,8 @@ const getPhotoStrokeColor = (photo) => {
 };
 
 const handleOrderPhotos = () => {
-  orderPhotos();
-  fitStageToPhotos();
+  autoAlignPhotos();
+  // fitStageToPhotos();
 };
 
 const fitStageToPhotos = () => {

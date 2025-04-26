@@ -223,6 +223,47 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     });
   };
 
+  const autoAlignPhotos = () => {
+    const threshold = 50; // cuánto margen permitimos para decir que están "casi alineados"
+    for (let i = 0; i < photos.value.length; i++) {
+      for (let j = i + 1; j < photos.value.length; j++) {
+        const photoA = photos.value[i];
+        const photoB = photos.value[j];
+
+        const dx = Math.abs(photoA.config.x - photoB.config.x);
+        const dy = Math.abs(photoA.config.y - photoB.config.y);
+
+        if (dx < threshold) {
+          // Alinear verticalmente
+          const targetX = Math.round((photoA.config.x + photoB.config.x) / 2);
+          movePhotoSmoothly(photoA, targetX, photoA.config.y);
+          movePhotoSmoothly(photoB, targetX, photoB.config.y);
+        }
+
+        if (dy < threshold) {
+          // Alinear horizontalmente
+          const targetY = Math.round((photoA.config.y + photoB.config.y) / 2);
+          movePhotoSmoothly(photoA, photoA.config.x, targetY);
+          movePhotoSmoothly(photoB, photoB.config.x, targetY);
+        }
+      }
+    }
+  };
+
+  const movePhotoSmoothly = (photo, targetX, targetY) => {
+    if (!photoRefs.value[photo.id]) return;
+    const node = photoRefs.value[photo.id].getNode();
+    new Konva.Tween({
+      node,
+      duration: 0.5,
+      x: targetX,
+      y: targetY,
+      easing: Konva.Easings.StrongEaseInOut,
+    }).play();
+    photo.config.x = targetX;
+    photo.config.y = targetY;
+  };
+
   const bringPhotosToFront = (photoList) => {
     photoList.forEach((photo) => {
       const node = photoRefs.value[photo.id]?.getNode();
@@ -240,6 +281,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     handleMouseOver,
     handleMouseOut,
     orderPhotos,
+    autoAlignPhotos,
     isHoveringTrash,
   };
 }
