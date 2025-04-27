@@ -93,6 +93,7 @@
                 :config="{
                   x: photo.config.width / 2,
                   y: photo.config.height / 2,
+                  opacity: 0.7,
                 }"
                 ref="spinnerRefs"
               >
