@@ -87,6 +87,7 @@ import { usePhotosStore } from "@/stores/photos";
 import axios from "axios";
 import { io } from "socket.io-client";
 import PhotosGrid from "@/components/PhotosGrid.vue";
+import pLimit from "p-limit";
 
 const photosStore = usePhotosStore();
 const fileInput = ref(null);
@@ -102,32 +103,54 @@ function openFileDialog() {
   fileInput.value.click();
 }
 
-/** 🔹 Sube fotos seleccionadas y actualiza la UI */
+const limit = pLimit(5); // 5 peticiones en paralelo
+
 async function uploadLocalFiles(event) {
   const selectedFiles = Array.from(event.target.files);
   if (selectedFiles.length === 0) return;
 
-  const formData = new FormData();
-  selectedFiles.forEach((file) => {
-    formData.append("photos", file);
-  });
+  uploadingPhotos.value = selectedFiles.length;
+
+  const batchSize = 10;
+  const batches = [];
+  for (let i = 0; i < selectedFiles.length; i += batchSize) {
+    batches.push(selectedFiles.slice(i, i + batchSize));
+  }
 
   try {
-    uploadingPhotos.value = selectedFiles.length;
-    await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/catalog/uploadLocal`,
-      {
-        method: "POST",
-        body: formData,
-      }
+    await Promise.all(
+      batches.map((batch) => limit(() => uploadPhotoBatch(batch)))
     );
-
     await photosStore.getOrFetch(true);
   } catch (error) {
-    console.error("❌ Error uploading photos:", error);
+    console.error("❌ Error en la subida:", error);
   } finally {
     uploadingPhotos.value = 0;
     event.target.value = "";
+  }
+}
+
+async function uploadPhotoBatch(batch) {
+  const formData = new FormData();
+  batch.forEach((file) => {
+    formData.append("photos", file);
+  });
+
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/api/catalog/uploadLocal`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error subiendo lote");
+  }
+
+  const { savedPhotos } = await response.json();
+  if (savedPhotos?.length) {
+    photosStore.photos.unshift(...savedPhotos);
   }
 }
 
@@ -167,9 +190,9 @@ async function analyze() {
     photosStore.isAnalyzing = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
-      packageId: "basic_1",
-      mode: "first",
-      // processId: 93,
+      packageId: "topological_upgrade",
+      mode: "remake",
+      processId: 4,
     });
   } catch (error) {
     console.error("❌ Error iniciando análisis:", error);
