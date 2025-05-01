@@ -103,7 +103,7 @@ function openFileDialog() {
   fileInput.value.click();
 }
 
-const limit = pLimit(5); // 5 peticiones en paralelo
+const limit = pLimit(2); // 5 peticiones en paralelo
 
 async function uploadLocalFiles(event) {
   const selectedFiles = Array.from(event.target.files);
@@ -111,7 +111,7 @@ async function uploadLocalFiles(event) {
 
   uploadingPhotos.value = selectedFiles.length;
 
-  const batchSize = 10;
+  const batchSize = 5;
   const batches = [];
   for (let i = 0; i < selectedFiles.length; i += batchSize) {
     batches.push(selectedFiles.slice(i, i + batchSize));
