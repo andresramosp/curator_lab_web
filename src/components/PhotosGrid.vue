@@ -32,7 +32,7 @@
         </template>
       </v-hover>
     </div>
-    <div v-else class="photos-list">
+    <!-- <div v-else class="photos-list">
       <v-card
         v-for="n in uploadingPhotos"
         v-bind="props"
@@ -40,7 +40,7 @@
       >
         <v-skeleton-loader :key="n" type="image" class="photo-skeleton"
       /></v-card>
-    </div>
+    </div> -->
 
     <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
   </div>

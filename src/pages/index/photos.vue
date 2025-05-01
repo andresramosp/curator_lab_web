@@ -88,6 +88,7 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import PhotosGrid from "@/components/PhotosGrid.vue";
 import pLimit from "p-limit";
+import pica from "pica";
 
 const photosStore = usePhotosStore();
 const fileInput = ref(null);
@@ -95,15 +96,15 @@ const socket = io(import.meta.env.VITE_API_BASE_URL);
 const googleAccessToken = ref(localStorage.getItem("access_token") || null);
 const googleAlbums = ref([]);
 const showAlbumsDialog = ref(false);
-// Estados de carga
 const uploadingPhotos = ref(0);
+
+const picaInstance = pica();
+const limit = pLimit(10);
 
 /** 🔹 Abre el selector de archivos */
 function openFileDialog() {
   fileInput.value.click();
 }
-
-const limit = pLimit(2); // 5 peticiones en paralelo
 
 async function uploadLocalFiles(event) {
   const selectedFiles = Array.from(event.target.files);
@@ -111,15 +112,9 @@ async function uploadLocalFiles(event) {
 
   uploadingPhotos.value = selectedFiles.length;
 
-  const batchSize = 5;
-  const batches = [];
-  for (let i = 0; i < selectedFiles.length; i += batchSize) {
-    batches.push(selectedFiles.slice(i, i + batchSize));
-  }
-
   try {
     await Promise.all(
-      batches.map((batch) => limit(() => uploadPhotoBatch(batch)))
+      selectedFiles.map((file) => limit(() => processAndUploadFile(file)))
     );
     await photosStore.getOrFetch(true);
   } catch (error) {
@@ -130,28 +125,69 @@ async function uploadLocalFiles(event) {
   }
 }
 
-async function uploadPhotoBatch(batch) {
-  const formData = new FormData();
-  batch.forEach((file) => {
-    formData.append("photos", file);
-  });
+async function processAndUploadFile(file) {
+  // Redimensionar original y thumbnail en paralelo
+  const [resizedBlob, thumbnailBlob] = await Promise.all([
+    resizeImage(file, 1500),
+    resizeImage(file, 800),
+  ]);
 
-  const response = await fetch(
+  // Pedir URLs firmadas al backend
+  const res = await fetch(
     `${import.meta.env.VITE_API_BASE_URL}/api/catalog/uploadLocal`,
     {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileType: resizedBlob.type }),
     }
   );
 
-  if (!response.ok) {
-    throw new Error("Error subiendo lote");
-  }
+  if (!res.ok) throw new Error("Error obteniendo URLs firmadas");
+  const { uploadUrl, thumbnailUploadUrl, photo } = await res.json();
 
-  const { savedPhotos } = await response.json();
-  if (savedPhotos?.length) {
-    photosStore.photos.unshift(...savedPhotos);
-  }
+  // Subir original y thumbnail en paralelo
+  await Promise.all([
+    fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": resizedBlob.type },
+      body: resizedBlob,
+    }),
+    fetch(thumbnailUploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": thumbnailBlob.type },
+      body: thumbnailBlob,
+    }),
+  ]);
+
+  photosStore.photos.unshift(photo);
+
+  // Confirmar subida al backend
+  // await fetch(${import.meta.env.VITE_API_BASE_URL}/api/catalog/confirm-upload, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ key, publicUrl }),
+  // })
+}
+
+async function resizeImage(file, targetWidth) {
+  const img = await loadImage(file);
+  const canvas = document.createElement("canvas");
+  const scale = targetWidth / img.width;
+  canvas.width = targetWidth;
+  canvas.height = img.height * scale;
+
+  await picaInstance.resize(img, canvas);
+  const blob = await picaInstance.toBlob(canvas, "image/jpeg", 0.9);
+  return blob;
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 async function uploadGooglePhotos(mediaItems) {
@@ -190,8 +226,8 @@ async function analyze() {
     photosStore.isAnalyzing = true;
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/analyzer`, {
       userId: "1234",
-      packageId: "topological_upgrade",
-      mode: "remake",
+      packageId: "basic_1",
+      mode: "adding",
       processId: 4,
     });
   } catch (error) {
