@@ -16,7 +16,7 @@
             >
               <v-card v-bind="props">
                 <v-img
-                  :src="`${baseUrl}/uploads/photos/${photo.thumbnailName}`"
+                  :src="photo.thumbnailUrl"
                   :class="{ 'selected-photo': selectedIds.includes(photo.id) }"
                   width="100"
                   @click="toggleSelection(photo.id)"

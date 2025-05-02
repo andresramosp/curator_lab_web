@@ -13,9 +13,7 @@ function createPhoto(
 ) {
   return {
     id: backendPhoto.id,
-    src: `${import.meta.env.VITE_API_BASE_URL}/uploads/photos/${
-      backendPhoto.thumbnailName
-    }`,
+    src: backendPhoto.thumbnailUrl,
     // src: `${
     //   import.meta.env.VITE_API_BASE_URL
     // }/uploads/photos/boxes/structure_mlsd_${backendPhoto.id}.png`,

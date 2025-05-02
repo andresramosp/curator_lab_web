@@ -9,7 +9,7 @@
       >
         <div class="image-container">
           <v-img
-            :src="photoSrc"
+            :src="photo.thumbnailUrl"
             @error="fallbackImage"
             :class="[`photo-image-${type}`]"
           ></v-img>
@@ -63,10 +63,6 @@ const props = defineProps({
 const emit = defineEmits(["view-info"]);
 
 const photosStore = usePhotosStore();
-
-const photoSrc = computed(
-  () => `${import.meta.env.VITE_PHOTOS_BASE_URL}/${props.photo.thumbnailName}`
-);
 
 const cardStyle = computed(() => ({
   animationDelay: `${props.fadeDelay}ms`,

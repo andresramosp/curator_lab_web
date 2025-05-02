@@ -29,7 +29,7 @@
 
           <div style="padding: 20px">
             <v-img
-              :src="photosBaseURL + '/' + selectedPhoto.name"
+              :src="selectedPhoto.originalUrl"
               class="photo-image-big"
             ></v-img>
           </div>
