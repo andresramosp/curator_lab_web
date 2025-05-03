@@ -1,8 +1,13 @@
 <template>
   <div class="main-container">
-    <v-toolbar color="surface" :elevation="8" class="sticky-toolbar d-flex">
-      <!-- Área de input (condicional) -->
-      <div style="width: 45%; padding-top: 5px">
+    <v-toolbar
+      color="surface"
+      :elevation="8"
+      class="sticky-toolbar d-flex"
+      style="gap: 12px"
+    >
+      <!-- Área de input (flex proporcional con box-sizing) -->
+      <div style="flex: 0 0 50%; box-sizing: border-box; padding-top: 5px">
         <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
@@ -10,11 +15,10 @@
             :placeholder="queryDescription.example"
             outlined
             persistent-placeholder
-            class="mx-3"
           ></v-text-field>
         </template>
         <template v-else-if="searchType == 'tags'">
-          <div class="d-flex" style="width: 100%">
+          <div class="d-flex" style="width: 100%; gap: 8px">
             <v-combobox
               v-model="includedTags"
               v-model:search="searchInputIncluded"
@@ -25,7 +29,6 @@
               clearable
               open-on-focus
               @update:search="onSearchInputIncluded"
-              class="mx-2"
             />
             <v-combobox
               v-model="excludedTags"
@@ -37,18 +40,16 @@
               clearable
               open-on-focus
               @update:search="onSearchInputExcluded"
-              class="mx-2"
             />
           </div>
         </template>
         <template v-else>
-          <div class="d-flex">
+          <div class="d-flex" style="gap: 8px">
             <v-text-field
               v-model="topologicalAreas.left"
-              :label="'Left half'"
-              :placeholder="'A red dragon'"
+              label="Left half"
+              placeholder="A red dragon"
               outlined
-              class="mx-1"
               persistent-placeholder
             >
               <template #append-inner v-if="topologicalAreas.left">
@@ -63,10 +64,9 @@
             </v-text-field>
             <v-text-field
               v-model="topologicalAreas.middle"
-              :label="'Middle area'"
-              :placeholder="'Something funny'"
+              label="Middle area"
+              placeholder="Something funny"
               outlined
-              class="mx-1"
               persistent-placeholder
             >
               <template #append-inner v-if="topologicalAreas.middle">
@@ -77,14 +77,13 @@
                 >
                   mdi-close
                 </v-icon>
-              </template></v-text-field
-            >
+              </template>
+            </v-text-field>
             <v-text-field
               v-model="topologicalAreas.right"
-              :label="'Right half'"
-              :placeholder="'A little mouse'"
+              label="Right half"
+              placeholder="A little mouse"
               outlined
-              class="mx-1"
               persistent-placeholder
             >
               <template #append-inner v-if="topologicalAreas.right">
@@ -95,13 +94,14 @@
                 >
                   mdi-close
                 </v-icon>
-              </template></v-text-field
-            >
+              </template>
+            </v-text-field>
           </div>
         </template>
       </div>
 
-      <div style="width: 55%; padding-bottom: 5px">
+      <!-- Área de botones (flex proporcional con box-sizing) -->
+      <div style="flex: 0 0 50%; box-sizing: border-box; padding-bottom: 5px">
         <ToggleButtons v-model="searchType">
           <ToggleOption
             value="semantic"
@@ -153,11 +153,11 @@
           @click="handleSearch"
           :loading="loading && !loadingIteration"
           :disabled="searchDisabled"
-          class="mx-3 toolbar-control"
+          class="toolbar-control mx-3"
         >
           Search
         </v-btn>
-        <v-menu offset-y>
+        <v-menu offset-y class="mx-3">
           <template #activator="{ on, attrs }">
             <v-btn size="small" icon v-bind="attrs" v-on="on">
               <v-icon>mdi-dots-vertical</v-icon>
@@ -176,8 +176,6 @@
           </v-list>
         </v-menu>
       </div>
-
-      <!-- Menú de tres puntos -->
     </v-toolbar>
 
     <PhotosSearchGrid
