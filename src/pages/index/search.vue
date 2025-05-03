@@ -111,7 +111,7 @@
         "
       >
         <!-- Agrupación principal de controles -->
-        <div style="display: flex; gap: 12px; align-items: center">
+        <div style="display: flex; gap: 7px; align-items: center">
           <ToggleButtons v-model="searchType">
             <ToggleOption
               value="semantic"
@@ -169,22 +169,21 @@
           </v-btn>
         </div>
         <!-- Menú desplazado al extremo derecho -->
-        <div style="margin-left: auto; margin-right: 8px">
-          <v-menu offset-y>
-            <template #activator="{ on, attrs }">
-              <v-btn size="small" icon v-bind="attrs" v-on="on">
+        <div style="margin-left: auto; margin-right: 12px">
+          <v-menu v-model="menu" offset-y>
+            <template #activator="{ props }">
+              <v-btn
+                :disabled="!photosStore.selectedPhotoIds.length"
+                size="small"
+                v-bind="props"
+                icon
+              >
                 <v-icon>mdi-dots-vertical</v-icon>
               </v-btn>
             </template>
             <v-list>
-              <v-list-item @click="onOption('Primera opción')">
-                <v-list-item-title>Primera opción</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="onOption('Segunda opción')">
-                <v-list-item-title>Segunda opción</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="onOption('Tercera opción')">
-                <v-list-item-title>Tercera opción</v-list-item-title>
+              <v-list-item @click="moveToCanvas()">
+                <v-list-item-title>Move to Canvas</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
@@ -203,15 +202,6 @@
       :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
     />
-    <div class="grid-floating-buttons">
-      <v-btn
-        v-if="photosStore.selectedPhotoIds.length"
-        class="sync-button"
-        @click="moveToCanvas()"
-      >
-        Move to Canvas
-      </v-btn>
-    </div>
   </div>
 </template>
 
@@ -246,6 +236,8 @@ const hasMoreIterations = ref(false);
 const maxPageAttempts = ref(false);
 const clearQuery = ref(null);
 const currentMatchPercent = ref(0);
+
+const menu = ref(false);
 
 // Semantic
 const description = ref("");
