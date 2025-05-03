@@ -11,8 +11,8 @@
         <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
-            :label="queryDescription.text"
-            :placeholder="queryDescription.example"
+            :label="'Type your query in natural language'"
+            autofocus
             outlined
             persistent-placeholder
           ></v-text-field>
@@ -136,7 +136,7 @@
           <ToggleButtons v-model="searchMode">
             <ToggleOption
               value="low_precision"
-              tooltip="Low precision search, but much faster"
+              tooltip="Perform a fast search with broader matching and lower precision"
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
               Fast
@@ -209,6 +209,31 @@
       :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
     />
+    <div
+      v-else
+      class="d-flex flex-column align-center justify-center"
+      style="height: 100%; opacity: 0.5; text-align: center"
+    >
+      <v-icon size="164">mdi-magnify</v-icon>
+      <div style="margin-top: 0px; font-size: 1.2rem">
+        {{ queryDescription.prefix }}
+      </div>
+      <v-fade-transition mode="out-in">
+        <div
+          v-if="queryDescription.example"
+          :key="queryDescription.example"
+          style="
+            margin-top: 4px;
+            font-size: 1rem;
+            font-style: italic;
+            cursor: pointer;
+          "
+          @click="description = queryDescription.example"
+        >
+          {{ `"${queryDescription.example}"` }}
+        </div>
+      </v-fade-transition>
+    </div>
   </div>
 </template>
 
@@ -225,6 +250,7 @@ import { useSearchTags } from "@/composables/useSearchTags";
 import { usePhotosStore } from "@/stores/photos";
 import { useCanvasStore } from "@/stores/canvas";
 import { useRouter } from "vue-router";
+import queryExamples from "@/assets/query_examples.json";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
@@ -272,15 +298,46 @@ const {
 } = useSearchTags();
 
 const queryDescription = computed(() => {
-  return searchMode.value === "creative"
-    ? {
+  const mode = searchMode.value;
+  const type = searchType.value;
+
+  if (type === "semantic") {
+    const examples = queryExamples[mode];
+    const randomExample = `${
+      examples[Math.floor(Math.random() * examples.length)]
+    }`;
+
+    if (mode === "creative") {
+      return {
         text: "Explore your catalogue in a more flexible and figurative way",
-        example: "Images that resonate with StarWars universe",
-      }
-    : {
-        text: "Search the catalogue with natural language and logic precision",
-        example: "People eating on a boat, during a sunny day",
+        example: randomExample,
+        prefix: "Try something like...",
       };
+    } else if (mode === "logical") {
+      return {
+        text: "Search the catalogue with strict logic and precise criteria",
+        example: randomExample,
+        prefix: "Try something like...",
+      };
+    } else if (mode === "low_precision") {
+      return {
+        text: "Perform a fast search with broader matching and lower precision",
+        example: randomExample,
+        prefix: "Try something like...",
+      };
+    }
+  } else if (type === "tags") {
+    return {
+      prefix: "Search by including or penalizing specific tags you define",
+      example: null,
+    };
+  } else if (type === "topological") {
+    return {
+      prefix:
+        "Search based on where elements appear in the image (left, middle, right)",
+      example: null,
+    };
+  }
 });
 
 const photos = computed(() => {
