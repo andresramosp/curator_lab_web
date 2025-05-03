@@ -5,14 +5,24 @@
         v-bind="props"
         :class="[`photo-card-${type}`]"
         :style="cardStyle"
-        @click="photosStore.togglePhotoSelection(photo.id)"
+        @click="handleClick"
       >
         <div class="image-container">
-          <v-img
-            :src="photo.thumbnailUrl"
-            @error="fallbackImage"
-            :class="[`photo-image-${type}`]"
-          ></v-img>
+          <template v-if="photo.isSkeleton">
+            <v-skeleton-loader type="image" class="photo-skeleton" />
+          </template>
+          <template v-else>
+            <v-img
+              :src="photo.thumbnailUrl"
+              @error="fallbackImage"
+              :class="[`photo-card-${type}`]"
+              transition="fade-transition"
+            >
+              <template #placeholder>
+                <v-skeleton-loader type="image" class="photo-skeleton" />
+              </template>
+            </v-img>
+          </template>
         </div>
 
         <!-- Slot para overlay, se espera que el componente padre lo provea -->
@@ -47,6 +57,7 @@ const props = defineProps({
   photo: Object,
   withInsights: Boolean,
   isThinking: Boolean,
+  isLoading: Boolean,
   fadeDelay: {
     type: Number,
     default: 0,
@@ -70,6 +81,11 @@ const cardStyle = computed(() => ({
     ? "1px solid rgb(var(--v-theme-secondary)) !important"
     : "none",
 }));
+
+const handleClick = () => {
+  if (props.isLoading) return;
+  photosStore.togglePhotoSelection(props.photo.id);
+};
 
 function fallbackImage() {
   if (props.photo.url) {
@@ -103,44 +119,6 @@ const starCount = computed(() => {
   font-size: 13px;
 }
 
-/* Animaciones de fade-in para Insights y Matches */
-.fade-in-selected {
-  opacity: 0;
-  transform: translateY(50px);
-  filter: grayscale(100%) blur(3px);
-  animation: fadeInSelectedAnimation 0.5s ease-in-out forwards;
-}
-
-.fade-in-unselected {
-  opacity: 0;
-  transform: translateY(50px);
-  animation: fadeInUnselectedAnimation 0.5s ease-in-out forwards;
-}
-
-@keyframes fadeInSelectedAnimation {
-  from {
-    opacity: 0;
-    filter: grayscale(100%) blur(3px);
-    transform: translateY(50px);
-  }
-  to {
-    opacity: 1;
-    filter: grayscale(0%) blur(0px);
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUnselectedAnimation {
-  from {
-    opacity: 0;
-    transform: translateY(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .high-match {
   /* color: rgb(var(--v-theme-secondary)); */
   color: white;
@@ -158,5 +136,10 @@ const starCount = computed(() => {
   justify-content: center; /* Opcional, para centrar horizontalmente */
   height: 100%;
   padding: 5px;
+}
+
+.photo-skeleton {
+  height: 100%;
+  width: 100%;
 }
 </style>

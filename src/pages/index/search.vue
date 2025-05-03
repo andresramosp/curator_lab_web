@@ -183,11 +183,13 @@
       </div>
     </div> -->
     <PhotosSearchGrid
+      v-if="loading || loadingIteration || (photos && photos.length)"
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
       :withInsights="searchType !== 'tags' ? withInsights : false"
       :loadingIteration="loadingIteration"
+      :loading="loading"
       :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
     />
@@ -379,7 +381,6 @@ onMounted(() => {
       iterationsRecord.value[iter] = {
         photos: richPhotos.map((item) => ({
           ...item.photo,
-          matchPercent: item.matchPercent,
         })),
       };
       currentMatchPercent.value = Math.min(
