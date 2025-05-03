@@ -9,7 +9,7 @@
     <div
       ref="scrollContainer"
       class="photos-container"
-      style="overflow-y: auto; height: 74vh"
+      style="overflow-y: auto"
     >
       <v-card style="min-height: 620px; width: 100%">
         <v-card-text>

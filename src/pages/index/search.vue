@@ -2,7 +2,7 @@
   <div class="main-container">
     <v-toolbar color="surface" :elevation="8" class="sticky-toolbar d-flex">
       <!-- Área de input (condicional) -->
-      <div style="width: 55%">
+      <div style="width: 45%; padding-top: 5px">
         <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
@@ -101,87 +101,85 @@
         </template>
       </div>
 
-      <ToggleButtons v-model="searchType" style="width: 17%">
-        <ToggleOption
-          value="semantic"
-          tooltip="Enter the query in natural language"
-        >
-          <v-icon left class="mr-1">mdi-brain</v-icon>
-          Semantic
-        </ToggleOption>
-        <ToggleOption value="tags" tooltip="Enter the query by tags">
-          <v-icon left class="mr-1">mdi-brain</v-icon>
-          Tags
-        </ToggleOption>
-        <ToggleOption
-          value="topological"
-          tooltip="Search for specific elements by spatial distribution"
-        >
-          <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
-          Spatial
-        </ToggleOption>
-      </ToggleButtons>
+      <div style="width: 55%; padding-bottom: 5px">
+        <ToggleButtons v-model="searchType">
+          <ToggleOption
+            value="semantic"
+            tooltip="Enter the query in natural language"
+          >
+            <v-icon left class="mr-1">mdi-brain</v-icon>
+            Semantic
+          </ToggleOption>
+          <ToggleOption value="tags" tooltip="Enter the query by tags">
+            <v-icon left class="mr-1">mdi-brain</v-icon>
+            Tags
+          </ToggleOption>
+          <ToggleOption
+            value="topological"
+            tooltip="Search for specific elements by spatial distribution"
+          >
+            <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
+            Spatial
+          </ToggleOption>
+        </ToggleButtons>
 
-      <ToggleButtons v-model="searchMode" style="width: 11%">
-        <ToggleOption
-          value="logical"
-          tooltip="Performs a search with logical criteria and conceptual precision"
-        >
-          <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
-          Strict
-        </ToggleOption>
-        <ToggleOption
-          value="creative"
-          tooltip="Allows the engine to find indirect and figurative associations"
-        >
-          <v-icon left class="mr-1">mdi-brain</v-icon>
-          Flexible
-        </ToggleOption>
-      </ToggleButtons>
+        <ToggleButtons v-model="searchMode">
+          <ToggleOption
+            value="logical"
+            tooltip="Performs a search with logical criteria and conceptual precision"
+          >
+            <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
+            Strict
+          </ToggleOption>
+          <ToggleOption
+            value="creative"
+            tooltip="Allows the engine to find indirect and figurative associations"
+          >
+            <v-icon left class="mr-1">mdi-brain</v-icon>
+            Flexible
+          </ToggleOption>
+        </ToggleButtons>
 
-      <SwitchButton
-        :isDisabled="searchMode != 'creative' || searchType != 'semantic'"
-        icon="mdi-eye-outline"
-        v-model="withInsights"
-        tooltip="Get insights on high potential photos"
-      >
-        Insights
-      </SwitchButton>
+        <SwitchButton
+          :isDisabled="searchMode != 'creative' || searchType != 'semantic'"
+          icon="mdi-eye-outline"
+          v-model="withInsights"
+          tooltip="Get insights on high potential photos"
+        >
+          Insights
+        </SwitchButton>
 
-      <v-btn
-        @click="handleSearch"
-        :loading="loading && !loadingIteration"
-        :disabled="searchDisabled"
-        class="mx-3 toolbar-control"
-      >
-        Search
-      </v-btn>
+        <v-btn
+          @click="handleSearch"
+          :loading="loading && !loadingIteration"
+          :disabled="searchDisabled"
+          class="mx-3 toolbar-control"
+        >
+          Search
+        </v-btn>
+        <v-menu offset-y>
+          <template #activator="{ on, attrs }">
+            <v-btn size="small" icon v-bind="attrs" v-on="on">
+              <v-icon>mdi-dots-vertical</v-icon>
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item @click="onOption('Primera opción')">
+              <v-list-item-title>Primera opción</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="onOption('Segunda opción')">
+              <v-list-item-title>Segunda opción</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="onOption('Tercera opción')">
+              <v-list-item-title>Tercera opción</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </div>
+
+      <!-- Menú de tres puntos -->
     </v-toolbar>
 
-    <!-- <div class="alert-message">
-      <v-alert
-        v-if="maxPageAttempts"
-        class="bottom-0 mb-5"
-        position="fixed"
-        color="secondary"
-        closable
-        :text="`It seems unlikely that we will find more pictures related to ${clearQuery}. We suggest you adjust the search or try a different mode.`"
-        theme="dark"
-      ></v-alert>
-    </div> -->
-    <!-- <div
-      v-if="photos.length"
-      class="toolbar-control photos-options d-flex align-center"
-    >
-      <div v-if="withInsights" class="d-flex align-center">
-        <span class="me-2">Insights</span>
-        <v-switch
-          v-model="onlyInsights"
-          color="secondary"
-          hide-details
-        ></v-switch>
-      </div>
-    </div> -->
     <PhotosSearchGrid
       v-if="loading || loadingIteration || (photos && photos.length)"
       :photos="photos"
