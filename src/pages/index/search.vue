@@ -214,11 +214,15 @@
       class="d-flex flex-column align-center justify-center"
       style="height: 100%; opacity: 0.5; text-align: center"
     >
-      <v-icon size="164">mdi-magnify</v-icon>
+      <img
+        src="@/assets/CuratorLogoGray.png"
+        alt="Curator Lab Logo"
+        style="width: 250px; height: auto; opacity: 0.15"
+      />
       <div style="margin-top: 0px; font-size: 1.2rem">
         {{ queryDescription.prefix }}
       </div>
-      <v-fade-transition mode="out-in">
+      <transition name="slide-fade" mode="out-in">
         <div
           v-if="queryDescription.example"
           :key="queryDescription.example"
@@ -232,7 +236,7 @@
         >
           {{ `"${queryDescription.example}"` }}
         </div>
-      </v-fade-transition>
+      </transition>
     </div>
   </div>
 </template>
@@ -333,8 +337,7 @@ const queryDescription = computed(() => {
     };
   } else if (type === "topological") {
     return {
-      prefix:
-        "Search based on where elements appear in the image (left, middle, right)",
+      prefix: "Search based on where elements appear in the image",
       example: null,
     };
   }
@@ -550,5 +553,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.4s ease;
+}
+
+.slide-fade-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
 }
 </style>
