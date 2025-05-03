@@ -1,15 +1,9 @@
 <template>
   <div class="photos-grid">
-    <!-- <div class="search-grid-toolbar"></div> -->
-    <!-- <v-toolbar
-      color="surface"
-      :elevation="8"
-      class="sticky-toolbar d-flex"
-    ></v-toolbar> -->
     <div
       ref="scrollContainer"
       class="photos-container"
-      style="overflow-y: auto"
+      style="overflow-y: auto; height: 77vh"
     >
       <v-card style="min-height: 620px; width: 100%">
         <v-card-text>

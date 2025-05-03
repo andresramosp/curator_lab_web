@@ -100,81 +100,95 @@
         </template>
       </div>
 
-      <!-- Área de botones (flex proporcional con box-sizing) -->
-      <div style="flex: 0 0 50%; box-sizing: border-box; padding-bottom: 5px">
-        <ToggleButtons v-model="searchType">
-          <ToggleOption
-            value="semantic"
-            tooltip="Enter the query in natural language"
-          >
-            <v-icon left class="mr-1">mdi-brain</v-icon>
-            Semantic
-          </ToggleOption>
-          <ToggleOption value="tags" tooltip="Enter the query by tags">
-            <v-icon left class="mr-1">mdi-brain</v-icon>
-            Tags
-          </ToggleOption>
-          <ToggleOption
-            value="topological"
-            tooltip="Search for specific elements by spatial distribution"
-          >
-            <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
-            Spatial
-          </ToggleOption>
-        </ToggleButtons>
+      <!-- Área de botones (flex con menú alineado a la derecha) -->
+      <div
+        style="
+          flex: 0 0 50%;
+          box-sizing: border-box;
+          padding-bottom: 5px;
+          display: flex;
+          align-items: center;
+        "
+      >
+        <!-- Agrupación principal de controles -->
+        <div style="display: flex; gap: 12px; align-items: center">
+          <ToggleButtons v-model="searchType">
+            <ToggleOption
+              value="semantic"
+              tooltip="Enter the query in natural language"
+            >
+              <v-icon left class="mr-1">mdi-brain</v-icon>
+              Semantic
+            </ToggleOption>
+            <ToggleOption value="tags" tooltip="Enter the query by tags">
+              <v-icon left class="mr-1">mdi-brain</v-icon>
+              Tags
+            </ToggleOption>
+            <ToggleOption
+              value="topological"
+              tooltip="Search for specific elements by spatial distribution"
+            >
+              <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
+              Spatial
+            </ToggleOption>
+          </ToggleButtons>
 
-        <ToggleButtons v-model="searchMode">
-          <ToggleOption
-            value="logical"
-            tooltip="Performs a search with logical criteria and conceptual precision"
-          >
-            <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
-            Strict
-          </ToggleOption>
-          <ToggleOption
-            value="creative"
-            tooltip="Allows the engine to find indirect and figurative associations"
-          >
-            <v-icon left class="mr-1">mdi-brain</v-icon>
-            Flexible
-          </ToggleOption>
-        </ToggleButtons>
+          <ToggleButtons v-model="searchMode">
+            <ToggleOption
+              value="logical"
+              tooltip="Performs a search with logical criteria and conceptual precision"
+            >
+              <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
+              Strict
+            </ToggleOption>
+            <ToggleOption
+              value="creative"
+              tooltip="Allows the engine to find indirect and figurative associations"
+            >
+              <v-icon left class="mr-1">mdi-brain</v-icon>
+              Flexible
+            </ToggleOption>
+          </ToggleButtons>
 
-        <SwitchButton
-          :isDisabled="searchMode != 'creative' || searchType != 'semantic'"
-          icon="mdi-eye-outline"
-          v-model="withInsights"
-          tooltip="Get insights on high potential photos"
-        >
-          Insights
-        </SwitchButton>
+          <SwitchButton
+            :isDisabled="searchMode != 'creative' || searchType != 'semantic'"
+            icon="mdi-eye-outline"
+            v-model="withInsights"
+            tooltip="Get insights on high potential photos"
+          >
+            Insights
+          </SwitchButton>
 
-        <v-btn
-          @click="handleSearch"
-          :loading="loading && !loadingIteration"
-          :disabled="searchDisabled"
-          class="toolbar-control mx-3"
-        >
-          Search
-        </v-btn>
-        <v-menu offset-y class="mx-3">
-          <template #activator="{ on, attrs }">
-            <v-btn size="small" icon v-bind="attrs" v-on="on">
-              <v-icon>mdi-dots-vertical</v-icon>
-            </v-btn>
-          </template>
-          <v-list>
-            <v-list-item @click="onOption('Primera opción')">
-              <v-list-item-title>Primera opción</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="onOption('Segunda opción')">
-              <v-list-item-title>Segunda opción</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="onOption('Tercera opción')">
-              <v-list-item-title>Tercera opción</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+          <v-btn
+            @click="handleSearch"
+            :loading="loading && !loadingIteration"
+            :disabled="searchDisabled"
+            class="toolbar-control"
+          >
+            Search
+          </v-btn>
+        </div>
+        <!-- Menú desplazado al extremo derecho -->
+        <div style="margin-left: auto; margin-right: 8px">
+          <v-menu offset-y>
+            <template #activator="{ on, attrs }">
+              <v-btn size="small" icon v-bind="attrs" v-on="on">
+                <v-icon>mdi-dots-vertical</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item @click="onOption('Primera opción')">
+                <v-list-item-title>Primera opción</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="onOption('Segunda opción')">
+                <v-list-item-title>Segunda opción</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="onOption('Tercera opción')">
+                <v-list-item-title>Tercera opción</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
       </div>
     </v-toolbar>
 
