@@ -7,7 +7,7 @@
       style="gap: 12px"
     >
       <!-- Área de input (flex proporcional con box-sizing) -->
-      <div style="flex: 0 0 50%; box-sizing: border-box; padding-top: 5px">
+      <div style="flex: 0 0 45%; box-sizing: border-box; padding-top: 5px">
         <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
@@ -103,7 +103,7 @@
       <!-- Área de botones (flex con menú alineado a la derecha) -->
       <div
         style="
-          flex: 0 0 50%;
+          flex: 0 0 55%;
           box-sizing: border-box;
           padding-bottom: 5px;
           display: flex;
@@ -135,6 +135,13 @@
 
           <ToggleButtons v-model="searchMode">
             <ToggleOption
+              value="low_precision"
+              tooltip="Low precision search, but much faster"
+            >
+              <v-icon left class="mr-1">mdi-brain</v-icon>
+              Fast
+            </ToggleOption>
+            <ToggleOption
               value="logical"
               tooltip="Performs a search with logical criteria and conceptual precision"
             >
@@ -146,7 +153,7 @@
               tooltip="Allows the engine to find indirect and figurative associations"
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
-              Flexible
+              Creative
             </ToggleOption>
           </ToggleButtons>
 
@@ -206,7 +213,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive } from "vue";
+defineOptions({ name: "SearchPage" });
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from "vue";
 import axios from "axios";
 import { io } from "socket.io-client";
 import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
@@ -276,19 +284,35 @@ const queryDescription = computed(() => {
 });
 
 const photos = computed(() => {
-  const keys = Object.keys(iterationsRecord.value)
-    .map(Number)
-    .sort((a, b) => a - b);
-  let result = [];
-  for (let i = 0; i < iteration.value; i++) {
-    const key = keys[i];
-    if (key !== undefined && iterationsRecord.value[key]?.photos) {
-      result.push(...iterationsRecord.value[key].photos);
+  // función helper para extraer fotos reales según tu lógica actual
+  const getActualPhotos = () => {
+    const keys = Object.keys(iterationsRecord.value)
+      .map(Number)
+      .sort((a, b) => a - b);
+    let result = [];
+    for (let i = 0; i < iteration.value; i++) {
+      const key = keys[i];
+      if (key !== undefined && iterationsRecord.value[key]?.photos) {
+        result.push(...iterationsRecord.value[key].photos);
+      }
     }
+    return result.filter(
+      (photo) =>
+        loadingIteration.value || !onlyInsights.value || photo.isInsight
+    );
+  };
+
+  if (loading.value || loadingIteration.value) {
+    const actual = getActualPhotos();
+    const skeletons = Array.from({ length: 12 }, (_, i) => ({
+      id: `skeleton-${i}`,
+      isSkeleton: true,
+      src: null,
+    }));
+    return [...actual, ...skeletons];
+  } else {
+    return getActualPhotos();
   }
-  return result.filter(
-    (photo) => loadingIteration.value || !onlyInsights.value || photo.isInsight
-  );
 });
 
 const searchDisabled = computed(() => {
@@ -304,6 +328,12 @@ const searchDisabled = computed(() => {
       !topologicalAreas.right.length &&
       !topologicalAreas.middle.length
     );
+  }
+});
+
+watch([searchType, searchMode], ([newType, newMode]) => {
+  if (newType !== "semantic" || newMode !== "creative") {
+    withInsights.value = false;
   }
 });
 

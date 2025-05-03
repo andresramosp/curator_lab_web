@@ -9,7 +9,7 @@
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
-              v-for="(photo, index) in photoList"
+              v-for="(photo, index) in photos"
               :key="photo.id"
               :photo="photo"
               :isLoading="loading || loadingIteration"
@@ -112,16 +112,6 @@ const photoFadeInDelays = ref([]);
 const previousPhotosLength = shallowRef(props.photos.length);
 const scrollContainer = ref(null);
 
-const photoList = computed(() => {
-  if (props.loading || props.loadingIteration) {
-    return Array.from({ length: 12 }, (_, i) => ({
-      id: `skeleton-${i}`,
-      isSkeleton: true,
-      src: null,
-    }));
-  }
-  return props.photos;
-});
 watch(
   () => props.photos.length,
   (newLength, oldLength) => {

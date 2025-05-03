@@ -178,6 +178,8 @@
 </template>
 
 <script setup>
+defineOptions({ name: "CanvasPage" });
+
 import { ref, onMounted, watch, computed } from "vue";
 import {
   useCanvasStage,

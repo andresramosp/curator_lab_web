@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: "PhotosPage" });
 import { ref, onMounted } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import axios from "axios";

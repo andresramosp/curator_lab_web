@@ -28,7 +28,15 @@
     </v-navigation-drawer>
 
     <v-main>
-      <router-view />
+      <!-- <keep-alive include="SearchPage,PhotosPage,CanvasPage">
+        <router-view />
+      </keep-alive> -->
+
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </v-main>
   </v-app>
 </template>
