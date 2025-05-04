@@ -111,7 +111,8 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     );
   }
 
-  const SNAP_THRESHOLD = 50; // distancia mínima en píxeles para activar el snapping
+  const SNAP_THRESHOLD = 50; // distancia mínima para activar el snapping
+  const MIN_SEPARATION = 15; // separación mínima entre bordes
 
   const handleDragEnd = (photo, evt) => {
     const node = evt.target;
@@ -119,7 +120,6 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     photo.config.x = newPos.x;
     photo.config.y = newPos.y;
 
-    // --- SNAPPING CON UMBRAL ---
     const others = photos.value.filter((p) => p.id !== photo.id);
     if (others.length) {
       let closestX = { dist: Infinity, photo: null };
@@ -133,7 +133,6 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
       }
 
       const minDist = Math.min(closestX.dist, closestY.dist);
-      // Solo snap si la distancia mínima está por debajo del umbral
       if (minDist < SNAP_THRESHOLD) {
         if (closestX.dist <= closestY.dist) {
           photo.config.x = closestX.photo.config.x;
@@ -141,6 +140,46 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
         } else {
           photo.config.y = closestY.photo.config.y;
           node.y(photo.config.y);
+        }
+      }
+
+      // --- EVITAR MONTAJE O CERCANÍA EXCESIVA ---
+      for (const p of others) {
+        const ax1 = photo.config.x;
+        const ay1 = photo.config.y;
+        const ax2 = ax1 + photo.config.width;
+        const ay2 = ay1 + photo.config.height;
+
+        const bx1 = p.config.x;
+        const by1 = p.config.y;
+        const bx2 = bx1 + p.config.width;
+        const by2 = by1 + p.config.height;
+
+        const overlapX =
+          Math.min(ax2, bx2 + MIN_SEPARATION) -
+          Math.max(ax1, bx1 - MIN_SEPARATION);
+        const overlapY =
+          Math.min(ay2, by2 + MIN_SEPARATION) -
+          Math.max(ay1, by1 - MIN_SEPARATION);
+
+        if (overlapX > 0 && overlapY > 0) {
+          if (overlapX < overlapY) {
+            // Ajuste horizontal
+            if (ax1 < bx1) {
+              photo.config.x = bx1 - photo.config.width - MIN_SEPARATION;
+            } else {
+              photo.config.x = bx2 + MIN_SEPARATION;
+            }
+            node.x(photo.config.x);
+          } else {
+            // Ajuste vertical
+            if (ay1 < by1) {
+              photo.config.y = by1 - photo.config.height - MIN_SEPARATION;
+            } else {
+              photo.config.y = by2 + MIN_SEPARATION;
+            }
+            node.y(photo.config.y);
+          }
         }
       }
     }
