@@ -112,7 +112,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
   }
 
   const SNAP_THRESHOLD = 120;
-  const MIN_SEPARATION = 45;
+  const MIN_SEPARATION = 35;
 
   const handleDragEnd = (photo, evt) => {
     const node = evt.target;
@@ -122,32 +122,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
     const others = photos.value.filter((p) => p.id !== photo.id);
     if (others.length) {
-      let closestX = { dist: Infinity, value: null };
-      let closestY = { dist: Infinity, value: null };
-
-      for (const p of others) {
-        const dx = Math.abs(p.config.x - photo.config.x);
-        const dy = Math.abs(p.config.y - photo.config.y);
-
-        if (dx < closestX.dist) {
-          closestX = { dist: dx, value: p.config.x };
-        }
-        if (dy < closestY.dist) {
-          closestY = { dist: dy, value: p.config.y };
-        }
-      }
-
-      if (closestX.dist < SNAP_THRESHOLD || closestY.dist < SNAP_THRESHOLD) {
-        if (closestX.dist <= closestY.dist && closestX.dist < SNAP_THRESHOLD) {
-          photo.config.x = closestX.value;
-          node.x(photo.config.x);
-        } else if (closestY.dist < SNAP_THRESHOLD) {
-          photo.config.y = closestY.value;
-          node.y(photo.config.y);
-        }
-      }
-
-      // --- EVITAR MONTAJE SOLO SI HAY SOLAPAMIENTO ---
+      // --- EVITAR MONTAJE Y CERCANÍA EXCESIVA ---
       for (const p of others) {
         const ax1 = photo.config.x;
         const ay1 = photo.config.y;
@@ -178,6 +153,53 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
             }
             node.y(photo.config.y);
           }
+        } else {
+          const gapX = Math.max(bx1 - ax2, ax1 - bx2);
+          const gapY = Math.max(by1 - ay2, ay1 - by2);
+
+          if (gapX >= 0 && gapX < MIN_SEPARATION) {
+            if (ax1 < bx1) {
+              photo.config.x = bx1 - photo.config.width - MIN_SEPARATION;
+            } else {
+              photo.config.x = bx2 + MIN_SEPARATION;
+            }
+            node.x(photo.config.x);
+          }
+
+          if (gapY >= 0 && gapY < MIN_SEPARATION) {
+            if (ay1 < by1) {
+              photo.config.y = by1 - photo.config.height - MIN_SEPARATION;
+            } else {
+              photo.config.y = by2 + MIN_SEPARATION;
+            }
+            node.y(photo.config.y);
+          }
+        }
+      }
+
+      // --- APLICAR SNAP SOLO AL FINAL ---
+      let closestX = { dist: Infinity, value: null };
+      let closestY = { dist: Infinity, value: null };
+
+      for (const p of others) {
+        const dx = Math.abs(p.config.x - photo.config.x);
+        const dy = Math.abs(p.config.y - photo.config.y);
+
+        if (dx < closestX.dist) {
+          closestX = { dist: dx, value: p.config.x };
+        }
+        if (dy < closestY.dist) {
+          closestY = { dist: dy, value: p.config.y };
+        }
+      }
+
+      if (closestX.dist < SNAP_THRESHOLD || closestY.dist < SNAP_THRESHOLD) {
+        if (closestX.dist <= closestY.dist && closestX.dist < SNAP_THRESHOLD) {
+          photo.config.x = closestX.value;
+          node.x(photo.config.x);
+        } else if (closestY.dist < SNAP_THRESHOLD) {
+          photo.config.y = closestY.value;
+          node.y(photo.config.y);
         }
       }
     }
