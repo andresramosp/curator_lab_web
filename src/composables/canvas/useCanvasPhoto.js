@@ -113,6 +113,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
   const SNAP_THRESHOLD = 120;
   const MIN_SEPARATION = 35;
+  const MIN_SEPARATION_APPLY_THRESHOLD = 80; // nuevo umbral para activar corrección
 
   const handleDragEnd = (photo, evt) => {
     const node = evt.target;
@@ -138,6 +139,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
         const overlapY = Math.min(ay2, by2) - Math.max(ay1, by1);
 
         if (overlapX > 0 && overlapY > 0) {
+          // Solapamiento directo
           if (overlapX < overlapY) {
             if (ax1 < bx1) {
               photo.config.x = bx1 - photo.config.width - MIN_SEPARATION;
@@ -154,10 +156,11 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
             node.y(photo.config.y);
           }
         } else {
+          // Sin solapamiento, pero cercanía peligrosa
           const gapX = Math.max(bx1 - ax2, ax1 - bx2);
           const gapY = Math.max(by1 - ay2, ay1 - by2);
 
-          if (gapX >= 0 && gapX < MIN_SEPARATION) {
+          if (gapX >= 0 && gapX < MIN_SEPARATION_APPLY_THRESHOLD) {
             if (ax1 < bx1) {
               photo.config.x = bx1 - photo.config.width - MIN_SEPARATION;
             } else {
@@ -166,7 +169,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
             node.x(photo.config.x);
           }
 
-          if (gapY >= 0 && gapY < MIN_SEPARATION) {
+          if (gapY >= 0 && gapY < MIN_SEPARATION_APPLY_THRESHOLD) {
             if (ay1 < by1) {
               photo.config.y = by1 - photo.config.height - MIN_SEPARATION;
             } else {
