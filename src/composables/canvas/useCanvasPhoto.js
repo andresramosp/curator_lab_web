@@ -117,22 +117,36 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     photo.config.x = newPos.x;
     photo.config.y = newPos.y;
 
-    let photosToRemove = [];
-
-    if (photo.selected) {
-      const selectedPhotos = photos.value.filter((p) => p.selected);
-
-      // Si al menos una está dentro → se eliminan todas las seleccionadas
-      const anyInTrash = selectedPhotos.some((p) => isInTrashZone(p));
-      if (anyInTrash) {
-        photosToRemove = selectedPhotos;
+    // --- SNAPPING ---
+    // Excluimos la propia foto
+    const others = photos.value.filter((p) => p.id !== photo.id);
+    if (others.length) {
+      let closestX = { dist: Infinity, photo: null };
+      let closestY = { dist: Infinity, photo: null };
+      for (const p of others) {
+        const dx = Math.abs(p.config.x - photo.config.x);
+        const dy = Math.abs(p.config.y - photo.config.y);
+        if (dx < closestX.dist) closestX = { dist: dx, photo: p };
+        if (dy < closestY.dist) closestY = { dist: dy, photo: p };
       }
-    } else {
-      if (isInTrashZone(photo)) {
-        photosToRemove = [photo];
+      // Decidir alineación según la menor distancia
+      if (closestX.dist < closestY.dist) {
+        photo.config.x = closestX.photo.config.x;
+        node.x(photo.config.x);
+      } else {
+        photo.config.y = closestY.photo.config.y;
+        node.y(photo.config.y);
       }
     }
 
+    // --- BASURA ---
+    let photosToRemove = [];
+    if (photo.selected) {
+      const selected = photos.value.filter((p) => p.selected);
+      if (selected.some((p) => isInTrashZone(p))) photosToRemove = selected;
+    } else if (isInTrashZone(photo)) {
+      photosToRemove = [photo];
+    }
     if (photosToRemove.length) {
       canvasStore.deletePhotos(photosToRemove.map((p) => p.id));
       isHoveringTrash.value = false;
