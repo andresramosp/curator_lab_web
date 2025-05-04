@@ -13,7 +13,6 @@
               :key="photo.id"
               :photo="photo"
               :isLoading="loading || loadingIteration"
-              :with-insights="withInsights"
               :is-thinking="isThinking(photo)"
               :fade-delay="photoFadeInDelays[index] || 0"
               @view-info="viewPhotoInfo"
@@ -34,7 +33,7 @@
                 </div>
                 <div
                   v-if="isThinking(photo) && !maxPageAttempts"
-                  class="photo-overlay"
+                  class="thinking-overlay"
                 >
                   <span
                     v-for="(letter, index) in 'Reviewing'.split('')"
@@ -87,7 +86,6 @@ const props = defineProps({
   loading: Boolean,
   hasMoreIterations: Boolean,
   loadingInsights: Boolean,
-  withInsights: Boolean,
   maxPageAttempts: Boolean,
 });
 
@@ -125,9 +123,7 @@ defineExpose({
 });
 
 const isThinking = (photo) => {
-  return (
-    props.loadingInsights && props.withInsights && photo.isInsight === undefined
-  );
+  return props.loadingInsights && photo.isInsight === undefined;
 };
 
 function deletePhoto(id) {
@@ -175,7 +171,7 @@ function analyzePhoto(id) {
   font-size: 18px;
 }
 
-.photo-overlay {
+.thinking-overlay {
   position: absolute;
   bottom: 5px;
   left: 0;

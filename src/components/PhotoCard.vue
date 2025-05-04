@@ -8,25 +8,10 @@
         @click="handleClick"
       >
         <div class="image-container">
-          <!-- <template v-if="photo.isSkeleton">
-            <v-skeleton-loader type="image" class="photo-skeleton" />
-          </template>
-          <template v-else>
-            <v-img
-              :src="photo.thumbnailUrl"
-              @error="fallbackImage"
-              :class="[`photo-card-${type}`]"
-              transition="fade-transition"
-            >
-              <template #placeholder>
-                <v-skeleton-loader type="image" class="photo-skeleton" />
-              </template>
-            </v-img>
-          </template> -->
           <v-img
             :src="photo.thumbnailUrl"
             @error="fallbackImage"
-            :class="[`photo-card-${type}`]"
+            :class="[`photo-card-${type}`, isThinking ? 'blurred-photo' : '']"
             transition="fade-transition"
           >
             <template #placeholder>
@@ -69,7 +54,6 @@ import { usePhotosStore } from "@/stores/photos";
 
 const props = defineProps({
   photo: Object,
-  withInsights: Boolean,
   isThinking: Boolean,
   isLoading: Boolean,
   fadeDelay: {

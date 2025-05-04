@@ -183,3 +183,20 @@
 // .v-toolbar {
 //   background-color: red !important;
 // }
+
+// .blurred-photo {
+//   filter: blur(15px);
+// }
+
+@keyframes unblur {
+  0% {
+    filter: blur(21px);
+  }
+  100% {
+    filter: blur(5px);
+  }
+}
+
+.blurred-photo {
+  animation: unblur 17s forwards;
+}

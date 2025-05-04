@@ -1,13 +1,8 @@
 <template>
   <div class="main-container">
-    <v-toolbar
-      color="surface"
-      :elevation="8"
-      class="sticky-toolbar d-flex"
-      style="gap: 12px"
-    >
+    <v-toolbar color="surface" :elevation="8" class="sticky-toolbar d-flex">
       <!-- Área de input (flex proporcional con box-sizing) -->
-      <div style="flex: 0 0 45%; box-sizing: border-box; padding-top: 5px">
+      <div style="flex: 0 0 48%; box-sizing: border-box; padding-top: 5px">
         <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
@@ -105,7 +100,7 @@
       <!-- Área de botones (flex con menú alineado a la derecha) -->
       <div
         style="
-          flex: 0 0 55%;
+          flex: 0 0 52%;
           box-sizing: border-box;
           padding-bottom: 5px;
           display: flex;
@@ -113,7 +108,7 @@
         "
       >
         <!-- Agrupación principal de controles -->
-        <div style="display: flex; gap: 7px; align-items: center">
+        <div style="display: flex; gap: 10px; align-items: center">
           <ToggleButtons v-model="searchType">
             <ToggleOption
               value="semantic"
@@ -138,36 +133,34 @@
           <ToggleButtons v-model="searchMode">
             <ToggleOption
               value="low_precision"
-              tooltip="Perform a fast search with broader matching and lower precision"
+              tooltip="Perform a broad and faster search that may include indirect associations."
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
-              Fast
+              Broad
             </ToggleOption>
             <ToggleOption
               value="logical"
-              tooltip="Performs a search with logical criteria and conceptual precision"
+              tooltip="Consume more time to perform a search with logical criteria and conceptual precision."
             >
               <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
               Strict
             </ToggleOption>
             <ToggleOption
               value="creative"
-              tooltip="Allows the engine to find indirect and figurative associations"
+              tooltip="Get intelligent search and curation assistance, along with artistic insights."
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
-              Creative
+              Curation
             </ToggleOption>
           </ToggleButtons>
 
-          <SwitchButton
-            :isDisabled="searchMode != 'creative' || searchType != 'semantic'"
-            icon="mdi-eye-outline"
-            v-model="withInsights"
-            tooltip="Get insights on high potential photos"
+          <v-btn
+            @click="handleClear"
+            :disabled="loading"
+            class="toolbar-control outline"
           >
-            Insights
-          </SwitchButton>
-
+            Clear
+          </v-btn>
           <v-btn
             @click="handleSearch"
             :loading="loading && !loadingIteration"
@@ -206,7 +199,6 @@
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
-      :withInsights="searchType !== 'tags' ? withInsights : false"
       :loadingIteration="loadingIteration"
       :loading="loading"
       :loadingInsights="loadingInsights"
@@ -267,7 +259,6 @@ const router = useRouter();
 
 const searchType = ref("semantic");
 const searchMode = ref("logical");
-const withInsights = ref(false);
 const iteration = ref(1);
 const iterationsRecord = ref({});
 const loading = ref(false);
@@ -291,8 +282,6 @@ const topologicalAreas = reactive({
   right: "",
   middle: "",
 });
-
-const onlyInsights = ref(false);
 
 // Lógica específica para tags (composable)
 const {
@@ -349,7 +338,6 @@ const queryDescription = computed(() => {
 });
 
 const photos = computed(() => {
-  // función helper para extraer fotos reales según tu lógica actual
   const getActualPhotos = () => {
     const keys = Object.keys(iterationsRecord.value)
       .map(Number)
@@ -361,20 +349,29 @@ const photos = computed(() => {
         result.push(...iterationsRecord.value[key].photos);
       }
     }
-    return result.filter(
-      (photo) =>
-        loadingIteration.value || !onlyInsights.value || photo.isInsight
-    );
+    if (searchMode.value == "creative") {
+      if (loadingInsights.value) {
+        return result.filter((photo) => photo.isInsight == undefined);
+      } else {
+        return result.filter((photo) => photo.isInsight);
+      }
+    }
+    return result;
   };
 
-  if (loading.value || loadingIteration.value) {
+  if (loading.value || loadingIteration.value || loadingInsights.value) {
     const actual = getActualPhotos();
     const skeletons = Array.from({ length: 12 }, (_, i) => ({
       id: `skeleton-${i}`,
       isSkeleton: true,
       src: null,
     }));
-    return iteration.value == 1 ? [...skeletons] : [...actual]; // [...actual, ...skeletons]
+    return iteration.value == 1 ||
+      (searchMode.value == "creative" &&
+        loadingIteration.value &&
+        !loadingInsights.value)
+      ? [...skeletons]
+      : [...actual]; // [...actual, ...skeletons]
   } else {
     return getActualPhotos();
   }
@@ -396,12 +393,6 @@ const searchDisabled = computed(() => {
   }
 });
 
-watch([searchType, searchMode], ([newType, newMode]) => {
-  if (newType !== "semantic" || newMode !== "creative") {
-    withInsights.value = false;
-  }
-});
-
 function getPageSize() {
   return 12;
 }
@@ -409,14 +400,10 @@ function getPageSize() {
 async function searchPhotos() {
   loading.value = true;
   maxPageAttempts.value = false;
-  // setTimeout(() => {
-  //   photosGridRef.value?.scrollToBottom();
-  // }, 100);
-
   try {
     let payload;
     let options = {
-      withInsights: withInsights.value,
+      withInsights: searchMode.value == "creative",
       searchMode: searchMode.value,
       iteration: iteration.value,
       pageSize: getPageSize(),
@@ -449,9 +436,29 @@ async function searchPhotos() {
   }
 }
 
+watch(searchMode, () => {
+  handleClear();
+});
+
+function handleClear() {
+  description.value = "";
+  includedTags.value = [];
+  excludedTags.value = [];
+  topologicalAreas.left = "";
+  topologicalAreas.middle = "";
+  topologicalAreas.right = "";
+
+  iteration.value = 1;
+  iterationsRecord.value = {};
+  hasMoreIterations.value = false;
+  currentMatchPercent.value = 0;
+  clearQuery.value = null;
+
+  photosStore.selectedPhotosRecord = {};
+}
+
 function handleSearch() {
   photosStore.selectedPhotosRecord = {};
-  onlyInsights.value = false;
   iteration.value = 1;
   hasMoreIterations.value = false;
   iterationsRecord.value = {};
@@ -460,9 +467,7 @@ function handleSearch() {
 
 async function nextIteration() {
   loadingIteration.value = true;
-  loadingInsights.value = withInsights.value;
   await searchPhotos();
-  loadingIteration.value = false;
 }
 
 async function moveToCanvas() {
@@ -499,7 +504,8 @@ onMounted(() => {
       photosGridRef.value?.scrollToBottom();
     }, 100);
 
-    loadingInsights.value = withInsights.value;
+    loadingIteration.value = false;
+    loadingInsights.value = searchMode.value == "creative";
   });
 
   socket.on("insights", (data) => {
@@ -524,6 +530,10 @@ onMounted(() => {
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
     loadingInsights.value = false;
+
+    setTimeout(() => {
+      photosGridRef.value?.scrollToBottom();
+    }, 100);
 
     console.log(data);
   });
