@@ -3,7 +3,10 @@
     <template #default="{ isHovering, props }">
       <v-card
         v-bind="props"
-        :class="[`photo-card-${type}`]"
+        :class="[
+          `photo-card-${type}`,
+          !photo.isSkeleton && !isThinking ? 'photo-appear' : '',
+        ]"
         :style="cardStyle"
         @click="handleClick"
       >
@@ -26,7 +29,8 @@
         <!-- Iconos informativos seleccion/deselección -->
         <div v-if="!isThinking" class="photo-icons">
           <div v-if="photo.isInsight" class="high-match">
-            <v-icon color="secondary">mdi-crown</v-icon>
+            <!-- <v-icon color="secondary">mdi-crown</v-icon> -->
+            <img style="width: 22px;" :src="logo" alt="CuratorLab Logo"></img>
           </div>
           <div v-else :class="[matchPercentClass]">
             <template v-if="numericalMatch">
@@ -51,6 +55,7 @@
 <script setup>
 import { computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
+import logo from "@/assets/CuratorLogo.png";
 
 const props = defineProps({
   photo: Object,
@@ -139,5 +144,20 @@ const starCount = computed(() => {
 .photo-skeleton {
   height: 100%;
   width: 100%;
+}
+
+@keyframes appearUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.photo-appear {
+  animation: appearUp 1s ease;
 }
 </style>

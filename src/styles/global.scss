@@ -190,13 +190,13 @@
 
 @keyframes unblur {
   0% {
-    filter: blur(21px);
+    filter: blur(20px);
   }
   100% {
-    filter: blur(5px);
+    filter: blur(2px);
   }
 }
 
 .blurred-photo {
-  animation: unblur 17s forwards;
+  animation: unblur 12s forwards steps(30);
 }

@@ -5,7 +5,7 @@
       class="photos-container"
       style="overflow-y: auto; height: 77vh"
     >
-      <v-card style="min-height: 620px; width: 100%">
+      <v-card style="width: 100%">
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
