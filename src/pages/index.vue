@@ -2,7 +2,10 @@
   <v-app>
     <v-app-bar app>
       <v-toolbar-title>
-        <v-img width="200" :src="logo" alt="CuratorLab Logo" fill></v-img>
+        <div class="logo-container">
+          <img style="width: 35px;" :src="logo" alt="CuratorLab Logo"></img>
+          <img  style="width: 200px" :src="logoText" alt="CuratorLab Logo"></img>
+        </div>
       </v-toolbar-title>
 
       <v-spacer></v-spacer>
@@ -43,7 +46,8 @@
 
 <script setup>
 import { useRouter } from "vue-router";
-import logo from "@/assets/logo.png";
+import logoText from "@/assets/logo.png";
+import logo from "@/assets/CuratorLogoGray.png";
 
 const router = useRouter();
 
@@ -69,5 +73,11 @@ function goTo(route) {
 }
 .menu-item .v-list-item-title {
   font-size: 0.7rem;
+}
+.logo-container {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 7px
 }
 </style>

@@ -408,7 +408,6 @@ function getPageSize() {
 
 async function searchPhotos() {
   loading.value = true;
-  loadingInsights.value = withInsights.value;
   maxPageAttempts.value = false;
   // setTimeout(() => {
   //   photosGridRef.value?.scrollToBottom();
@@ -499,6 +498,8 @@ onMounted(() => {
     setTimeout(() => {
       photosGridRef.value?.scrollToBottom();
     }, 100);
+
+    loadingInsights.value = withInsights.value;
   });
 
   socket.on("insights", (data) => {

@@ -48,7 +48,11 @@
               <span>{{ photo.matchPercent.toFixed(0) }}%</span>
             </template>
             <template v-else>
-              <v-icon style="font-size: 15px" v-for="n in starCount" :key="n"
+              <v-icon
+                color="gray"
+                style="font-size: 15px; opacity: 0.5"
+                v-for="n in starCount"
+                :key="n"
                 >mdi-star</v-icon
               >
             </template>
@@ -145,7 +149,7 @@ const starCount = computed(() => {
   align-items: center; /* Centrado vertical */
   justify-content: center; /* Opcional, para centrar horizontalmente */
   height: 100%;
-  padding: 5px;
+  padding: 1px;
 }
 
 .photo-skeleton {
