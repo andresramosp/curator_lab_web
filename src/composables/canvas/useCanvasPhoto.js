@@ -111,35 +111,41 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     );
   }
 
+  const SNAP_THRESHOLD = 50; // distancia mínima en píxeles para activar el snapping
+
   const handleDragEnd = (photo, evt) => {
     const node = evt.target;
     const newPos = node.position();
     photo.config.x = newPos.x;
     photo.config.y = newPos.y;
 
-    // --- SNAPPING ---
-    // Excluimos la propia foto
+    // --- SNAPPING CON UMBRAL ---
     const others = photos.value.filter((p) => p.id !== photo.id);
     if (others.length) {
       let closestX = { dist: Infinity, photo: null };
       let closestY = { dist: Infinity, photo: null };
+
       for (const p of others) {
         const dx = Math.abs(p.config.x - photo.config.x);
         const dy = Math.abs(p.config.y - photo.config.y);
         if (dx < closestX.dist) closestX = { dist: dx, photo: p };
         if (dy < closestY.dist) closestY = { dist: dy, photo: p };
       }
-      // Decidir alineación según la menor distancia
-      if (closestX.dist < closestY.dist) {
-        photo.config.x = closestX.photo.config.x;
-        node.x(photo.config.x);
-      } else {
-        photo.config.y = closestY.photo.config.y;
-        node.y(photo.config.y);
+
+      const minDist = Math.min(closestX.dist, closestY.dist);
+      // Solo snap si la distancia mínima está por debajo del umbral
+      if (minDist < SNAP_THRESHOLD) {
+        if (closestX.dist <= closestY.dist) {
+          photo.config.x = closestX.photo.config.x;
+          node.x(photo.config.x);
+        } else {
+          photo.config.y = closestY.photo.config.y;
+          node.y(photo.config.y);
+        }
       }
     }
 
-    // --- BASURA ---
+    // --- CONTROL DE BASURA ---
     let photosToRemove = [];
     if (photo.selected) {
       const selected = photos.value.filter((p) => p.selected);
@@ -147,6 +153,7 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     } else if (isInTrashZone(photo)) {
       photosToRemove = [photo];
     }
+
     if (photosToRemove.length) {
       canvasStore.deletePhotos(photosToRemove.map((p) => p.id));
       isHoveringTrash.value = false;
