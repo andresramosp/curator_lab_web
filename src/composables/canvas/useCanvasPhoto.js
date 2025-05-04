@@ -111,8 +111,8 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
     );
   }
 
-  const SNAP_THRESHOLD = 50; // distancia mínima para activar el snapping
-  const MIN_SEPARATION = 15; // separación mínima entre bordes
+  const SNAP_THRESHOLD = 120;
+  const MIN_SEPARATION = 45;
 
   const handleDragEnd = (photo, evt) => {
     const node = evt.target;
@@ -122,28 +122,32 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
 
     const others = photos.value.filter((p) => p.id !== photo.id);
     if (others.length) {
-      let closestX = { dist: Infinity, photo: null };
-      let closestY = { dist: Infinity, photo: null };
+      let closestX = { dist: Infinity, value: null };
+      let closestY = { dist: Infinity, value: null };
 
       for (const p of others) {
         const dx = Math.abs(p.config.x - photo.config.x);
         const dy = Math.abs(p.config.y - photo.config.y);
-        if (dx < closestX.dist) closestX = { dist: dx, photo: p };
-        if (dy < closestY.dist) closestY = { dist: dy, photo: p };
+
+        if (dx < closestX.dist) {
+          closestX = { dist: dx, value: p.config.x };
+        }
+        if (dy < closestY.dist) {
+          closestY = { dist: dy, value: p.config.y };
+        }
       }
 
-      const minDist = Math.min(closestX.dist, closestY.dist);
-      if (minDist < SNAP_THRESHOLD) {
-        if (closestX.dist <= closestY.dist) {
-          photo.config.x = closestX.photo.config.x;
+      if (closestX.dist < SNAP_THRESHOLD || closestY.dist < SNAP_THRESHOLD) {
+        if (closestX.dist <= closestY.dist && closestX.dist < SNAP_THRESHOLD) {
+          photo.config.x = closestX.value;
           node.x(photo.config.x);
-        } else {
-          photo.config.y = closestY.photo.config.y;
+        } else if (closestY.dist < SNAP_THRESHOLD) {
+          photo.config.y = closestY.value;
           node.y(photo.config.y);
         }
       }
 
-      // --- EVITAR MONTAJE O CERCANÍA EXCESIVA ---
+      // --- EVITAR MONTAJE SOLO SI HAY SOLAPAMIENTO ---
       for (const p of others) {
         const ax1 = photo.config.x;
         const ay1 = photo.config.y;
@@ -155,16 +159,11 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
         const bx2 = bx1 + p.config.width;
         const by2 = by1 + p.config.height;
 
-        const overlapX =
-          Math.min(ax2, bx2 + MIN_SEPARATION) -
-          Math.max(ax1, bx1 - MIN_SEPARATION);
-        const overlapY =
-          Math.min(ay2, by2 + MIN_SEPARATION) -
-          Math.max(ay1, by1 - MIN_SEPARATION);
+        const overlapX = Math.min(ax2, bx2) - Math.max(ax1, bx1);
+        const overlapY = Math.min(ay2, by2) - Math.max(ay1, by1);
 
         if (overlapX > 0 && overlapY > 0) {
           if (overlapX < overlapY) {
-            // Ajuste horizontal
             if (ax1 < bx1) {
               photo.config.x = bx1 - photo.config.width - MIN_SEPARATION;
             } else {
@@ -172,7 +171,6 @@ export function useCanvasPhoto(stageRef, photos, photoRefs, stageConfig) {
             }
             node.x(photo.config.x);
           } else {
-            // Ajuste vertical
             if (ay1 < by1) {
               photo.config.y = by1 - photo.config.height - MIN_SEPARATION;
             } else {
