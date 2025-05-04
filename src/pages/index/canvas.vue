@@ -123,14 +123,14 @@
               <!-- Tags y botones -->
               <template>
                 <PhotoDetectionAreas
-                  v-if="toolbarState.expansion.type.criteria === 'composition'"
+                  v-if="toolbarState.expansion.type.criteria === 'composition' && photo.hovered"
                   :photo="photo"
                   :detectionAreas="photo.detectionAreas"
                   :visible="photo.hovered"
                   >/</PhotoDetectionAreas
                 >
                 <TagPillsCanvas
-                  v-if="toolbarState.expansion.type.criteria === 'tags'"
+                  v-if="toolbarState.expansion.type.criteria === 'tags' && photo.hovered"
                   :photo="photo"
                   :tags="photo.tags"
                   :visible="photo.hovered"

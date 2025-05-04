@@ -20,6 +20,7 @@
         <template v-else-if="searchType == 'tags'">
           <div class="d-flex" style="width: 100%; gap: 8px">
             <v-combobox
+              autofocus
               v-model="includedTags"
               v-model:search="searchInputIncluded"
               :items="includedTagSuggestions"
@@ -46,6 +47,7 @@
         <template v-else>
           <div class="d-flex" style="gap: 8px">
             <v-text-field
+              autofocus
               v-model="topologicalAreas.left"
               label="Left half"
               placeholder="A red dragon"
@@ -200,6 +202,7 @@
 
     <PhotosSearchGrid
       v-if="loading || loadingIteration || (photos && photos.length)"
+      ref="photosGridRef"
       :photos="photos"
       :hasMoreIterations="hasMoreIterations"
       @next-iteration="nextIteration"
@@ -212,7 +215,7 @@
     <div
       v-else
       class="d-flex flex-column align-center justify-center"
-      style="height: 100%; opacity: 0.5; text-align: center"
+      style="height: 100%; opacity: 0.5; text-align: center; margin-top: -50px"
     >
       <img
         src="@/assets/CuratorLogoGray.png"
@@ -276,6 +279,8 @@ const clearQuery = ref(null);
 const currentMatchPercent = ref(0);
 
 const menu = ref(false);
+
+const photosGridRef = ref(null);
 
 // Semantic
 const description = ref("");
@@ -369,7 +374,7 @@ const photos = computed(() => {
       isSkeleton: true,
       src: null,
     }));
-    return [...actual, ...skeletons];
+    return iteration.value == 1 ? [...skeletons] : [...actual]; // [...actual, ...skeletons]
   } else {
     return getActualPhotos();
   }
@@ -405,6 +410,10 @@ async function searchPhotos() {
   loading.value = true;
   loadingInsights.value = withInsights.value;
   maxPageAttempts.value = false;
+  // setTimeout(() => {
+  //   photosGridRef.value?.scrollToBottom();
+  // }, 100);
+
   try {
     let payload;
     let options = {
@@ -486,6 +495,10 @@ onMounted(() => {
       clearQuery.value = data.structuredResult.original;
     }
     console.log(data);
+
+    setTimeout(() => {
+      photosGridRef.value?.scrollToBottom();
+    }, 100);
   });
 
   socket.on("insights", (data) => {

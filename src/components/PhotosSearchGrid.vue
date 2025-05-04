@@ -62,16 +62,15 @@
         </v-card-text>
       </v-card>
     </div>
-    <v-card style="padding: 10px">
-      <v-btn
-        :loading="loadingIteration"
-        @click="$emit('next-iteration')"
-        class="centered-btn outline"
-        :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
-      >
-        <v-icon size="23">mdi-autorenew</v-icon> Load More
-      </v-btn>
-    </v-card>
+    <v-btn
+      style="padding: 0px; width: 99%; margin-top: 5px"
+      :loading="loadingIteration"
+      @click="$emit('next-iteration')"
+      class="centered-btn outline"
+      :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
+    >
+      <v-icon size="23">mdi-autorenew</v-icon> Load More
+    </v-btn>
   </div>
 
   <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
@@ -109,30 +108,21 @@ function viewPhotoInfo(photo) {
 }
 
 const photoFadeInDelays = ref([]);
-const previousPhotosLength = shallowRef(props.photos.length);
+
 const scrollContainer = ref(null);
 
-watch(
-  () => props.photos.length,
-  (newLength, oldLength) => {
-    if (newLength > oldLength) {
-      photoFadeInDelays.value = props.photos.map((_, index) => index * 15);
-      previousPhotosLength.value = newLength;
-
-      nextTick(() => {
-        setTimeout(() => {
-          if (scrollContainer.value) {
-            scrollContainer.value.scrollTop =
-              scrollContainer.value.scrollHeight;
-          }
-        }, 200);
-      });
-    } else {
-      photoFadeInDelays.value = [];
-    }
+defineExpose({
+  scrollToBottom: () => {
+    nextTick(() => {
+      if (scrollContainer.value) {
+        scrollContainer.value.scrollTo({
+          top: scrollContainer.value.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    });
   },
-  { immediate: true }
-);
+});
 
 const isThinking = (photo) => {
   return (

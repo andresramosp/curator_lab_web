@@ -8,7 +8,7 @@
         @click="handleClick"
       >
         <div class="image-container">
-          <template v-if="photo.isSkeleton">
+          <!-- <template v-if="photo.isSkeleton">
             <v-skeleton-loader type="image" class="photo-skeleton" />
           </template>
           <template v-else>
@@ -22,7 +22,17 @@
                 <v-skeleton-loader type="image" class="photo-skeleton" />
               </template>
             </v-img>
-          </template>
+          </template> -->
+          <v-img
+            :src="photo.thumbnailUrl"
+            @error="fallbackImage"
+            :class="[`photo-card-${type}`]"
+            transition="fade-transition"
+          >
+            <template #placeholder>
+              <v-skeleton-loader type="image" class="photo-skeleton" />
+            </template>
+          </v-img>
         </div>
 
         <!-- Slot para overlay, se espera que el componente padre lo provea -->
