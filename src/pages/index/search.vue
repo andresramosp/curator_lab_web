@@ -147,7 +147,7 @@
             </ToggleOption>
             <ToggleOption
               value="creative"
-              tooltip="Get a top selecton search and curation assistance for your ideas."
+              tooltip="Gather a top selection of images for your project or idea with intelligence assistance."
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
               Curation

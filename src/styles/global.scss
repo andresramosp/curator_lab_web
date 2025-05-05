@@ -193,10 +193,10 @@
     filter: blur(20px);
   }
   100% {
-    filter: blur(2px);
+    filter: blur(4px);
   }
 }
 
 .blurred-photo {
-  animation: unblur 12s forwards steps(30);
+  animation: unblur 16s forwards steps(30);
 }
