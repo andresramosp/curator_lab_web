@@ -133,21 +133,21 @@
           <ToggleButtons v-model="searchMode">
             <ToggleOption
               value="low_precision"
-              tooltip="Perform a broad and faster search that may include indirect associations."
+              tooltip="Perform a broad and fast search that may include indirect associations."
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
               Broad
             </ToggleOption>
             <ToggleOption
               value="logical"
-              tooltip="Consume more time to perform a search with logical criteria and conceptual precision."
+              tooltip="Perform a heavy search with logical criteria and conceptual precision."
             >
               <v-icon left class="mr-1">mdi-magnify-scan</v-icon>
               Strict
             </ToggleOption>
             <ToggleOption
               value="creative"
-              tooltip="Get intelligent search and curation assistance, along with artistic insights."
+              tooltip="Get a top selecton search and curation assistance for your ideas."
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
               Curation
