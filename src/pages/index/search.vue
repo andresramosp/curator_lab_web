@@ -132,13 +132,6 @@
 
           <ToggleButtons v-model="searchMode">
             <ToggleOption
-              value="low_precision"
-              tooltip="Perform a broad and fast search that may include indirect associations."
-            >
-              <v-icon left class="mr-1">mdi-brain</v-icon>
-              Broad
-            </ToggleOption>
-            <ToggleOption
               value="logical"
               tooltip="Perform a heavy search with logical criteria and conceptual precision."
             >
@@ -146,10 +139,19 @@
               Strict
             </ToggleOption>
             <ToggleOption
-              value="creative"
-              tooltip="Gather a top selection of images for your project or idea with intelligence assistance."
+              value="flexible"
+              tooltip="Allow the engine to include indirect and figurative associations."
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
+              Flexible
+            </ToggleOption>
+          
+            <ToggleOption
+              value="curation"
+              tooltip="Create a top selection of images for your conceptual project with intelligence assistance."
+            >
+            <img style="width: 16px; margin-right: 3.5px;" :src="searchMode == 'flexible' ? logoGray : logoGreen" alt="CuratorLab Logo"></img>
+
               Curation
             </ToggleOption>
           </ToggleButtons>
@@ -243,13 +245,14 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
 import ToggleOption from "@/components/wrappers/ToggleOption.vue";
-import SwitchButton from "@/components/wrappers/SwitchButton.vue";
 import PhotosSearchGrid from "@/components/PhotosSearchGrid.vue";
 import { useSearchTags } from "@/composables/useSearchTags";
 import { usePhotosStore } from "@/stores/photos";
 import { useCanvasStore } from "@/stores/canvas";
 import { useRouter } from "vue-router";
 import queryExamples from "@/assets/query_examples.json";
+import logoGray from "@/assets/CuratorLogoGray.png";
+import logoGreen from "@/assets/CuratorLogo.png";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
@@ -305,21 +308,18 @@ const queryDescription = computed(() => {
       examples[Math.floor(Math.random() * examples.length)]
     }`;
 
-    if (mode === "creative") {
+    if (mode === "flexible") {
       return {
-        text: "Explore your catalogue in a more flexible and figurative way",
         example: randomExample,
         prefix: "Try something like...",
       };
     } else if (mode === "logical") {
       return {
-        text: "Search the catalogue with strict logic and precise criteria",
         example: randomExample,
         prefix: "Try something like...",
       };
-    } else if (mode === "low_precision") {
+    } else if (mode === "curation") {
       return {
-        text: "Perform a fast search with broader matching and lower precision",
         example: randomExample,
         prefix: "Try something like...",
       };
@@ -349,7 +349,7 @@ const photos = computed(() => {
         result.push(...iterationsRecord.value[key].photos);
       }
     }
-    if (searchMode.value == "creative") {
+    if (searchMode.value == "curation") {
       if (loadingInsights.value) {
         return result.filter((photo) => photo.isInsight == undefined);
       } else {
@@ -367,7 +367,7 @@ const photos = computed(() => {
       src: null,
     }));
     return iteration.value == 1 ||
-      (searchMode.value == "creative" &&
+      (searchMode.value == "flexible" &&
         loadingIteration.value &&
         !loadingInsights.value)
       ? [...skeletons]
@@ -403,7 +403,6 @@ async function searchPhotos() {
   try {
     let payload;
     let options = {
-      withInsights: searchMode.value == "creative",
       searchMode: searchMode.value,
       iteration: iteration.value,
       pageSize: getPageSize(),
@@ -441,12 +440,12 @@ watch(searchMode, () => {
 });
 
 function handleClear() {
-  description.value = "";
-  includedTags.value = [];
-  excludedTags.value = [];
-  topologicalAreas.left = "";
-  topologicalAreas.middle = "";
-  topologicalAreas.right = "";
+  // description.value = "";
+  // includedTags.value = [];
+  // excludedTags.value = [];
+  // topologicalAreas.left = "";
+  // topologicalAreas.middle = "";
+  // topologicalAreas.right = "";
 
   iteration.value = 1;
   iterationsRecord.value = {};
@@ -505,7 +504,7 @@ onMounted(() => {
     }, 100);
 
     loadingIteration.value = false;
-    loadingInsights.value = searchMode.value == "creative";
+    loadingInsights.value = searchMode.value == "curation";
   });
 
   socket.on("insights", (data) => {

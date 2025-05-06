@@ -51,7 +51,7 @@
     "A child blowing bubbles in the garden",
     "A hiker crossing a wooden suspension bridge"
   ],
-  "creative": [
+  "curation": [
     "Show me images that resonate with the Star Wars universe",
     "A series of portraits inspired by Alice in Wonderland characters",
     "Photos documenting urban decay in futuristic cities",
@@ -101,7 +101,7 @@
     "A series inspired by childhood fairytales, retold in modern settings",
     "An artistic investigation of the border between chaos and harmony"
   ],
-  "low_precision": [
+  "flexible": [
     "A dog running in a park",
     "Mountains covered in snow",
     "People standing together on a street",

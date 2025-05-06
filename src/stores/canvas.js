@@ -98,7 +98,6 @@ export const useCanvasStore = defineStore("canvas", {
             inverted,
             descriptionCategories: similarityType.fields,
             resultLength,
-            withInsights: false,
             tagIds: selectedTags,
             boxesIds: selectedBoxes,
           }
