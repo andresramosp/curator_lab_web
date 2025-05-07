@@ -5,7 +5,8 @@
       class="photos-container"
       style="overflow-y: auto; height: 77vh"
     >
-      <v-card :style="{ width: '100%' }">
+      <!-- GRID PRINCIPAL -->
+      <v-card :style="{ width: '50%' }">
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
@@ -17,9 +18,86 @@
               :fade-delay="photoFadeInDelays[index] || 0"
               @view-info="viewPhotoInfo"
               :numerical-match="false"
-              :size="'16%'"
+              :size="'32%'"
             >
               <template #overlay="{ isHovering, photo }">
+                <div
+                  v-if="
+                    isHovering &&
+                    !loading &&
+                    !loadingInsights &&
+                    !loadingIteration
+                  "
+                  class="reasoning-overlay"
+                >
+                  <span v-if="photo.reasoning" class="reasoning-text">
+                    {{ photo.reasoning }}
+                  </span>
+                </div>
+                <div
+                  v-if="isThinking(photo) && !maxPageAttempts"
+                  class="thinking-overlay"
+                >
+                  <span
+                    v-for="(letter, index) in 'Reviewing'.split('')"
+                    :key="index"
+                    class="thinking-letter"
+                    :style="{ animationDelay: `${index * 0.1}s` }"
+                  >
+                    {{ letter }}
+                  </span>
+                </div>
+                <div
+                  v-show="isHovering && !loadingIteration && !loading"
+                  class="action-buttons"
+                >
+                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click="deletePhoto(photo.id)">
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                </div>
+              </template>
+            </PhotoCard>
+          </div>
+        </v-card-text>
+      </v-card>
+
+      <!-- GRID SELECCIÓN -->
+      <v-card :style="{ width: '50%' }">
+        <v-card-text>
+          <div class="photos-list">
+            <PhotoCard
+              v-for="(photo, index) in photos"
+              :key="photo.id"
+              :photo="photo"
+              :isLoading="loading || loadingIteration"
+              :is-thinking="isThinking(photo)"
+              :fade-delay="photoFadeInDelays[index] || 0"
+              @view-info="viewPhotoInfo"
+              :numerical-match="false"
+              :size="isCuration ? '32%' : '16%'"
+            >
+              <template #overlay="{ isHovering, photo }">
+                <div v-if="isHovering && isCuration" class="reasoning-overlay">
+                  <span v-if="photo.reasoning" class="reasoning-text">
+                    {{ photo.reasoning }}
+                  </span>
+                </div>
+                <div
+                  v-if="isThinking(photo) && !maxPageAttempts"
+                  class="thinking-overlay"
+                >
+                  <span
+                    v-for="(letter, index) in 'Reviewing'.split('')"
+                    :key="index"
+                    class="thinking-letter"
+                    :style="{ animationDelay: `${index * 0.1}s` }"
+                  >
+                    {{ letter }}
+                  </span>
+                </div>
                 <div
                   v-show="isHovering && !loadingIteration && !loading"
                   class="action-buttons"

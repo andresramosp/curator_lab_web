@@ -3,6 +3,7 @@
     <template #activator="{ props }">
       <v-btn
         v-bind="props"
+        :disabled="disabled"
         class="toolbar-control switch outline"
         :class="[`toggle-option-${size}`]"
         :value="value"
@@ -29,6 +30,10 @@ export default {
     size: {
       type: String,
       default: "large",
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
   },
 };

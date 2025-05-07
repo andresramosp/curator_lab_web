@@ -115,7 +115,7 @@
               tooltip="Enter the query in natural language"
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
-              Semantic
+              Text
             </ToggleOption>
             <ToggleOption value="tags" tooltip="Enter the query by tags">
               <v-icon left class="mr-1">mdi-brain</v-icon>
@@ -147,10 +147,11 @@
             </ToggleOption>
           
             <ToggleOption
+              :disabled="searchType != 'semantic'"
               value="curation"
               tooltip="Create a top selection of images for your conceptual project with intelligence assistance."
             >
-            <img style="width: 16px; margin-right: 3.5px;" :src="searchMode == 'flexible' ? logoGray : logoGreen" alt="CuratorLab Logo"></img>
+            <img style="width: 16px; margin-right: 3.5px;" :src="searchMode == 'curation' || searchType != 'semantic' ? logoGray : logoGreen" alt="CuratorLab Logo"></img>
 
               Curation
             </ToggleOption>
@@ -195,7 +196,7 @@
       </div>
     </v-toolbar>
 
-    <PhotosSearchGrid
+    <component :is="currentGrid"
       v-if="loading || loadingIteration || (photos && photos.length)"
       ref="photosGridRef"
       :photos="photos"
@@ -246,6 +247,7 @@ import { io } from "socket.io-client";
 import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
 import ToggleOption from "@/components/wrappers/ToggleOption.vue";
 import PhotosSearchGrid from "@/components/PhotosSearchGrid.vue";
+import PhotosCurationGrid from "@/components/PhotosCurationGrid.vue";
 import { useSearchTags } from "@/composables/useSearchTags";
 import { usePhotosStore } from "@/stores/photos";
 import { useCanvasStore } from "@/stores/canvas";
@@ -275,6 +277,9 @@ const currentMatchPercent = ref(0);
 const menu = ref(false);
 
 const photosGridRef = ref(null);
+
+const currentGrid = computed(() => 
+searchMode.value == 'curation' ? PhotosCurationGrid : PhotosSearchGrid)
 
 // Semantic
 const description = ref("");
@@ -361,7 +366,7 @@ const photos = computed(() => {
 
   if (loading.value || loadingIteration.value || loadingInsights.value) {
     const actual = getActualPhotos();
-    const skeletons = Array.from({ length: 12 }, (_, i) => ({
+    const skeletons = Array.from({ length: getPageSize() }, (_, i) => ({
       id: `skeleton-${i}`,
       isSkeleton: true,
       src: null,
@@ -394,7 +399,7 @@ const searchDisabled = computed(() => {
 });
 
 function getPageSize() {
-  return 12;
+  return searchMode.value == 'curation' ? 6 : 12;
 }
 
 async function searchPhotos() {
@@ -437,6 +442,12 @@ async function searchPhotos() {
 
 watch(searchMode, () => {
   handleClear();
+});
+
+watch(searchType, () => {
+  if (searchType.value != 'semantic' && searchMode.value == 'curation') {
+    searchMode.value = 'logical'
+  }
 });
 
 function handleClear() {

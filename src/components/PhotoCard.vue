@@ -4,7 +4,7 @@
       <v-card
         v-bind="props"
         :class="[
-          `photo-card-${type}`,
+          `photo-card`,
           !photo.isSkeleton && !isThinking ? 'photo-appear' : '',
         ]"
         :style="cardStyle"
@@ -14,7 +14,7 @@
           <v-img
             :src="photo.thumbnailUrl"
             @error="fallbackImage"
-            :class="[`photo-card-${type}`, isThinking ? 'blurred-photo' : '']"
+            :class="[`photo-card`, isThinking ? 'blurred-photo' : '']"
             transition="fade-transition"
           >
             <template #placeholder>
@@ -28,7 +28,7 @@
 
         <!-- Iconos informativos seleccion/deselección -->
         <div v-if="!isThinking" class="photo-icons">
-          <div v-if="photo.isInsight" class="high-match">
+          <div v-if="photo.reasoning" class="high-match">
             <!-- <v-icon color="secondary">mdi-crown</v-icon> -->
             <img style="width: 22px;" :src="logo" alt="CuratorLab Logo"></img>
           </div>
@@ -71,7 +71,7 @@ const props = defineProps({
   },
   showMatchPercent: { type: Boolean, default: true },
   maxPageAttempts: Boolean,
-  type: "match" | "selected" | "insight",
+  size: String,
 });
 
 const emit = defineEmits(["view-info"]);
@@ -79,6 +79,7 @@ const emit = defineEmits(["view-info"]);
 const photosStore = usePhotosStore();
 
 const cardStyle = computed(() => ({
+  width: props.size,
   animationDelay: `${props.fadeDelay}ms`,
   border: photosStore.selectedPhotoIds.includes(props.photo.id.toString())
     ? "1px solid rgb(var(--v-theme-secondary)) !important"
