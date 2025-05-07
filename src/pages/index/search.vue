@@ -166,7 +166,7 @@
           </v-btn>
           <v-btn
             @click="handleSearch"
-            :loading="loading && !loadingIteration"
+            :loading="loading && !loadingIteration && !loadingInsights"
             :disabled="searchDisabled"
             class="toolbar-control"
           >
@@ -354,13 +354,13 @@ const photos = computed(() => {
         result.push(...iterationsRecord.value[key].photos);
       }
     }
-    if (searchMode.value == "curation") {
-      if (loadingInsights.value) {
-        return result.filter((photo) => photo.isInsight == undefined);
-      } else {
-        return result.filter((photo) => photo.isInsight);
-      }
-    }
+    // if (searchMode.value == "curation") {
+    //   if (loadingInsights.value) {
+    //     return result.filter((photo) => photo.isInsight == undefined || photo.selected);
+    //   } else {
+    //     return result //.filter((photo) => photo.isInsight);
+    //   }
+    // }
     return result;
   };
 
@@ -371,12 +371,9 @@ const photos = computed(() => {
       isSkeleton: true,
       src: null,
     }));
-    return iteration.value == 1 ||
-      (searchMode.value == "flexible" &&
-        loadingIteration.value &&
-        !loadingInsights.value)
+    return iteration.value == 1 
       ? [...skeletons]
-      : [...actual]; // [...actual, ...skeletons]
+      : [...actual]
   } else {
     return getActualPhotos();
   }
@@ -510,8 +507,9 @@ onMounted(() => {
     }
     console.log(data);
 
+
     setTimeout(() => {
-      photosGridRef.value?.scrollToBottom();
+        photosGridRef.value?.scrollToLast();
     }, 100);
 
     loadingIteration.value = false;
@@ -532,6 +530,7 @@ onMounted(() => {
               ...existing,
               isInsight: updated.isInsight,
               reasoning: updated.reasoning,
+              selected: updated.isInsight
             }
           : existing;
       });
@@ -540,11 +539,7 @@ onMounted(() => {
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
     loadingInsights.value = false;
-
-    setTimeout(() => {
-      photosGridRef.value?.scrollToBottom();
-    }, 100);
-
+    
     console.log(data);
   });
 

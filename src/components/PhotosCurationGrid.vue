@@ -1,23 +1,23 @@
 <template>
   <div class="photos-grid">
-    <div
-      ref="scrollContainer"
-      class="photos-container"
-      style="overflow-y: auto; height: 77vh"
-    >
-      <!-- GRID PRINCIPAL -->
-      <v-card :style="{ width: '50%' }">
+    <div class="photos-container">
+      <!-- GRID PRINCIPAL (NO SELECCIONADAS O DESCARTADAS) -->
+      <v-card
+        ref="scrollOneContainer"
+        :style="{ width: '50%' }"
+        style="overflow-y: scroll; height: 77vh"
+      >
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
-              v-for="(photo, index) in photos"
+              v-for="(photo, index) in unselectedPhotos"
               :key="photo.id"
               :photo="photo"
               :isLoading="loading || loadingIteration"
               :is-thinking="isThinking(photo)"
-              :fade-delay="photoFadeInDelays[index] || 0"
+              :fade-delay="unselectedPhotoFadeInDelays[index] || 0"
               @view-info="viewPhotoInfo"
-              :numerical-match="false"
+              :showMatchPercent="false"
               :size="'32%'"
             >
               <template #overlay="{ isHovering, photo }">
@@ -30,9 +30,9 @@
                   "
                   class="reasoning-overlay"
                 >
-                  <span v-if="photo.reasoning" class="reasoning-text">
-                    {{ photo.reasoning }}
-                  </span>
+                  <span v-if="photo.reasoning" class="reasoning-text">{{
+                    photo.reasoning
+                  }}</span>
                 </div>
                 <div
                   v-if="isThinking(photo) && !maxPageAttempts"
@@ -43,20 +43,19 @@
                     :key="index"
                     class="thinking-letter"
                     :style="{ animationDelay: `${index * 0.1}s` }"
+                    >{{ letter }}</span
                   >
-                    {{ letter }}
-                  </span>
                 </div>
                 <div
                   v-show="isHovering && !loadingIteration && !loading"
                   class="action-buttons"
                 >
-                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)">
-                    <v-icon>mdi-information</v-icon>
-                  </v-btn>
-                  <v-btn size="small" icon @click="deletePhoto(photo.id)">
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
+                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)"
+                    ><v-icon>mdi-information</v-icon></v-btn
+                  >
+                  <v-btn size="small" icon @click.stop="toggleSelection(photo)"
+                    ><v-icon>mdi-arrow-right-bold</v-icon></v-btn
+                  >
                 </div>
               </template>
             </PhotoCard>
@@ -64,26 +63,33 @@
         </v-card-text>
       </v-card>
 
-      <!-- GRID SELECCIÓN -->
-      <v-card :style="{ width: '50%' }">
+      <!-- GRID SELECCIÓN (SELECCIONADAS) -->
+      <v-card
+        ref="scrollTwoContainer"
+        :style="{ width: '50%' }"
+        style="overflow-y: scroll; height: 77vh"
+      >
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
-              v-for="(photo, index) in photos"
+              v-for="(photo, index) in selectedPhotos"
               :key="photo.id"
               :photo="photo"
               :isLoading="loading || loadingIteration"
               :is-thinking="isThinking(photo)"
-              :fade-delay="photoFadeInDelays[index] || 0"
+              :fade-delay="selectedPhotoFadeInDelays[index] || 0"
               @view-info="viewPhotoInfo"
-              :numerical-match="false"
-              :size="isCuration ? '32%' : '16%'"
+              :showMatchPercent="false"
+              :size="'32%'"
             >
               <template #overlay="{ isHovering, photo }">
-                <div v-if="isHovering && isCuration" class="reasoning-overlay">
-                  <span v-if="photo.reasoning" class="reasoning-text">
-                    {{ photo.reasoning }}
-                  </span>
+                <div v-if="isHovering" class="reasoning-overlay">
+                  <span v-if="photo.reasoning" class="reasoning-text">{{
+                    photo.reasoning
+                  }}</span>
+                  <span v-else-if="photo.selected" class="reasoning-text">{{
+                    "User Selection"
+                  }}</span>
                 </div>
                 <div
                   v-if="isThinking(photo) && !maxPageAttempts"
@@ -94,20 +100,19 @@
                     :key="index"
                     class="thinking-letter"
                     :style="{ animationDelay: `${index * 0.1}s` }"
+                    >{{ letter }}</span
                   >
-                    {{ letter }}
-                  </span>
                 </div>
                 <div
                   v-show="isHovering && !loadingIteration && !loading"
                   class="action-buttons"
                 >
-                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)">
-                    <v-icon>mdi-information</v-icon>
-                  </v-btn>
-                  <v-btn size="small" icon @click="deletePhoto(photo.id)">
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
+                  <v-btn size="small" icon @click.stop="toggleSelection(photo)"
+                    ><v-icon>mdi-arrow-left-bold</v-icon></v-btn
+                  >
+                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)"
+                    ><v-icon>mdi-information</v-icon></v-btn
+                  >
                 </div>
               </template>
             </PhotoCard>
@@ -117,7 +122,7 @@
     </div>
     <v-btn
       style="padding: 0px; width: 99%; margin-top: 5px"
-      :loading="loadingIteration"
+      :loading="loadingIteration || loadingInsights"
       @click="$emit('next-iteration')"
       class="centered-btn outline"
       :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
@@ -130,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from "vue";
+import { ref, computed, nextTick, watch } from "vue";
 import PhotoCard from "./PhotoCard.vue";
 import PhotoDialog from "./PhotoDialog.vue";
 
@@ -148,6 +153,31 @@ const emit = defineEmits(["next-iteration"]);
 const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
 
+const unselectedPhotos = computed(() =>
+  props.photos
+    .filter(
+      (p) => (p.selected === false) | (p.selected === undefined) || p.isSkeleton
+    )
+    .reverse()
+);
+const selectedPhotos = computed(() =>
+  props.photos.filter((p) => p.selected === true).reverse()
+);
+
+const unselectedPhotoFadeInDelays = computed(() => {
+  return unselectedPhotos.value.reverse().map((photo) => {
+    const globalIndex = props.photos.findIndex((p) => p.id === photo.id);
+    return globalIndex * 150;
+  });
+});
+
+const selectedPhotoFadeInDelays = computed(() => {
+  return selectedPhotos.value.reverse().map((photo) => {
+    const globalIndex = props.photos.findIndex((p) => p.id === photo.id);
+    return globalIndex * 150;
+  });
+});
+
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
     ...photo,
@@ -159,16 +189,19 @@ function viewPhotoInfo(photo) {
   showDialog.value = true;
 }
 
-const photoFadeInDelays = ref([]);
-
-const scrollContainer = ref(null);
+const scrollOneContainer = ref(null);
+const scrollTwoContainer = ref(null);
 
 defineExpose({
-  scrollToBottom: () => {
+  scrollToLast: () => {
     nextTick(() => {
-      if (scrollContainer.value) {
-        scrollContainer.value.scrollTo({
-          top: scrollContainer.value.scrollHeight,
+      if (scrollOneContainer.value && scrollTwoContainer.value) {
+        scrollOneContainer.value.scrollTo({
+          bottom: scrollOneContainer.value.scrollHeight,
+          behavior: "smooth",
+        });
+        scrollTwoContainer.value.scrollTo({
+          bottom: scrollTwoContainer.value.scrollHeight,
           behavior: "smooth",
         });
       }
@@ -180,19 +213,8 @@ const isThinking = (photo) => {
   return props.loadingInsights && photo.isInsight === undefined;
 };
 
-function deletePhoto(id) {
-  // Placeholder: implement delete logic here
-  console.log("Delete photo", id);
-}
-
-function editPhoto(id) {
-  // Placeholder: implement edit logic here
-  console.log("Edit photo", id);
-}
-
-function analyzePhoto(id) {
-  // Placeholder: implement analyze logic here
-  console.log("Analyze photo", id);
+function toggleSelection(photo) {
+  photo.selected = photo.selected ? undefined : true;
 }
 </script>
 
@@ -203,6 +225,7 @@ function analyzePhoto(id) {
 }
 
 .photos-container {
+  display: flex;
   padding: 4px;
   border: 1px solid var(--v-theme-on-surface);
   border-radius: 8px;

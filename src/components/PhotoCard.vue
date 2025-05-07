@@ -28,23 +28,18 @@
 
         <!-- Iconos informativos seleccion/deselección -->
         <div v-if="!isThinking" class="photo-icons">
-          <div v-if="photo.reasoning" class="high-match">
-            <!-- <v-icon color="secondary">mdi-crown</v-icon> -->
-            <img style="width: 22px;" :src="logo" alt="CuratorLab Logo"></img>
+          <div v-if="photo.isInsight" class="high-match">
+            <img style="width: 21px;" :src="photo.selected ? logo : logoGray" alt="CuratorLab Logo"></img>
           </div>
-          <div v-else :class="[matchPercentClass]">
-            <template v-if="numericalMatch">
-              <span>{{ photo.matchPercent.toFixed(0) }}%</span>
-            </template>
-            <template v-else>
-              <v-icon
+          <div v-else-if="photo.selected">   <v-icon>mdi-information</v-icon></div>
+          <div v-else-if="showMatchPercent" :class="[matchPercentClass]">
+            <v-icon
                 color="gray"
                 style="font-size: 15px; opacity: 0.5"
                 v-for="n in starCount"
                 :key="n"
                 >mdi-star</v-icon
               >
-            </template>
           </div>
         </div>
       </v-card>
@@ -56,6 +51,8 @@
 import { computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import logo from "@/assets/CuratorLogo.png";
+import logoGray from "@/assets/CuratorLogoGray.png";
+
 
 const props = defineProps({
   photo: Object,
@@ -65,10 +62,7 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
-  numericalMatch: {
-    type: Boolean,
-    default: true,
-  },
+
   showMatchPercent: { type: Boolean, default: true },
   maxPageAttempts: Boolean,
   size: String,
@@ -150,7 +144,7 @@ const starCount = computed(() => {
 @keyframes appearUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -159,6 +153,8 @@ const starCount = computed(() => {
 }
 
 .photo-appear {
-  animation: appearUp 1s ease;
+  opacity: 0;
+  transform: translateY(40px);
+  animation: appearUp 1.5s ease forwards;
 }
 </style>

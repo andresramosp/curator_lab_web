@@ -86,7 +86,7 @@ const photoFadeInDelays = ref([]);
 const scrollContainer = ref(null);
 
 defineExpose({
-  scrollToBottom: () => {
+  scrollToLast: () => {
     nextTick(() => {
       if (scrollContainer.value) {
         scrollContainer.value.scrollTo({
