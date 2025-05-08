@@ -15,7 +15,7 @@
               :photo="photo"
               :isLoading="loading || loadingIteration"
               :is-thinking="isThinking(photo)"
-              :fade-delay="unselectedPhotoFadeInDelays[index] || 0"
+              :do-fade="false"
               @view-info="viewPhotoInfo"
               :showMatchPercent="false"
               :size="'32%'"
@@ -77,6 +77,7 @@
               :photo="photo"
               :isLoading="loading || loadingIteration"
               :is-thinking="isThinking(photo)"
+              :do-fade="true"
               :fade-delay="selectedPhotoFadeInDelays[index] || 0"
               @view-info="viewPhotoInfo"
               :showMatchPercent="false"
@@ -164,18 +165,13 @@ const selectedPhotos = computed(() =>
   props.photos.filter((p) => p.selected === true).reverse()
 );
 
-const unselectedPhotoFadeInDelays = computed(() => {
-  return unselectedPhotos.value.reverse().map((photo) => {
-    const globalIndex = props.photos.findIndex((p) => p.id === photo.id);
-    return globalIndex * 150;
-  });
-});
-
 const selectedPhotoFadeInDelays = computed(() => {
-  return selectedPhotos.value.reverse().map((photo) => {
+  return selectedPhotos.value.map((photo) => {
+    if (photo.justMoved) return 0;
     const globalIndex = props.photos.findIndex((p) => p.id === photo.id);
     return globalIndex * 150;
   });
+  //.reverse();
 });
 
 function viewPhotoInfo(photo) {
@@ -215,6 +211,7 @@ const isThinking = (photo) => {
 
 function toggleSelection(photo) {
   photo.selected = photo.selected ? undefined : true;
+  photo.justMoved = true;
 }
 </script>
 

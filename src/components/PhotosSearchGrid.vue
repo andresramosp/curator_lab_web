@@ -106,16 +106,6 @@ function deletePhoto(id) {
   // Placeholder: implement delete logic here
   console.log("Delete photo", id);
 }
-
-function editPhoto(id) {
-  // Placeholder: implement edit logic here
-  console.log("Edit photo", id);
-}
-
-function analyzePhoto(id) {
-  // Placeholder: implement analyze logic here
-  console.log("Analyze photo", id);
-}
 </script>
 
 <style scoped>

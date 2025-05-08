@@ -5,7 +5,7 @@
         v-bind="props"
         :class="[
           `photo-card`,
-          !photo.isSkeleton && !isThinking ? 'photo-appear' : '',
+          !photo.isSkeleton && !isThinking && doFade  ? 'photo-appear' : '',
         ]"
         :style="cardStyle"
         @click="handleClick"
@@ -58,6 +58,7 @@ const props = defineProps({
   photo: Object,
   isThinking: Boolean,
   isLoading: Boolean,
+  doFade: Boolean,
   fadeDelay: {
     type: Number,
     default: 0,
@@ -144,7 +145,7 @@ const starCount = computed(() => {
 @keyframes appearUp {
   from {
     opacity: 0;
-    transform: translateY(40px);
+    transform: translateY(70px);
   }
   to {
     opacity: 1;
@@ -154,7 +155,7 @@ const starCount = computed(() => {
 
 .photo-appear {
   opacity: 0;
-  transform: translateY(40px);
-  animation: appearUp 1.5s ease forwards;
+  transform: translateY(70px);
+  animation: appearUp 0.4s ease forwards;
 }
 </style>
