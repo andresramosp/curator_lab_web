@@ -4,8 +4,8 @@
       <v-card
         v-bind="props"
         :class="[
-          `photo-card-${type}`,
-          !photo.isSkeleton && !isThinking ? 'photo-appear' : '',
+          `photo-card`,
+          !photo.isSkeleton && !isThinking && doFade  ? 'photo-appear' : '',
         ]"
         :style="cardStyle"
         @click="handleClick"
@@ -14,7 +14,7 @@
           <v-img
             :src="photo.thumbnailUrl"
             @error="fallbackImage"
-            :class="[`photo-card-${type}`, isThinking ? 'blurred-photo' : '']"
+            :class="[`photo-card`, isThinking ? 'blurred-photo' : '']"
             transition="fade-transition"
           >
             <template #placeholder>
@@ -27,24 +27,21 @@
         <slot name="overlay" :isHovering="isHovering" :photo="photo"></slot>
 
         <!-- Iconos informativos seleccion/deselección -->
-        <div v-if="!isThinking" class="photo-icons">
-          <div v-if="photo.isInsight" class="high-match">
-            <!-- <v-icon color="secondary">mdi-crown</v-icon> -->
-            <img style="width: 22px;" :src="logo" alt="CuratorLab Logo"></img>
+        <div v-if="!isThinking " class="photo-icons">
+          <div v-if="photo.selected">  
+            <v-icon color="secondary">mdi-check</v-icon>
           </div>
-          <div v-else :class="[matchPercentClass]">
-            <template v-if="numericalMatch">
-              <span>{{ photo.matchPercent.toFixed(0) }}%</span>
-            </template>
-            <template v-else>
-              <v-icon
+          <div v-else-if="photo.matchScore == 3" class="high-match">
+            <img style="width: 21px;" :src="logo" alt="CuratorLab Logo"></img>
+          </div>
+          <div v-else-if="showMatchPercent" :class="[matchPercentClass]">
+            <v-icon
                 color="gray"
                 style="font-size: 15px; opacity: 0.5"
                 v-for="n in starCount"
                 :key="n"
                 >mdi-star</v-icon
               >
-            </template>
           </div>
         </div>
       </v-card>
@@ -56,22 +53,22 @@
 import { computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import logo from "@/assets/CuratorLogo.png";
+import logoGray from "@/assets/CuratorLogoGray.png";
+
 
 const props = defineProps({
   photo: Object,
   isThinking: Boolean,
   isLoading: Boolean,
+  doFade: Boolean,
   fadeDelay: {
     type: Number,
     default: 0,
   },
-  numericalMatch: {
-    type: Boolean,
-    default: true,
-  },
+
   showMatchPercent: { type: Boolean, default: true },
   maxPageAttempts: Boolean,
-  type: "match" | "selected" | "insight",
+  size: String,
 });
 
 const emit = defineEmits(["view-info"]);
@@ -79,6 +76,7 @@ const emit = defineEmits(["view-info"]);
 const photosStore = usePhotosStore();
 
 const cardStyle = computed(() => ({
+  width: props.size,
   animationDelay: `${props.fadeDelay}ms`,
   border: photosStore.selectedPhotoIds.includes(props.photo.id.toString())
     ? "1px solid rgb(var(--v-theme-secondary)) !important"
@@ -87,6 +85,7 @@ const cardStyle = computed(() => ({
 
 const handleClick = () => {
   if (props.isLoading) return;
+  if (props.photo.reasoning && !props.photo.selected) return
   photosStore.togglePhotoSelection(props.photo.id);
 };
 
@@ -104,6 +103,9 @@ const matchPercentClass = computed(() => {
 });
 
 const starCount = computed(() => {
+  if (props.photo.matchScore !== undefined) {
+    return props.photo.matchScore
+  }
   const percent = props.photo.matchPercent;
   if (percent >= 95) return 5;
   if (percent >= 85) return 4;
@@ -149,7 +151,7 @@ const starCount = computed(() => {
 @keyframes appearUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(70px);
   }
   to {
     opacity: 1;
@@ -158,6 +160,8 @@ const starCount = computed(() => {
 }
 
 .photo-appear {
-  animation: appearUp 1s ease;
+  opacity: 0;
+  transform: translateY(70px);
+  animation: appearUp 0.4s ease forwards;
 }
 </style>

@@ -5,7 +5,7 @@
       class="photos-container"
       style="overflow-y: auto; height: 77vh"
     >
-      <v-card style="width: 100%">
+      <v-card :style="{ width: '100%' }">
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
@@ -17,33 +17,9 @@
               :fade-delay="photoFadeInDelays[index] || 0"
               @view-info="viewPhotoInfo"
               :numerical-match="false"
-              :type="photo.isInsight ? 'insight' : 'match'"
+              :size="'16%'"
             >
               <template #overlay="{ isHovering, photo }">
-                <div
-                  v-if="isHovering && photo.isInsight"
-                  class="reasoning-overlay"
-                >
-                  <span
-                    v-if="photo.isInsight && photo.reasoning"
-                    class="reasoning-text"
-                  >
-                    {{ photo.reasoning }}
-                  </span>
-                </div>
-                <div
-                  v-if="isThinking(photo) && !maxPageAttempts"
-                  class="thinking-overlay"
-                >
-                  <span
-                    v-for="(letter, index) in 'Reviewing'.split('')"
-                    :key="index"
-                    class="thinking-letter"
-                    :style="{ animationDelay: `${index * 0.1}s` }"
-                  >
-                    {{ letter }}
-                  </span>
-                </div>
                 <div
                   v-show="isHovering && !loadingIteration && !loading"
                   class="action-buttons"
@@ -76,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, watch, shallowRef, nextTick, computed } from "vue";
+import { ref, nextTick } from "vue";
 import PhotoCard from "./PhotoCard.vue";
 import PhotoDialog from "./PhotoDialog.vue";
 
@@ -110,7 +86,7 @@ const photoFadeInDelays = ref([]);
 const scrollContainer = ref(null);
 
 defineExpose({
-  scrollToBottom: () => {
+  scrollToLast: () => {
     nextTick(() => {
       if (scrollContainer.value) {
         scrollContainer.value.scrollTo({
@@ -123,22 +99,12 @@ defineExpose({
 });
 
 const isThinking = (photo) => {
-  return props.loadingInsights && photo.isInsight === undefined;
+  return props.loadingInsights && photo.matchScore === undefined;
 };
 
 function deletePhoto(id) {
   // Placeholder: implement delete logic here
   console.log("Delete photo", id);
-}
-
-function editPhoto(id) {
-  // Placeholder: implement edit logic here
-  console.log("Edit photo", id);
-}
-
-function analyzePhoto(id) {
-  // Placeholder: implement analyze logic here
-  console.log("Analyze photo", id);
 }
 </script>
 

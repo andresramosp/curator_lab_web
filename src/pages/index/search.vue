@@ -115,7 +115,7 @@
               tooltip="Enter the query in natural language"
             >
               <v-icon left class="mr-1">mdi-brain</v-icon>
-              Semantic
+              Text
             </ToggleOption>
             <ToggleOption value="tags" tooltip="Enter the query by tags">
               <v-icon left class="mr-1">mdi-brain</v-icon>
@@ -147,10 +147,11 @@
             </ToggleOption>
           
             <ToggleOption
+              :disabled="searchType != 'semantic'"
               value="curation"
               tooltip="Create a top selection of images for your conceptual project with intelligence assistance."
             >
-            <img style="width: 16px; margin-right: 3.5px;" :src="searchMode == 'flexible' ? logoGray : logoGreen" alt="CuratorLab Logo"></img>
+            <img style="width: 16px; margin-right: 3.5px;" :src="searchMode == 'curation' || searchType != 'semantic' ? logoGray : logoGreen" alt="CuratorLab Logo"></img>
 
               Curation
             </ToggleOption>
@@ -165,7 +166,7 @@
           </v-btn>
           <v-btn
             @click="handleSearch"
-            :loading="loading && !loadingIteration"
+            :loading="loading && !loadingIteration && !loadingInsights"
             :disabled="searchDisabled"
             class="toolbar-control"
           >
@@ -195,7 +196,7 @@
       </div>
     </v-toolbar>
 
-    <PhotosSearchGrid
+    <component :is="currentGrid"
       v-if="loading || loadingIteration || (photos && photos.length)"
       ref="photosGridRef"
       :photos="photos"
@@ -246,6 +247,7 @@ import { io } from "socket.io-client";
 import ToggleButtons from "@/components/wrappers/ToggleButtons.vue";
 import ToggleOption from "@/components/wrappers/ToggleOption.vue";
 import PhotosSearchGrid from "@/components/PhotosSearchGrid.vue";
+import PhotosCurationGrid from "@/components/PhotosCurationGrid.vue";
 import { useSearchTags } from "@/composables/useSearchTags";
 import { usePhotosStore } from "@/stores/photos";
 import { useCanvasStore } from "@/stores/canvas";
@@ -275,6 +277,9 @@ const currentMatchPercent = ref(0);
 const menu = ref(false);
 
 const photosGridRef = ref(null);
+
+const currentGrid = computed(() => 
+searchMode.value == 'curation' ? PhotosCurationGrid : PhotosSearchGrid)
 
 // Semantic
 const description = ref("");
@@ -349,29 +354,20 @@ const photos = computed(() => {
         result.push(...iterationsRecord.value[key].photos);
       }
     }
-    if (searchMode.value == "curation") {
-      if (loadingInsights.value) {
-        return result.filter((photo) => photo.isInsight == undefined);
-      } else {
-        return result.filter((photo) => photo.isInsight);
-      }
-    }
+
     return result;
   };
 
   if (loading.value || loadingIteration.value || loadingInsights.value) {
     const actual = getActualPhotos();
-    const skeletons = Array.from({ length: 12 }, (_, i) => ({
+    const skeletons = Array.from({ length: getPageSize() }, (_, i) => ({
       id: `skeleton-${i}`,
       isSkeleton: true,
       src: null,
     }));
-    return iteration.value == 1 ||
-      (searchMode.value == "flexible" &&
-        loadingIteration.value &&
-        !loadingInsights.value)
+    return iteration.value == 1 
       ? [...skeletons]
-      : [...actual]; // [...actual, ...skeletons]
+      : [...actual]
   } else {
     return getActualPhotos();
   }
@@ -394,7 +390,7 @@ const searchDisabled = computed(() => {
 });
 
 function getPageSize() {
-  return 12;
+  return searchMode.value == 'curation' ? 6 : 12;
 }
 
 async function searchPhotos() {
@@ -437,6 +433,12 @@ async function searchPhotos() {
 
 watch(searchMode, () => {
   handleClear();
+});
+
+watch(searchType, () => {
+  if (searchType.value != 'semantic' && searchMode.value == 'curation') {
+    searchMode.value = 'logical'
+  }
 });
 
 function handleClear() {
@@ -499,9 +501,13 @@ onMounted(() => {
     }
     console.log(data);
 
-    setTimeout(() => {
-      photosGridRef.value?.scrollToBottom();
+
+    if (searchMode.value != 'curation') {
+          setTimeout(() => {
+        photosGridRef.value?.scrollToLast();
     }, 100);
+    }
+
 
     loadingIteration.value = false;
     loadingInsights.value = searchMode.value == "curation";
@@ -519,7 +525,7 @@ onMounted(() => {
         return updated
           ? {
               ...existing,
-              isInsight: updated.isInsight,
+              matchScore: updated.matchScore,
               reasoning: updated.reasoning,
             }
           : existing;
@@ -529,12 +535,9 @@ onMounted(() => {
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
     loadingInsights.value = false;
-
-    setTimeout(() => {
-      photosGridRef.value?.scrollToBottom();
-    }, 100);
-
+    
     console.log(data);
+
   });
 
   socket.on("maxPageAttempts", () => {

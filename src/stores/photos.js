@@ -68,6 +68,7 @@ export const usePhotosStore = defineStore("photos", {
     },
 
     togglePhotoSelection(photoId) {
+      debugger;
       this.selectedPhotosRecord[photoId] = !this.selectedPhotosRecord[photoId];
     },
   },
