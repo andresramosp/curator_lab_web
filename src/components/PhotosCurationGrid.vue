@@ -2,10 +2,33 @@
   <div class="photos-grid">
     <div class="photos-container">
       <v-card
-        ref="scrollOneContainer"
-        :style="{ width: '50%' }"
-        style="overflow-y: scroll; height: 77vh"
+        ref="scrollContainer"
+        :style="{
+          width: '50%',
+          position: 'relative',
+          overflowY: 'scroll',
+          height: '83vh',
+        }"
       >
+        <img
+          src="@/assets/CandidatePhotosGray.png"
+          alt="Curator Lab Logo"
+          style="
+            width: 450px;
+            height: auto;
+            opacity: 0.06;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+          "
+        />
+        <!-- <v-toolbar flat dense color="surface" class="curation-toolbar">
+          <v-switch v-model="someSwitch" dense label="Activate" />
+          <v-spacer />
+
+        </v-toolbar> -->
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
@@ -61,13 +84,38 @@
             </PhotoCard>
           </div>
         </v-card-text>
+        <div class="search-fixed-button">
+          <div class="search-button-wrapper">
+            <v-btn
+              :loading="loadingIteration || loadingInsights"
+              @click="$emit('next-iteration')"
+              class="outline"
+              block
+            >
+              <v-icon size="23">mdi-autorenew</v-icon> Load More
+            </v-btn>
+          </div>
+        </div>
       </v-card>
 
       <v-card
-        ref="scrollTwoContainer"
-        :style="{ width: '50%' }"
-        style="overflow-y: scroll; height: 77vh"
+        :style="{ width: '50%', position: 'relative' }"
+        style="overflow-y: scroll; height: 83vh"
       >
+        <img
+          src="@/assets/CuratedPhotosGray.png"
+          alt="Curator Lab Logo"
+          style="
+            width: 450px;
+            height: auto;
+            opacity: 0.06;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+          "
+        />
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
@@ -119,17 +167,20 @@
             </PhotoCard>
           </div>
         </v-card-text>
+        <div class="search-fixed-button">
+          <div class="search-button-wrapper">
+            <v-btn
+              :disabled="!selectedPhotos.length"
+              @click="$emit('next-iteration')"
+              class="outline"
+              block
+            >
+              <v-icon size="23">mdi-image</v-icon> Create Collection
+            </v-btn>
+          </div>
+        </div>
       </v-card>
     </div>
-    <v-btn
-      style="padding: 0px; width: 99%; margin-top: 5px"
-      :loading="loadingIteration || loadingInsights"
-      @click="$emit('next-iteration')"
-      class="centered-btn outline"
-      :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
-    >
-      <v-icon size="23">mdi-autorenew</v-icon> Load More
-    </v-btn>
   </div>
 
   <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
@@ -195,8 +246,20 @@ function viewPhotoInfo(photo) {
   showDialog.value = true;
 }
 
-const scrollOneContainer = ref(null);
-const scrollTwoContainer = ref(null);
+const scrollContainer = ref(null);
+
+defineExpose({
+  scrollToLast: () => {
+    nextTick(() => {
+      if (scrollContainer.value) {
+        scrollContainer.value.$el.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      }
+    });
+  },
+});
 
 const isThinking = (photo) => {
   return props.loadingInsights && photo.matchScore === undefined;
@@ -221,7 +284,7 @@ function toggleSelection(photo) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .section-title {
   font-size: 16px;
   color: var(--v-theme-primary);
@@ -314,5 +377,22 @@ function toggleSelection(photo) {
   display: flex;
   height: 20px;
   background-color: red;
+}
+
+.v-card {
+  display: flex;
+  flex-direction: column;
+  // .v-card-text {
+  //   padding-top: 10px;
+  // }
+}
+
+.curation-toolbar {
+  position: sticky;
+  top: 0px;
+  height: 36px;
+  padding-left: 18px;
+  padding-right: 18px;
+  z-index: 10;
 }
 </style>
