@@ -1,11 +1,15 @@
 <template>
   <div class="photos-grid">
-    <div
-      ref="scrollContainer"
-      class="photos-container"
-      style="overflow-y: auto; height: 77vh"
-    >
-      <v-card :style="{ width: '100%' }">
+    <div class="photos-container">
+      <v-card
+        ref="scrollContainer"
+        :style="{
+          width: '100%',
+          position: 'relative',
+          overflowY: 'scroll',
+          height: '83vh',
+        }"
+      >
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
@@ -35,9 +39,24 @@
             </PhotoCard>
           </div>
         </v-card-text>
+        <div class="search-fixed-button">
+          <div class="search-button-wrapper">
+            <v-btn
+              :loading="loadingIteration"
+              @click="$emit('next-iteration')"
+              class="outline"
+              style="width: 99%"
+              :disabled="
+                !hasMoreIterations || loadingIteration || loadingInsights
+              "
+            >
+              <v-icon size="23">mdi-autorenew</v-icon> Load More
+            </v-btn>
+          </div>
+        </div>
       </v-card>
     </div>
-    <v-btn
+    <!-- <v-btn
       style="padding: 0px; width: 99%; margin-top: 5px"
       :loading="loadingIteration"
       @click="$emit('next-iteration')"
@@ -45,7 +64,7 @@
       :disabled="!hasMoreIterations || loadingIteration || loadingInsights"
     >
       <v-icon size="23">mdi-autorenew</v-icon> Load More
-    </v-btn>
+    </v-btn> -->
   </div>
 
   <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
@@ -89,8 +108,8 @@ defineExpose({
   scrollToLast: () => {
     nextTick(() => {
       if (scrollContainer.value) {
-        scrollContainer.value.scrollTo({
-          top: scrollContainer.value.scrollHeight,
+        scrollContainer.value.$el.scrollTo({
+          top: scrollContainer.value.$el.scrollHeight,
           behavior: "smooth",
         });
       }

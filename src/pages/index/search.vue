@@ -502,11 +502,9 @@ onMounted(() => {
     console.log(data);
 
 
-    if (searchMode.value != 'curation') {
-          setTimeout(() => {
+   setTimeout(() => {
         photosGridRef.value?.scrollToLast();
     }, 100);
-    }
 
 
     loadingIteration.value = false;
@@ -535,6 +533,10 @@ onMounted(() => {
     iteration.value = data.iteration + 1;
     clearQuery.value = data.structuredResult.original;
     loadingInsights.value = false;
+
+       setTimeout(() => {
+        photosGridRef.value?.scrollToLast();
+    }, 100);
     
     console.log(data);
 

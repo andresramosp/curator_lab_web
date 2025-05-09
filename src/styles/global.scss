@@ -199,10 +199,22 @@
     filter: blur(20px);
   }
   100% {
-    filter: blur(4px);
+    filter: blur(3px);
   }
 }
 
 .blurred-photo {
-  animation: unblur 16s forwards steps(30);
+  animation: unblur 12s forwards steps(30);
+}
+
+.search-fixed-button {
+  position: sticky;
+  bottom: 0px;
+  background: var(--v-theme-surface);
+  padding: 10px;
+  z-index: 1;
+}
+.search-button-wrapper {
+  display: flex;
+  justify-content: center;
 }
