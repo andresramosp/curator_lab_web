@@ -27,11 +27,13 @@
         <slot name="overlay" :isHovering="isHovering" :photo="photo"></slot>
 
         <!-- Iconos informativos seleccion/deselección -->
-        <div v-if="!isThinking" class="photo-icons">
-          <div v-if="photo.isInsight" class="high-match">
-            <img style="width: 21px;" :src="photo.selected ? logo : logoGray" alt="CuratorLab Logo"></img>
+        <div v-if="!isThinking " class="photo-icons">
+          <div v-if="photo.selected">  
+            <v-icon color="secondary">mdi-check</v-icon>
           </div>
-          <div v-else-if="photo.selected">   <v-icon>mdi-information</v-icon></div>
+          <div v-else-if="photo.matchScore == 3" class="high-match">
+            <img style="width: 21px;" :src="logo" alt="CuratorLab Logo"></img>
+          </div>
           <div v-else-if="showMatchPercent" :class="[matchPercentClass]">
             <v-icon
                 color="gray"
@@ -83,6 +85,7 @@ const cardStyle = computed(() => ({
 
 const handleClick = () => {
   if (props.isLoading) return;
+  if (props.photo.reasoning && !props.photo.selected) return
   photosStore.togglePhotoSelection(props.photo.id);
 };
 
@@ -100,6 +103,9 @@ const matchPercentClass = computed(() => {
 });
 
 const starCount = computed(() => {
+  if (props.photo.matchScore !== undefined) {
+    return props.photo.matchScore
+  }
   const percent = props.photo.matchPercent;
   if (percent >= 95) return 5;
   if (percent >= 85) return 4;

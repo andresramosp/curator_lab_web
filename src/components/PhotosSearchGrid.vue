@@ -99,7 +99,7 @@ defineExpose({
 });
 
 const isThinking = (photo) => {
-  return props.loadingInsights && photo.isInsight === undefined;
+  return props.loadingInsights && photo.matchScore === undefined;
 };
 
 function deletePhoto(id) {

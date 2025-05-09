@@ -354,13 +354,7 @@ const photos = computed(() => {
         result.push(...iterationsRecord.value[key].photos);
       }
     }
-    // if (searchMode.value == "curation") {
-    //   if (loadingInsights.value) {
-    //     return result.filter((photo) => photo.isInsight == undefined || photo.selected);
-    //   } else {
-    //     return result //.filter((photo) => photo.isInsight);
-    //   }
-    // }
+
     return result;
   };
 
@@ -508,9 +502,12 @@ onMounted(() => {
     console.log(data);
 
 
-    setTimeout(() => {
+    if (searchMode.value != 'curation') {
+          setTimeout(() => {
         photosGridRef.value?.scrollToLast();
     }, 100);
+    }
+
 
     loadingIteration.value = false;
     loadingInsights.value = searchMode.value == "curation";
@@ -528,9 +525,8 @@ onMounted(() => {
         return updated
           ? {
               ...existing,
-              isInsight: updated.isInsight,
+              matchScore: updated.matchScore,
               reasoning: updated.reasoning,
-              selected: updated.isInsight
             }
           : existing;
       });
@@ -541,6 +537,7 @@ onMounted(() => {
     loadingInsights.value = false;
     
     console.log(data);
+
   });
 
   socket.on("maxPageAttempts", () => {

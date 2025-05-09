@@ -1,7 +1,6 @@
 <template>
   <div class="photos-grid">
     <div class="photos-container">
-      <!-- GRID PRINCIPAL (NO SELECCIONADAS O DESCARTADAS) -->
       <v-card
         ref="scrollOneContainer"
         :style="{ width: '50%' }"
@@ -17,7 +16,7 @@
               :is-thinking="isThinking(photo)"
               :do-fade="false"
               @view-info="viewPhotoInfo"
-              :showMatchPercent="false"
+              :showMatchPercent="true"
               :size="'32%'"
             >
               <template #overlay="{ isHovering, photo }">
@@ -43,19 +42,20 @@
                     :key="index"
                     class="thinking-letter"
                     :style="{ animationDelay: `${index * 0.1}s` }"
-                    >{{ letter }}</span
                   >
+                    {{ letter }}
+                  </span>
                 </div>
                 <div
                   v-show="isHovering && !loadingIteration && !loading"
                   class="action-buttons"
                 >
-                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)"
-                    ><v-icon>mdi-information</v-icon></v-btn
-                  >
-                  <v-btn size="small" icon @click.stop="toggleSelection(photo)"
-                    ><v-icon>mdi-arrow-right-bold</v-icon></v-btn
-                  >
+                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click.stop="toggleSelection(photo)">
+                    <v-icon>mdi-arrow-right-bold</v-icon>
+                  </v-btn>
                 </div>
               </template>
             </PhotoCard>
@@ -63,7 +63,6 @@
         </v-card-text>
       </v-card>
 
-      <!-- GRID SELECCIÓN (SELECCIONADAS) -->
       <v-card
         ref="scrollTwoContainer"
         :style="{ width: '50%' }"
@@ -78,7 +77,7 @@
               :isLoading="loading || loadingIteration"
               :is-thinking="isThinking(photo)"
               :do-fade="true"
-              :fade-delay="selectedPhotoFadeInDelays[index] || 0"
+              :fade-delay="0"
               @view-info="viewPhotoInfo"
               :showMatchPercent="false"
               :size="'32%'"
@@ -101,19 +100,20 @@
                     :key="index"
                     class="thinking-letter"
                     :style="{ animationDelay: `${index * 0.1}s` }"
-                    >{{ letter }}</span
                   >
+                    {{ letter }}
+                  </span>
                 </div>
                 <div
                   v-show="isHovering && !loadingIteration && !loading"
                   class="action-buttons"
                 >
-                  <v-btn size="small" icon @click.stop="toggleSelection(photo)"
-                    ><v-icon>mdi-arrow-left-bold</v-icon></v-btn
-                  >
-                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)"
-                    ><v-icon>mdi-information</v-icon></v-btn
-                  >
+                  <v-btn size="small" icon @click.stop="toggleSelection(photo)">
+                    <v-icon>mdi-arrow-left-bold</v-icon>
+                  </v-btn>
+                  <v-btn size="small" icon @click.stop="viewPhotoInfo(photo)">
+                    <v-icon>mdi-information</v-icon>
+                  </v-btn>
                 </div>
               </template>
             </PhotoCard>
@@ -136,9 +136,10 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from "vue";
+import { ref, nextTick, watch, computed } from "vue";
 import PhotoCard from "./PhotoCard.vue";
 import PhotoDialog from "./PhotoDialog.vue";
+import { usePhotosStore } from "@/stores/photos";
 
 const props = defineProps({
   photos: Array,
@@ -151,28 +152,37 @@ const props = defineProps({
 
 const emit = defineEmits(["next-iteration"]);
 
+const photosStore = usePhotosStore();
+
 const showDialog = ref(false);
 const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
 
-const unselectedPhotos = computed(() =>
-  props.photos
-    .filter(
-      (p) => (p.selected === false) | (p.selected === undefined) || p.isSkeleton
-    )
-    .reverse()
-);
-const selectedPhotos = computed(() =>
-  props.photos.filter((p) => p.selected === true).reverse()
-);
+const unselectedPhotos = ref([]);
+const selectedPhotos = ref([]);
 
-const selectedPhotoFadeInDelays = computed(() => {
-  return selectedPhotos.value.map((photo) => {
-    if (photo.justMoved) return 0;
-    const globalIndex = props.photos.findIndex((p) => p.id === photo.id);
-    return globalIndex * 150;
-  });
-  //.reverse();
-});
+watch(
+  () => props.photos,
+  (newPhotos) => {
+    const newSelected = newPhotos.filter((p) => p.selected);
+    const newUnselected = newPhotos.filter((p) => !p.selected || p.isSkeleton);
+
+    // Actualiza selected solo añadiendo los nuevos, sin reordenar los ya locales
+    const currentSelectedIds = selectedPhotos.value.map((p) => p.id);
+    newSelected.forEach((p) => {
+      if (!currentSelectedIds.includes(p.id)) {
+        selectedPhotos.value.push(p);
+      }
+    });
+    // Elimina los que ya no están seleccionados
+    selectedPhotos.value = selectedPhotos.value.filter((p) =>
+      newSelected.some((np) => np.id === p.id)
+    );
+
+    // Para unselected puedes reemplazar completa, porque no tienes orden manual
+    unselectedPhotos.value = newUnselected.reverse();
+  },
+  { immediate: true }
+);
 
 function viewPhotoInfo(photo) {
   selectedPhoto.value = {
@@ -188,30 +198,26 @@ function viewPhotoInfo(photo) {
 const scrollOneContainer = ref(null);
 const scrollTwoContainer = ref(null);
 
-defineExpose({
-  scrollToLast: () => {
-    nextTick(() => {
-      if (scrollOneContainer.value && scrollTwoContainer.value) {
-        scrollOneContainer.value.scrollTo({
-          bottom: scrollOneContainer.value.scrollHeight,
-          behavior: "smooth",
-        });
-        scrollTwoContainer.value.scrollTo({
-          bottom: scrollTwoContainer.value.scrollHeight,
-          behavior: "smooth",
-        });
-      }
-    });
-  },
-});
-
 const isThinking = (photo) => {
-  return props.loadingInsights && photo.isInsight === undefined;
+  return props.loadingInsights && photo.matchScore === undefined;
 };
 
 function toggleSelection(photo) {
-  photo.selected = photo.selected ? undefined : true;
-  photo.justMoved = true;
+  if (photo.selected) {
+    photo.selected = undefined;
+    selectedPhotos.value = selectedPhotos.value.filter(
+      (p) => p.id !== photo.id
+    );
+    unselectedPhotos.value.unshift(photo);
+    photosStore.togglePhotoSelection(photo.id);
+  } else {
+    photo.selected = true;
+    unselectedPhotos.value = unselectedPhotos.value.filter(
+      (p) => p.id !== photo.id
+    );
+    selectedPhotos.value.unshift(photo);
+    photosStore.togglePhotoSelection(photo.id);
+  }
 }
 </script>
 
