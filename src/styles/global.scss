@@ -199,12 +199,12 @@
     filter: blur(20px);
   }
   100% {
-    filter: blur(3px);
+    filter: blur(1px);
   }
 }
 
 .blurred-photo {
-  animation: unblur 12s forwards steps(30);
+  animation: unblur 10s forwards steps(18);
 }
 
 .search-fixed-button {
@@ -217,4 +217,21 @@
 .search-button-wrapper {
   display: flex;
   justify-content: center;
+}
+
+.alert-message {
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  left: 50%;
+  transform: translateX(-50%);
+  position: absolute;
+  bottom: 90px;
+  flex-direction: row;
+}
+
+.alert-text {
+  font-size: 14px;
+  width: 500px;
 }

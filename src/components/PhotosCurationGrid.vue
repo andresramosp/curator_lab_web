@@ -33,14 +33,13 @@
               hover
               color="primary"
               :length="3"
-              :size="15"
               v-model="minRating"
               dense
             >
               <template v-slot:item="props">
                 <v-icon
                   :color="props.isFilled ? 'secondary' : 'primary'"
-                  size="18px"
+                  size="17px"
                 >
                   mdi-star
                 </v-icon>
@@ -206,7 +205,12 @@
       </v-card>
     </div>
   </div>
-
+  <div v-if="maxPageAttempts" class="alert-message">
+    <v-alert dense class="alert-progress">
+      It seems unlikely we'll find more photos with the selected score. Please
+      reduce the score filter.
+    </v-alert>
+  </div>
   <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
 </template>
 
@@ -236,7 +240,6 @@ const unselectedPhotos = ref([]);
 const selectedPhotos = ref([]);
 
 const minRating = ref(1);
-const minResults = ref(1);
 
 const filteredUnselectedPhotos = computed(() =>
   unselectedPhotos.value.filter(

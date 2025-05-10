@@ -236,6 +236,7 @@
         </div>
       </transition>
     </div>
+    
   </div>
 </template>
 
@@ -402,6 +403,7 @@ async function searchPhotos() {
       searchMode: searchMode.value,
       iteration: iteration.value,
       pageSize: getPageSize(),
+      minMatchScore: 3
     };
     if (searchType.value === "tags") {
       payload = {

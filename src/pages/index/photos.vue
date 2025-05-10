@@ -57,7 +57,7 @@
       <v-alert
         v-if="photosStore.isAnalyzing || uploadingPhotos > 0"
         dense
-        class="alert-progress"
+        class="alert-text"
       >
         <div class="processing-content">
           <v-icon class="processing-icon" size="40">{{
@@ -363,23 +363,6 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-}
-
-.alert-message {
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  left: 50%;
-  transform: translateX(-50%);
-  position: absolute;
-  bottom: 90px;
-  flex-direction: row;
-}
-
-.alert-progress {
-  font-size: 14px;
-  width: 500px;
 }
 
 .sync-button {
