@@ -24,15 +24,35 @@
             pointer-events: none;
           "
         />
-        <!-- <v-toolbar flat dense color="surface" class="curation-toolbar">
-          <v-switch v-model="someSwitch" dense label="Activate" />
-          <v-spacer />
 
-        </v-toolbar> -->
+        <v-card-title class="curation-card-title">
+          <span style="font-size: 1.1rem; opacity: 0.7">Curation Area</span>
+          <div style="display: flex; align-items: center; gap: 4px">
+            <span style="font-size: 11px; font-weight: 300">Rating Filter</span>
+            <v-rating
+              hover
+              color="primary"
+              :length="3"
+              :size="15"
+              v-model="minRating"
+              dense
+            >
+              <template v-slot:item="props">
+                <v-icon
+                  :color="props.isFilled ? 'secondary' : 'primary'"
+                  size="18px"
+                >
+                  mdi-star
+                </v-icon>
+              </template>
+            </v-rating>
+          </div>
+        </v-card-title>
+
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
-              v-for="(photo, index) in unselectedPhotos"
+              v-for="(photo, index) in filteredUnselectedPhotos"
               :key="photo.id"
               :photo="photo"
               :isLoading="loading || loadingIteration"
@@ -116,6 +136,10 @@
             pointer-events: none;
           "
         />
+        <v-card-title class="curation-card-title">
+          <span style="font-size: 1.1rem; opacity: 0.7">Selection Area</span>
+          <div style="display: flex; align-items: center"></div>
+        </v-card-title>
         <v-card-text>
           <div class="photos-list">
             <PhotoCard
@@ -175,7 +199,7 @@
               class="outline"
               block
             >
-              <v-icon size="23">mdi-image</v-icon> Create Collection
+              <v-icon size="23">mdi-image</v-icon> Create Series
             </v-btn>
           </div>
         </div>
@@ -210,6 +234,18 @@ const selectedPhoto = ref({ id: null, description: "", matchingChunks: [] });
 
 const unselectedPhotos = ref([]);
 const selectedPhotos = ref([]);
+
+const minRating = ref(1);
+const minResults = ref(1);
+
+const filteredUnselectedPhotos = computed(() =>
+  unselectedPhotos.value.filter(
+    (photo) =>
+      photo.matchScore == undefined ||
+      minRating.value === 0 ||
+      (photo.matchScore || 0) >= minRating.value
+  )
+);
 
 watch(
   () => props.photos,
@@ -387,12 +423,15 @@ function toggleSelection(photo) {
   // }
 }
 
-.curation-toolbar {
+.curation-card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 20px;
   position: sticky;
-  top: 0px;
-  height: 36px;
-  padding-left: 18px;
-  padding-right: 18px;
-  z-index: 10;
+  top: 0;
+  background: rgb(var(--v-theme-surface));
+  z-index: 2;
+  min-height: 40px;
 }
 </style>

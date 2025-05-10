@@ -5,7 +5,7 @@
         v-bind="props"
         :class="[
           `photo-card`,
-          !photo.isSkeleton && !isThinking && doFade  ? 'photo-appear' : '',
+          !photo.isSkeleton && !isThinking && doFade ? 'photo-appear' : '',
         ]"
         :style="cardStyle"
         @click="handleClick"
@@ -27,21 +27,21 @@
         <slot name="overlay" :isHovering="isHovering" :photo="photo"></slot>
 
         <!-- Iconos informativos seleccion/deselección -->
-        <div v-if="!isThinking " class="photo-icons">
-          <div v-if="photo.selected">  
+        <div v-if="!isThinking" class="photo-icons">
+          <div v-if="photo.selected">
             <v-icon color="secondary">mdi-check</v-icon>
           </div>
-          <div v-else-if="photo.matchScore == 3" class="high-match">
-            <img style="width: 21px;" :src="logo" alt="CuratorLab Logo"></img>
-          </div>
+          <!-- <div v-else-if="photo.matchScore == 3" class="high-match">
+            <img style="width: 19px;" :src="logo" alt="CuratorLab Logo"></img>
+          </div> -->
           <div v-else-if="showMatchPercent" :class="[matchPercentClass]">
             <v-icon
-                color="gray"
-                style="font-size: 15px; opacity: 0.5"
-                v-for="n in starCount"
-                :key="n"
-                >mdi-star</v-icon
-              >
+              :color="starCount >= 3 ? 'secondary' : 'gray'"
+              style="font-size: 15px; opacity: 1"
+              v-for="n in starCount"
+              :key="n"
+              >mdi-star</v-icon
+            >
           </div>
         </div>
       </v-card>
@@ -54,7 +54,6 @@ import { computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import logo from "@/assets/CuratorLogo.png";
 import logoGray from "@/assets/CuratorLogoGray.png";
-
 
 const props = defineProps({
   photo: Object,
@@ -85,7 +84,7 @@ const cardStyle = computed(() => ({
 
 const handleClick = () => {
   if (props.isLoading) return;
-  if (props.photo.reasoning && !props.photo.selected) return
+  if (props.photo.reasoning && !props.photo.selected) return;
   photosStore.togglePhotoSelection(props.photo.id);
 };
 
@@ -104,7 +103,7 @@ const matchPercentClass = computed(() => {
 
 const starCount = computed(() => {
   if (props.photo.matchScore !== undefined) {
-    return props.photo.matchScore
+    return props.photo.matchScore;
   }
   const percent = props.photo.matchPercent;
   if (percent >= 95) return 5;
