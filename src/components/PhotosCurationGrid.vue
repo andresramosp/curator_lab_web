@@ -33,16 +33,27 @@
               hover
               color="primary"
               :length="3"
-              v-model="minRating"
+              :model-value="minMatchScore"
+              @update:model-value="$emit('update:minMatchScore', $event)"
               dense
             >
               <template v-slot:item="props">
-                <v-icon
-                  :color="props.isFilled ? 'secondary' : 'primary'"
-                  size="17px"
+                <v-tooltip
+                  location="top"
+                  :text="
+                    ['Partial Match', 'Good Match', 'Full Match'][props.index]
+                  "
                 >
-                  mdi-star
-                </v-icon>
+                  <template #activator="{ props: tooltipProps }">
+                    <v-icon
+                      v-bind="tooltipProps"
+                      :color="props.isFilled ? 'secondary' : 'primary'"
+                      size="17px"
+                    >
+                      mdi-star
+                    </v-icon>
+                  </template>
+                </v-tooltip>
               </template>
             </v-rating>
           </div>
@@ -227,9 +238,10 @@ const props = defineProps({
   hasMoreIterations: Boolean,
   loadingInsights: Boolean,
   maxPageAttempts: Boolean,
+  minMatchScore: Number,
 });
 
-const emit = defineEmits(["next-iteration"]);
+const emit = defineEmits(["next-iteration", "update:minMatchScore"]);
 
 const photosStore = usePhotosStore();
 
@@ -245,8 +257,7 @@ const filteredUnselectedPhotos = computed(() =>
   unselectedPhotos.value.filter(
     (photo) =>
       photo.matchScore == undefined ||
-      minRating.value === 0 ||
-      (photo.matchScore || 0) >= minRating.value
+      (photo.matchScore || 0) >= props.minMatchScore
   )
 );
 

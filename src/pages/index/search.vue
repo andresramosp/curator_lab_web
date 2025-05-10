@@ -206,6 +206,7 @@
       :loading="loading"
       :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
+      :minMatchScore="minMatchScore" @update:minMatchScore="minMatchScore = $event"
     />
     <div
       v-else
@@ -272,6 +273,7 @@ const loadingIteration = ref(false);
 const loadingInsights = ref(false);
 const hasMoreIterations = ref(false);
 const maxPageAttempts = ref(false);
+const minMatchScore = ref(1);
 const clearQuery = ref(null);
 const currentMatchPercent = ref(0);
 
@@ -403,7 +405,7 @@ async function searchPhotos() {
       searchMode: searchMode.value,
       iteration: iteration.value,
       pageSize: getPageSize(),
-      minMatchScore: 3
+      minMatchScore: minMatchScore.value
     };
     if (searchType.value === "tags") {
       payload = {
