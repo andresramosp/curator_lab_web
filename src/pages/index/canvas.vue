@@ -4,14 +4,41 @@
     <div class="toolbar">
       <CanvasToolbar
         v-model="toolbarState"
-        @deletePhotos="handleDeletePhotos"
-        @orderPhotos="handleOrderPhotos"
-        @zoomChanged="handleZoomChanged"
-        @fitStage="fitStageToPhotos"
+        @clearCanvas="handleClearCanvas"
         @openDialog="dialogVisible = true"
       />
     </div>
     <div ref="containerRef" class="canvas-wrapper">
+      <!-- Floating Controls -->
+      <div class="floating-controls">
+        <v-btn @click="zoomTick(1)" icon size="small" class="outline">
+          <v-icon>mdi-plus</v-icon>
+        </v-btn>
+        <v-btn @click="zoomTick(-1)" icon size="small" class="outline">
+          <v-icon>mdi-minus</v-icon>
+        </v-btn>
+        <v-btn @click="fitStageToPhotos" icon size="small" class="outline">
+          <v-icon>mdi-crop-free</v-icon>
+        </v-btn>
+        <v-btn
+          icon
+          size="small"
+          class="outline"
+          @click="
+            toolbarState.mouseMode =
+              toolbarState.mouseMode === 'move' ? 'select' : 'move'
+          "
+        >
+          <v-icon>
+            {{
+              toolbarState.mouseMode === "move"
+                ? "mdi-cursor-move"
+                : "mdi-selection-drag"
+            }}
+          </v-icon>
+        </v-btn>
+      </div>
+
       <v-stage
         :config="stageConfig"
         ref="stageRef"
@@ -123,14 +150,20 @@
               <!-- Tags y botones -->
               <template>
                 <PhotoDetectionAreas
-                  v-if="toolbarState.expansion.type.criteria === 'composition' && photo.hovered"
+                  v-if="
+                    toolbarState.expansion.type.criteria === 'composition' &&
+                    photo.hovered
+                  "
                   :photo="photo"
                   :detectionAreas="photo.detectionAreas"
                   :visible="photo.hovered"
                   >/</PhotoDetectionAreas
                 >
                 <TagPillsCanvas
-                  v-if="toolbarState.expansion.type.criteria === 'tags' && photo.hovered"
+                  v-if="
+                    toolbarState.expansion.type.criteria === 'tags' &&
+                    photo.hovered
+                  "
                   :photo="photo"
                   :tags="photo.tags"
                   :visible="photo.hovered"
@@ -313,13 +346,9 @@ const getPhotoStrokeColor = (photo) => {
   return "gray";
 };
 
-const handleOrderPhotos = () => {
-  orderPhotos();
-  if (
-    !photos.value.some((p) => p.selected) ||
-    photos.value.every((p) => p.selected)
-  )
-    fitStageToPhotos();
+const handleClearCanvas = () => {
+  canvasStore.$patch({ photos: [] });
+  canvasStore.$patch({ discardedPhotos: [] });
 };
 
 const fitStageToPhotos = () => {
@@ -329,7 +358,7 @@ const fitStageToPhotos = () => {
   const containerWidth = stage.width() - TOOLBAR_WIDTH; // Restamos el ancho de la toolbar
   const containerHeight = stage.height();
   const margin = 40;
-  const extraPaddingRatio = 0.25; // 10% de padding
+  const extraPaddingRatio = 0.1; // 10% de padding
 
   // Bounding box de todas las fotos
   const bounds = photos.value.reduce(
@@ -391,11 +420,6 @@ const fitStageToPhotos = () => {
   }).play();
 };
 
-const handleDeletePhotos = (event) => {
-  event.cancelBubble = true;
-  canvasStore.deletePhotos();
-};
-
 function handleAddPhotos(photoIds) {
   const photosToAdd = photoIds
     .map((id) => photosStore.photos.find((p) => p.id === id))
@@ -405,18 +429,24 @@ function handleAddPhotos(photoIds) {
   // fitStageToPhotos();
 }
 
-const handleZoomChanged = (newZoom) => {
+function zoomTick(direction = 1) {
   const stage = stageRef.value.getStage();
-  const scale = 0.5 + (newZoom / 100) * (3 - 0.5);
+  const scaleBy = 1.11;
 
-  applyZoom(stage, scale, updateStageOffset);
+  const oldScale = stage.scaleX();
+  const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
-  toolbarState.value.zoomLevel = newZoom;
-};
+  const pointer = {
+    x: stage.width() / 2,
+    y: stage.height() / 2,
+  };
+
+  applyZoom(stage, newScale, updateStageOffset, pointer);
+}
 
 onMounted(() => {
   stageConfig.width = containerRef.value.clientWidth;
-  stageConfig.height = containerRef.value.clientHeight;
+  stageConfig.height = containerRef.value.clientHeight - 64; // restamos height del header
   const stage = stageRef.value.getStage();
   stage.on("dragmove", updateStageOffset);
   orderPhotos();
@@ -471,11 +501,11 @@ watch(
   position: absolute;
   width: 100px;
   height: 100px;
-  bottom: 66px;
+  bottom: 0px;
   display: flex;
   right: 1px;
-  background-color: rgba(255, 0, 0, 0.1);
-  border: 1px solid rgba(250, 11, 11, 0.5);
+  /* background-color: rgba(255, 0, 0, 0.1); */
+  /* border: 1px solid rgba(250, 11, 11, 0.5); */
   border-radius: 8px;
   font-size: 40px;
   text-align: center;
@@ -495,5 +525,24 @@ watch(
   transform: rotate(8deg) scale(1.08);
   transition: transform 0.2s ease, background-color 0.2s ease,
     border-color 0.2s ease;
+}
+
+.floating-controls {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  z-index: 300;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.control-btn {
+  min-width: 36px;
+  height: 36px;
+  color: rgba(255, 255, 255, 0.7);
 }
 </style>

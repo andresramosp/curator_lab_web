@@ -52,7 +52,7 @@ import logo from "@/assets/CuratorLogoGray.png";
 const router = useRouter();
 
 const sections = [
-  { title: "Photos", icon: "mdi-image", route: "/photos" },
+  // { title: "Photos", icon: "mdi-image", route: "/photos" },
   // { title: "Collections", icon: "mdi-folder", route: "/catalog/collections" },
   { title: "Search", icon: "mdi-magnify", route: "/search" },
 

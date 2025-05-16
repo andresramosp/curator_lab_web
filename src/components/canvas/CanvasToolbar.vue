@@ -7,12 +7,11 @@
           Photos
         </div>
         <div class="d-flex justify-space-between">
-          <v-tooltip text="Open folder" location="bottom">
+          <v-tooltip text="Import from catalog" location="bottom">
             <template #activator="{ props }">
               <v-btn
                 icon
                 @click="emitOpenDialog"
-                variant="outlined"
                 size="small"
                 class="mx-auto"
                 v-bind="props"
@@ -22,68 +21,34 @@
             </template>
           </v-tooltip>
 
-          <v-tooltip text="Order photos" location="bottom">
+          <v-tooltip text="Import from local files" location="bottom">
             <template #activator="{ props }">
               <v-btn
                 icon
-                @click="emitOrderPhotos"
+                @click="emitImportLocal"
                 size="small"
                 class="mx-auto"
                 v-bind="props"
               >
-                <v-icon size="30">mdi-grid</v-icon>
+                <v-icon size="22">mdi-folder-download</v-icon>
               </v-btn>
             </template>
           </v-tooltip>
 
-          <v-tooltip text="Fit to view" location="bottom">
+          <v-tooltip text="Clear canvas" location="bottom">
             <template #activator="{ props }">
               <v-btn
                 icon
-                @click="emitFitStage"
+                @click="emitClearCanvas"
                 size="small"
                 class="mx-auto"
                 v-bind="props"
               >
-                <v-icon size="30">mdi-crop-free</v-icon>
+                <v-icon size="22">mdi-delete-sweep</v-icon>
               </v-btn>
             </template>
           </v-tooltip>
         </div>
-      </li>
-
-      <!-- Navigation -->
-      <li class="section">
-        <div class="text-caption font-weight-medium text-grey-lighten-1 mb-1">
-          Navigation
-        </div>
-        <ToggleButtons v-model="toolbarState.mouseMode">
-          <ToggleOption
-            size="small"
-            value="move"
-            tooltip="Move the canvas (pan)"
-          >
-            <v-icon left class="mr-1">mdi-pan</v-icon> Pan
-          </ToggleOption>
-          <ToggleOption
-            size="small"
-            value="select"
-            tooltip="Select multiple photos"
-          >
-            <v-icon left class="mr-1">mdi-selection-drag</v-icon> Select
-          </ToggleOption>
-        </ToggleButtons>
-
-        <v-slider
-          v-model="toolbarState.zoomLevel"
-          @update:modelValue="emitZoomChanged"
-          hide-details
-          density="compact"
-          class="mt-1"
-          style="height: 24px"
-          min="0"
-          max="100"
-        />
       </li>
 
       <!-- Settings -->
@@ -191,10 +156,9 @@ const props = defineProps({
 });
 const emit = defineEmits([
   "update:modelValue",
-  "orderPhotos",
-  "fitStage",
   "openDialog",
-  "zoomChanged", // Nuevo evento
+  "importLocal",
+  "clearCanvas",
 ]);
 
 const toolbarState = computed({
@@ -210,10 +174,9 @@ const expansionTypes = [
   { label: "Composition", data: { criteria: "composition" } },
 ];
 
-const emitOrderPhotos = () => emit("orderPhotos");
-const emitFitStage = () => emit("fitStage");
 const emitOpenDialog = () => emit("openDialog");
-const emitZoomChanged = (newValue) => emit("zoomChanged", newValue);
+const emitImportLocal = () => emit("importLocal");
+const emitClearCanvas = () => emit("clearCanvas");
 </script>
 
 <style scoped lang="scss">
