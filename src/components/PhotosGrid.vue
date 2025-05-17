@@ -7,7 +7,6 @@
             <v-img
               :src="photo.thumbnailUrl"
               class="photo-image"
-              :class="{ 'blurred-photo': needProcess(photo) }"
               @error="fallbackImage(photo)"
             ></v-img>
             <!-- Botonera flotante -->
@@ -21,11 +20,8 @@
               <v-btn size="small" icon @click="editPhoto(photo.id)">
                 <v-icon>mdi-pencil</v-icon>
               </v-btn>
-              <v-btn size="small" icon @click="analyzePhoto(photo.id)">
+              <v-btn size="small" icon @click="viewPhotoInfo(photo.id)">
                 <v-icon>mdi-magnify</v-icon>
-              </v-btn>
-              <v-btn size="small" icon @click="viewPhotoInfo(photo)">
-                <v-icon>mdi-information</v-icon>
               </v-btn>
             </div>
           </v-card>
@@ -58,7 +54,6 @@ const props = defineProps({
   hasMoreIterations: Boolean,
 });
 
-const photosBaseURL = import.meta.env.VITE_PHOTOS_BASE_URL;
 const photosStore = usePhotosStore();
 
 const showDialog = ref(false);
@@ -79,16 +74,16 @@ function editPhoto(photoId) {
   console.log("Edit photo", photoId);
 }
 
-async function analyzePhoto(photoId) {
-  photosStore.analyze([photoId]);
-}
+async function viewPhotoInfo(photoId) {
+  await photosStore.fetchPhoto(photoId);
+  const fullPhoto = photosStore.photos.find((p) => p.id === photoId);
 
-function viewPhotoInfo(photo) {
   selectedPhoto.value = {
-    ...photo,
-    description: photo.description || "No description available",
-    tags: photo.tags, //.map((t) => t.name),
+    ...fullPhoto,
+    description: fullPhoto.description || "No description available",
+    tags: fullPhoto.tags, //.map((t) => t.name),
   };
+
   showDialog.value = true;
 }
 

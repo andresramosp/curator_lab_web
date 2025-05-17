@@ -56,10 +56,28 @@ export const usePhotosStore = defineStore("photos", {
       }
     },
 
+    async fetchPhoto(photoId) {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/catalog/${photoId}`
+        );
+        const updatedPhoto = response.data.photo;
+
+        const index = this.photos.findIndex((p) => p.id === photoId);
+        if (index !== -1) {
+          this.photos[index] = { ...this.photos[index], ...updatedPhoto };
+        } else {
+          this.photos.push(updatedPhoto);
+        }
+      } catch (error) {
+        console.error("Error fetching photo:", error);
+      }
+    },
+
     async deletePhoto(photoId) {
       try {
         await axios.delete(
-          `${import.meta.env.VITE_API_BASE_URL}/api/photos/${photoId}`
+          `${import.meta.env.VITE_API_BASE_URL}/api/catalog/${photoId}`
         );
         this.photos = this.photos.filter((photo) => photo.id !== photoId);
       } catch (error) {
@@ -68,7 +86,6 @@ export const usePhotosStore = defineStore("photos", {
     },
 
     togglePhotoSelection(photoId) {
-      debugger;
       this.selectedPhotosRecord[photoId] = !this.selectedPhotosRecord[photoId];
     },
   },
