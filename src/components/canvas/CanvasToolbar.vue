@@ -103,17 +103,6 @@
               style="width: 120px"
             />
           </v-col>
-          <v-col>
-            <v-switch
-              style="padding-left: 14px"
-              label="Repeat"
-              color="secondary"
-              class="switch-compact"
-              v-model="toolbarState.expansion.repeat"
-              density="compact"
-              hide-details
-            />
-          </v-col>
         </v-row>
 
         <div class="d-flex justify-space-around mt-2">

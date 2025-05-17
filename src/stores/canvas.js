@@ -60,18 +60,18 @@ export const useCanvasStore = defineStore("canvas", {
       opposite,
       inverted
     ) {
-      let basePhoto = basePhotos[0];
+      let basePhoto = basePhotos[0]; // de momento solo un anchor
       try {
         basePhoto.loading = true;
 
-        const photoIds = basePhotos.map((bp) => bp.id);
+        const anchorIds = basePhotos.map((bp) => bp.id);
 
         const currentOrDiscardedPhotos = [
           ...this.photos.map((p) => p.id),
-          // ...this.discardedPhotos.map((p) => p.id),
+          ...this.discardedPhotos.map((p) => p.id),
         ];
         let selectedTags = [];
-        for (let photoId of photoIds) {
+        for (let photoId of anchorIds) {
           let photo = this.photos.find((p) => p.id == photoId);
           let selectedPhotoTagsIds = photo.tags
             .filter((t) => t.tag.selected)
@@ -80,7 +80,7 @@ export const useCanvasStore = defineStore("canvas", {
         }
 
         let selectedBoxes = [];
-        for (let photoId of photoIds) {
+        for (let photoId of anchorIds) {
           let photo = this.photos.find((p) => p.id == photoId);
           let selectedDetectionIds = photo.detectionAreas
             .filter((dt) => dt.selected)
@@ -91,7 +91,7 @@ export const useCanvasStore = defineStore("canvas", {
         const response = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/api/search/byPhotos`,
           {
-            photoIds,
+            anchorIds,
             currentPhotosIds: currentOrDiscardedPhotos,
             criteria: similarityType.criteria,
             opposite,

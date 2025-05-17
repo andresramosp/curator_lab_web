@@ -243,11 +243,9 @@ const toolbarState = ref({
     type: { criteria: "embedding" },
     inverted: false,
     opposite: false,
-    repeat: false,
-    // strict: false,
   },
   photoOptions: {
-    count: 3,
+    count: 1,
     spreadMode: "perpendicular",
   },
 });
