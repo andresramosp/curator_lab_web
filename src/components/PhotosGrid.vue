@@ -9,7 +9,7 @@
               class="photo-image"
               @error="fallbackImage(photo)"
             ></v-img>
-            <!-- Botonera flotante -->
+
             <div
               v-show="isHovering && !needProcess(photo).isAnalyzing"
               class="action-buttons"
@@ -37,13 +37,12 @@
         <v-skeleton-loader :key="n" type="image" class="photo-skeleton"
       /></v-card>
     </div> -->
-
     <PhotoDialog v-model:dialog="showDialog" :selected-photo="selectedPhoto" />
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { usePhotosStore } from "@/stores/photos";
 import PhotoDialog from "./PhotoDialog.vue";
 
@@ -57,7 +56,12 @@ const props = defineProps({
 const photosStore = usePhotosStore();
 
 const showDialog = ref(false);
-const selectedPhoto = ref({ id: null, description: "" });
+const selectedPhotoId = ref(null);
+
+// Accede al store para obtener la foto completa
+const selectedPhoto = computed(() =>
+  photosStore.photos.find((p) => p.id === selectedPhotoId.value)
+);
 
 function needProcess(photo) {
   return (
@@ -76,14 +80,7 @@ function editPhoto(photoId) {
 
 async function viewPhotoInfo(photoId) {
   await photosStore.fetchPhoto(photoId);
-  const fullPhoto = photosStore.photos.find((p) => p.id === photoId);
-
-  selectedPhoto.value = {
-    ...fullPhoto,
-    description: fullPhoto.description || "No description available",
-    tags: fullPhoto.tags, //.map((t) => t.name),
-  };
-
+  selectedPhotoId.value = photoId;
   showDialog.value = true;
 }
 

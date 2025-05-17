@@ -58,11 +58,10 @@ export const usePhotosStore = defineStore("photos", {
 
     async fetchPhoto(photoId) {
       try {
-        const response = await axios.get(
+        const { data: photo } = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/catalog/${photoId}`
         );
-        const updatedPhoto = response.data.photo;
-
+        const updatedPhoto = photo;
         const index = this.photos.findIndex((p) => p.id === photoId);
         if (index !== -1) {
           this.photos[index] = { ...this.photos[index], ...updatedPhoto };

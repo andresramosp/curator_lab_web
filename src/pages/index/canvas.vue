@@ -347,8 +347,21 @@ const getPhotoStrokeColor = (photo) => {
 };
 
 const handleClearCanvas = () => {
+  // Limpiar fotos y descartados
   canvasStore.$patch({ photos: [] });
   canvasStore.$patch({ discardedPhotos: [] });
+
+  // Resetear zoom y posición del stage
+  const stage = stageRef.value.getStage();
+  stage.scale({ x: 1, y: 1 });
+  stage.position({ x: 0, y: 0 });
+  stage.batchDraw();
+
+  // Resetear el zoomLevel del estado
+  toolbarState.value.zoomLevel = 1;
+
+  // Resetear offset
+  updateStageOffset();
 };
 
 const fitStageToPhotos = () => {
@@ -419,14 +432,16 @@ const fitStageToPhotos = () => {
     },
   }).play();
 };
+async function handleAddPhotos(photoIds) {
+  // Fetch todas las fotos necesarias en paralelo
+  await Promise.all(photoIds.map((id) => photosStore.fetchPhoto(id)));
 
-function handleAddPhotos(photoIds) {
   const photosToAdd = photoIds
     .map((id) => photosStore.photos.find((p) => p.id === id))
-    .filter(Boolean); // por si acaso
+    .filter(Boolean);
 
   canvasStore.addPhotos(photosToAdd);
-  // fitStageToPhotos();
+  fitStageToPhotos();
 }
 
 function zoomTick(direction = 1) {
