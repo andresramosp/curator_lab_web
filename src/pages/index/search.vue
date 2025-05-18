@@ -6,6 +6,7 @@
         <template v-if="searchType == 'semantic'">
           <v-text-field
             v-model="description"
+            :disabled="!warmedUp"
             :label="'Type your query in natural language'"
             autofocus
             outlined
@@ -15,6 +16,7 @@
         <template v-else-if="searchType == 'tags'">
           <div class="d-flex" style="width: 100%; gap: 8px">
             <v-combobox
+              :disabled="!warmedUp"
               autofocus
               v-model="includedTags"
               v-model:search="searchInputIncluded"
@@ -28,6 +30,7 @@
             />
             <v-combobox
               v-model="excludedTags"
+              :disabled="!warmedUp"
               v-model:search="searchInputExcluded"
               :items="excludedTagSuggestions"
               label="Penalized Tags"
@@ -42,6 +45,7 @@
         <template v-else>
           <div class="d-flex" style="gap: 8px">
             <v-text-field
+              :disabled="!warmedUp"
               autofocus
               v-model="topologicalAreas.left"
               label="Left half"
@@ -60,6 +64,7 @@
               </template>
             </v-text-field>
             <v-text-field
+              :disabled="!warmedUp"
               v-model="topologicalAreas.middle"
               label="Middle area"
               placeholder="Something funny"
@@ -77,6 +82,7 @@
               </template>
             </v-text-field>
             <v-text-field
+              :disabled="!warmedUp"
               v-model="topologicalAreas.right"
               label="Right half"
               placeholder="A little mouse"
@@ -145,13 +151,21 @@
               <v-icon left class="mr-1">mdi-brain</v-icon>
               Flexible
             </ToggleOption>
-          
+
             <ToggleOption
               :disabled="searchType != 'semantic'"
               value="curation"
               tooltip="Create a top selection of images for your conceptual project with intelligence assistance."
             >
-            <img style="width: 16px; margin-right: 3.5px;" :src="searchMode == 'curation' || searchType != 'semantic' ? logoGray : logoGreen" alt="CuratorLab Logo"></img>
+              <img
+                style="width: 16px; margin-right: 3.5px"
+                :src="
+                  searchMode == 'curation' || searchType != 'semantic'
+                    ? logoGray
+                    : logoGreen
+                "
+                alt="CuratorLab Logo"
+              />
 
               Curation
             </ToggleOption>
@@ -159,7 +173,7 @@
 
           <v-btn
             @click="handleClear"
-            :disabled="loading"
+            :disabled="loading || !warmedUp"
             class="toolbar-control outline"
           >
             Clear
@@ -167,7 +181,7 @@
           <v-btn
             @click="handleSearch"
             :loading="loading && !loadingIteration && !loadingInsights"
-            :disabled="searchDisabled"
+            :disabled="searchDisabled || !warmedUp"
             class="toolbar-control"
           >
             Search
@@ -196,7 +210,8 @@
       </div>
     </v-toolbar>
 
-    <component :is="currentGrid"
+    <component
+      :is="currentGrid"
       v-if="loading || loadingIteration || (photos && photos.length)"
       ref="photosGridRef"
       :photos="photos"
@@ -206,7 +221,8 @@
       :loading="loading"
       :loadingInsights="loadingInsights"
       :maxPageAttempts="maxPageAttempts"
-      :minMatchScore="minMatchScore" @update:minMatchScore="minMatchScore = $event"
+      :minMatchScore="minMatchScore"
+      @update:minMatchScore="minMatchScore = $event"
     />
     <div
       v-else
@@ -216,28 +232,35 @@
       <img
         src="@/assets/CuratorLogoGray.png"
         alt="Curator Lab Logo"
+        :class="{ 'soft-pulse': !warmedUp }"
         style="width: 250px; height: auto; opacity: 0.15"
       />
+
+      <div v-if="warmedUp"></div>
       <div style="margin-top: 0px; font-size: 1.2rem">
-        {{ queryDescription.prefix }}
+        <span v-if="!warmedUp">Warming up...</span>
+        <span v-else>{{ queryDescription.prefix }}</span>
       </div>
-      <transition name="slide-fade" mode="out-in">
+
+      <transition
+        v-if="!warmedUp || queryDescription.example"
+        name="slide-fade"
+        mode="out-in"
+      >
         <div
-          v-if="queryDescription.example"
-          :key="queryDescription.example"
+          :key="warmedUp ? queryDescription.example : warmingMessage"
           style="
             margin-top: 4px;
             font-size: 1rem;
             font-style: italic;
             cursor: pointer;
           "
-          @click="description = queryDescription.example"
+          @click="warmedUp ? (description = queryDescription.example) : null"
         >
-          {{ `"${queryDescription.example}"` }}
+          {{ warmedUp ? `"${queryDescription.example}"` : warmingMessage }}
         </div>
       </transition>
     </div>
-    
   </div>
 </template>
 
@@ -260,6 +283,18 @@ import logoGreen from "@/assets/CuratorLogo.png";
 
 const socket = io(import.meta.env.VITE_API_WS_URL);
 
+const warmedUp = ref(false);
+
+const warmingMessages = [
+  "Warming up the engines...",
+  "Preparing the stage...",
+  "Just a few seconds more...",
+  "Aligning the neurons...",
+  "Summoning the muses...",
+];
+const warmingMessage = ref(warmingMessages[0]);
+let warmingInterval = null;
+
 const photosStore = usePhotosStore();
 const canvasStore = useCanvasStore();
 const router = useRouter();
@@ -273,7 +308,7 @@ const loadingIteration = ref(false);
 const loadingInsights = ref(false);
 const hasMoreIterations = ref(false);
 const maxPageAttempts = ref(false);
-const minMatchScore = ref(1);
+const minMatchScore = ref(2);
 const clearQuery = ref(null);
 const currentMatchPercent = ref(0);
 
@@ -281,8 +316,9 @@ const menu = ref(false);
 
 const photosGridRef = ref(null);
 
-const currentGrid = computed(() => 
-searchMode.value == 'curation' ? PhotosCurationGrid : PhotosSearchGrid)
+const currentGrid = computed(() =>
+  searchMode.value == "curation" ? PhotosCurationGrid : PhotosSearchGrid
+);
 
 // Semantic
 const description = ref("");
@@ -368,9 +404,7 @@ const photos = computed(() => {
       isSkeleton: true,
       src: null,
     }));
-    return iteration.value == 1 
-      ? [...skeletons]
-      : [...actual]
+    return iteration.value == 1 ? [...skeletons] : [...actual];
   } else {
     return getActualPhotos();
   }
@@ -393,7 +427,7 @@ const searchDisabled = computed(() => {
 });
 
 function getPageSize() {
-  return searchMode.value == 'curation' ? 6 : 12;
+  return searchMode.value == "curation" ? 6 : 12;
 }
 
 async function searchPhotos() {
@@ -405,7 +439,7 @@ async function searchPhotos() {
       searchMode: searchMode.value,
       iteration: iteration.value,
       pageSize: getPageSize(),
-      minMatchScore: minMatchScore.value
+      minMatchScore: minMatchScore.value,
     };
     if (searchType.value === "tags") {
       payload = {
@@ -440,8 +474,8 @@ watch(searchMode, () => {
 });
 
 watch(searchType, () => {
-  if (searchType.value != 'semantic' && searchMode.value == 'curation') {
-    searchMode.value = 'logical'
+  if (searchType.value != "semantic" && searchMode.value == "curation") {
+    searchMode.value = "logical";
   }
 });
 
@@ -484,8 +518,27 @@ async function moveToCanvas() {
   router.push("/canvas");
 }
 
+async function ensureWarmUp() {
+  let i = 0;
+  warmingInterval = setInterval(() => {
+    i = (i + 1) % warmingMessages.length;
+    warmingMessage.value = warmingMessages[i];
+  }, 5000);
+
+  const { data } = await axios.get(
+    `${import.meta.env.VITE_API_BASE_URL}/api/search/warmUp`
+  );
+  warmedUp.value = data.result;
+
+  if (data.result && warmingInterval) {
+    clearInterval(warmingInterval);
+    warmingInterval = null;
+  }
+}
+
 // WebSocket handlers
 onMounted(() => {
+  ensureWarmUp();
   socket.on("matches", (data) => {
     Object.entries(data.results).forEach(([iter, richPhotos]) => {
       iterationsRecord.value[iter] = {
@@ -505,11 +558,9 @@ onMounted(() => {
     }
     console.log(data);
 
-
-   setTimeout(() => {
-        photosGridRef.value?.scrollToLast();
+    setTimeout(() => {
+      photosGridRef.value?.scrollToLast();
     }, 100);
-
 
     loadingIteration.value = false;
     loadingInsights.value = searchMode.value == "curation";
@@ -538,12 +589,11 @@ onMounted(() => {
     clearQuery.value = data.structuredResult.original;
     loadingInsights.value = false;
 
-       setTimeout(() => {
-        photosGridRef.value?.scrollToLast();
+    setTimeout(() => {
+      photosGridRef.value?.scrollToLast();
     }, 100);
-    
-    console.log(data);
 
+    console.log(data);
   });
 
   socket.on("maxPageAttempts", () => {
@@ -555,6 +605,7 @@ onUnmounted(() => {
   socket.off("matches");
   socket.off("insights");
   socket.off("maxPageAttempts");
+  if (warmingInterval) clearInterval(warmingInterval);
 });
 </script>
 
@@ -599,5 +650,32 @@ onUnmounted(() => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateX(-30px);
+}
+.warming-up-animated {
+  animation: soft-pulse 2.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.soft-pulse {
+  animation: soft-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 </style>
